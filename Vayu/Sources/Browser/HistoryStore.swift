@@ -90,8 +90,14 @@ final class HistoryStore {
                 params: [limit]
             )) ?? []
         } else {
-            // FTS search
-            let ftsQuery = query.split(separator: " ").map { "\($0)*" }.joined(separator: " ")
+            // FTS search — sanitize input to avoid FTS5 syntax errors.
+            // Strip special chars, split into tokens, prefix-match each.
+            let sanitized = query.unicodeScalars.filter { c in
+                CharacterSet.alphanumerics.contains(c) || c == " "
+            }
+            let tokens = String(sanitized).split(separator: " ").filter { !$0.isEmpty }
+            guard !tokens.isEmpty else { return [] }
+            let ftsQuery = tokens.map { "\($0)*" }.joined(separator: " ")
             results = (try? db.query(
                 """
                 SELECT h.id, h.url, h.title, h.visited_at
