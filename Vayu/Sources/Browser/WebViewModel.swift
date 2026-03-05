@@ -1,6 +1,5 @@
 import SwiftUI
 import WebKit
-import Combine
 
 @MainActor
 final class WebViewModel: NSObject, ObservableObject {
@@ -14,7 +13,8 @@ final class WebViewModel: NSObject, ObservableObject {
 
     let webView: WKWebView
     private var observers: [NSKeyValueObservation] = []
-    private var faviconGeneration: UInt = 0
+    private var faviconTask: Task<Void, Never>?
+    private var faviconSiteKey: String?
 
     init(initialURL: String? = nil) {
         let config = WKWebViewConfiguration()
@@ -37,7 +37,7 @@ final class WebViewModel: NSObject, ObservableObject {
         observers = [
             webView.observe(\.url) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.currentURL = webView.url?.absoluteString ?? ""
+                    self?.handleURLChange(webView.url)
                 }
             },
             webView.observe(\.title) { [weak self] webView, _ in
@@ -68,6 +68,15 @@ final class WebViewModel: NSObject, ObservableObject {
         ]
     }
 
+    deinit {
+        faviconTask?.cancel()
+    }
+
+    private func handleURLChange(_ url: URL?) {
+        currentURL = url?.absoluteString ?? ""
+        updateFavicon(for: url)
+    }
+
     func loadURL(_ input: String) {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -86,38 +95,77 @@ final class WebViewModel: NSObject, ObservableObject {
 
         if let url {
             webView.load(URLRequest(url: url))
-            prefetchFavicon(for: url)
         }
     }
 
-    // Kicks off favicon resolution the instant we know the domain —
-    // runs in parallel with the page load, not after it.
-    private func prefetchFavicon(for url: URL) {
-        faviconGeneration &+= 1
-        let gen = faviconGeneration
-        self.favicon = nil
-
-        guard let host = url.host else { return }
-        let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-
-        // Cache hit → instant, done
-        if let cached = FaviconStore.shared.get(domain: domain) {
-            self.favicon = cached
+    private func updateFavicon(for pageURL: URL?, force: Bool = false) {
+        guard let pageURL,
+              let siteKey = faviconSiteKey(for: pageURL),
+              let faviconURL = canonicalFaviconURL(for: pageURL) else {
+            resetFavicon()
             return
         }
 
-        // Cache miss → fire Google API immediately (tiny payload, fast CDN)
-        Task.detached {
-            let googleURL = URL(string: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://\(domain)&size=64")!
-            if let data = await Self.fetchImageData(from: googleURL),
-               let image = Self.renderFavicon(from: data) {
-                await MainActor.run { [weak self] in
-                    guard let self, self.faviconGeneration == gen else { return }
-                    self.favicon = image
-                    FaviconStore.shared.store(domain: domain, imageData: data)
-                }
+        let siteChanged = faviconSiteKey != siteKey
+        if !siteChanged && !force && (favicon != nil || faviconTask != nil) {
+            return
+        }
+
+        faviconSiteKey = siteKey
+        faviconTask?.cancel()
+        faviconTask = nil
+
+        if siteChanged || force {
+            favicon = nil
+        }
+
+        if let cached = FaviconStore.shared.get(domain: siteKey) {
+            favicon = cached
+            return
+        }
+
+        faviconTask = Task(priority: .utility) { [weak self] in
+            guard let data = await Self.fetchFaviconData(from: faviconURL),
+                  !Task.isCancelled,
+                  let image = Self.renderFavicon(from: data) else { return }
+
+            await MainActor.run { [weak self] in
+                guard let self, self.faviconSiteKey == siteKey else { return }
+                self.favicon = image
+                FaviconStore.shared.store(domain: siteKey, imageData: data)
+                self.faviconTask = nil
             }
         }
+    }
+
+    private func resetFavicon() {
+        faviconTask?.cancel()
+        faviconTask = nil
+        faviconSiteKey = nil
+        favicon = nil
+    }
+
+    private func faviconSiteKey(for pageURL: URL) -> String? {
+        guard let host = pageURL.host?.lowercased() else { return nil }
+
+        if let port = pageURL.port {
+            return "\(host):\(port)"
+        }
+
+        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+    }
+
+    private func canonicalFaviconURL(for pageURL: URL) -> URL? {
+        guard let scheme = pageURL.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              let host = pageURL.host else { return nil }
+
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = host
+        components.port = pageURL.port
+        components.path = "/favicon.ico"
+        return components.url
     }
 
     func goBack() { webView.goBack() }
@@ -125,62 +173,17 @@ final class WebViewModel: NSObject, ObservableObject {
 
     func reload() {
         if webView.url != nil {
+            updateFavicon(for: webView.url, force: true)
             webView.reload()
         }
     }
 
     func stopLoading() { webView.stopLoading() }
 
-    // Runs after page load — extracts page-declared icons and upgrades the
-    // favicon if a higher-quality source is found (SVG, large PNG).
-    // The result gets cached, so next visit uses the best version instantly.
-    private func upgradeFavicon() {
-        guard let pageURL = URL(string: currentURL),
-              let host = pageURL.host else { return }
+    nonisolated private static func fetchFaviconData(from url: URL) async -> Data? {
+        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 4)
 
-        let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        let gen = faviconGeneration
-
-        let js = """
-        (function() {
-            var icons = [];
-            var links = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"]');
-            for (var i = 0; i < links.length; i++) {
-                var link = links[i];
-                var size = 0;
-                var sizes = link.getAttribute('sizes');
-                if (sizes && sizes !== 'any') size = parseInt(sizes.split('x')[0]) || 0;
-                var type = link.getAttribute('type') || '';
-                var isSvg = type.indexOf('svg') !== -1 || link.href.endsWith('.svg');
-                icons.push({ href: link.href, size: size, svg: isSvg });
-            }
-            icons.sort(function(a, b) {
-                if (a.svg !== b.svg) return a.svg ? -1 : 1;
-                return b.size - a.size;
-            });
-            return icons.map(function(i) { return i.href; });
-        })();
-        """
-        webView.evaluateJavaScript(js) { [weak self] result, _ in
-            let candidates = (result as? [String])?.compactMap { URL(string: $0) } ?? []
-            Task.detached {
-                for candidate in candidates {
-                    if let data = await Self.fetchImageData(from: candidate),
-                       let image = Self.renderFavicon(from: data) {
-                        await MainActor.run { [weak self] in
-                            guard let self, self.faviconGeneration == gen else { return }
-                            self.favicon = image
-                            FaviconStore.shared.store(domain: domain, imageData: data)
-                        }
-                        return
-                    }
-                }
-            }
-        }
-    }
-
-    nonisolated private static func fetchImageData(from url: URL) async -> Data? {
-        guard let (data, response) = try? await URLSession.shared.data(from: url),
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
               let http = response as? HTTPURLResponse,
               http.statusCode == 200,
               !data.isEmpty else { return nil }
@@ -212,27 +215,26 @@ final class WebViewModel: NSObject, ObservableObject {
 }
 
 extension WebViewModel: WKNavigationDelegate {
-    nonisolated func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        // Read directly from WKWebView — the KVO-mirrored @Published
-        // properties may not have updated yet due to async Task hops.
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
-        Task { @MainActor in
-            HistoryStore.shared.recordVisit(url: url, title: title)
-            self.upgradeFavicon()
-        }
+        HistoryStore.shared.recordVisit(url: url, title: title)
     }
 
-    nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
     }
 
-    nonisolated func webView(
+    func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
-        .allow
+        if navigationAction.targetFrame?.isMainFrame != false {
+            updateFavicon(for: navigationAction.request.url)
+        }
+
+        return .allow
     }
 }
