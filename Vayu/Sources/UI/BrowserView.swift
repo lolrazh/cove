@@ -36,6 +36,7 @@ struct BrowserView: View {
     private var activeTabContent: some View {
         if let tab = tabManager.activeTab {
             ActiveTabView(tab: tab)
+                .id(tab.id)
         }
     }
 }
