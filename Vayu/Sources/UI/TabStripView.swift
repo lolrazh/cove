@@ -64,6 +64,8 @@ struct TabItemView: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            FaviconView(image: tab.viewModel.favicon, size: 14)
+
             Text(tabTitle)
                 .font(.system(size: 11.5, weight: isActive ? .medium : .regular))
                 .lineLimit(1)

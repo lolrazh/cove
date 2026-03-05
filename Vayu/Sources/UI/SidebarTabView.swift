@@ -114,6 +114,8 @@ struct SidebarTabItem: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            FaviconView(image: tab.viewModel.favicon, size: 14)
+
             Text(tabTitle)
                 .font(.system(size: 12, weight: isActive ? .medium : .regular))
                 .lineLimit(1)
