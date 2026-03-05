@@ -216,9 +216,11 @@ extension WebViewModel: WKNavigationDelegate {
     }
 
     nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // Read directly from WKWebView — the KVO-mirrored @Published
+        // properties may not have updated yet due to async Task hops.
+        let url = webView.url?.absoluteString ?? ""
+        let title = webView.title ?? ""
         Task { @MainActor in
-            let url = self.currentURL
-            let title = self.pageTitle
             HistoryStore.shared.recordVisit(url: url, title: title)
             self.upgradeFavicon()
         }
