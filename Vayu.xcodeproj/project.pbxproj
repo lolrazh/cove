@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2424788002B1FB2EEAB80312 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FE42F1A95D5C81D01CE91E /* Tab.swift */; };
+		290C95EF032BAED876630D4F /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC6F27EFB83B8D47C75C908 /* TabManager.swift */; };
 		32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */; };
 		3E4948AE5A6C5D9C0BE941B6 /* VayuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3BFF8975CD621ABB5C43EF /* VayuApp.swift */; };
+		97AC062B50EB14B95E9026F9 /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38124B0BAFC31DA29121D83 /* TabStripView.swift */; };
 		C2DEBF4AF425EA9FCC03DE93 /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */; };
 		EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDB7D08C77162092D1C04FC /* BrowserView.swift */; };
 		F5A71D6ADCB3FBE9629A6A71 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */; };
@@ -18,11 +21,14 @@
 /* Begin PBXFileReference section */
 		1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		26D5B233886ECEE462216AF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		31FE42F1A95D5C81D01CE91E /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
 		49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
 		7EDB7D08C77162092D1C04FC /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		BD3BFF8975CD621ABB5C43EF /* VayuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VayuApp.swift; sourceTree = "<group>"; };
+		C38124B0BAFC31DA29121D83 /* TabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabStripView.swift; sourceTree = "<group>"; };
 		D239CD0529B94F7AB4C43FD1 /* Vayu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vayu.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBar.swift; sourceTree = "<group>"; };
+		EEC6F27EFB83B8D47C75C908 /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -31,6 +37,7 @@
 			children = (
 				7EDB7D08C77162092D1C04FC /* BrowserView.swift */,
 				E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */,
+				C38124B0BAFC31DA29121D83 /* TabStripView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -38,6 +45,8 @@
 		5FECCBA669DD830974B1527B /* Browser */ = {
 			isa = PBXGroup;
 			children = (
+				31FE42F1A95D5C81D01CE91E /* Tab.swift */,
+				EEC6F27EFB83B8D47C75C908 /* TabManager.swift */,
 				49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */,
 				1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */,
 			);
@@ -138,6 +147,9 @@
 				FDC50CF50BE640EB307F4135 /* AppDelegate.swift in Sources */,
 				EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */,
 				C2DEBF4AF425EA9FCC03DE93 /* NavigationBar.swift in Sources */,
+				2424788002B1FB2EEAB80312 /* Tab.swift in Sources */,
+				290C95EF032BAED876630D4F /* TabManager.swift in Sources */,
+				97AC062B50EB14B95E9026F9 /* TabStripView.swift in Sources */,
 				3E4948AE5A6C5D9C0BE941B6 /* VayuApp.swift in Sources */,
 				F5A71D6ADCB3FBE9629A6A71 /* WebViewModel.swift in Sources */,
 				32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */,

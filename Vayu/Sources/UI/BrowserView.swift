@@ -1,20 +1,24 @@
 import SwiftUI
 
 struct BrowserView: View {
-    @StateObject private var viewModel = WebViewModel()
+    @StateObject private var tabManager = TabManager()
 
     var body: some View {
         VStack(spacing: 0) {
-            NavigationBar(viewModel: viewModel)
+            TabStripView(tabManager: tabManager)
 
-            // Progress bar
-            if viewModel.isLoading {
-                ProgressView(value: viewModel.estimatedProgress)
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
+            if let tab = tabManager.activeTab {
+                NavigationBar(viewModel: tab.viewModel)
+
+                if tab.viewModel.isLoading {
+                    ProgressView(value: tab.viewModel.estimatedProgress)
+                        .progressViewStyle(.linear)
+                        .tint(.accentColor)
+                }
+
+                WebViewRepresentable(webView: tab.viewModel.webView)
+                    .id(tab.id)
             }
-
-            WebViewRepresentable(webView: viewModel.webView)
         }
         .frame(minWidth: 800, minHeight: 600)
     }

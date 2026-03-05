@@ -14,7 +14,7 @@ final class WebViewModel: NSObject, ObservableObject {
     let webView: WKWebView
     private var observers: [NSKeyValueObservation] = []
 
-    override init() {
+    init(initialURL: String = "https://www.google.com") {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.preferences.isElementFullscreenEnabled = true
@@ -26,7 +26,7 @@ final class WebViewModel: NSObject, ObservableObject {
         webView.navigationDelegate = self
 
         setupObservers()
-        loadURL("https://www.google.com")
+        loadURL(initialURL)
     }
 
     private func setupObservers() {
