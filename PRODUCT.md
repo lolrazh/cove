@@ -37,8 +37,8 @@ Vayu is the browser that should exist: **Dia's skin, Safari's soul, zero bullshi
 | 1 | Xcode project scaffold + WKWebView loads a page | DONE |
 | 2 | URL bar + navigation (back/forward/reload) | DONE |
 | 3 | Tab model + horizontal tab strip | DONE |
-| 4 | Vertical sidebar tabs + layout toggle | TODO |
-| 5 | History persistence (SQLite) + search | TODO |
+| 4 | Vertical sidebar tabs + layout toggle | DONE |
+| 5 | History persistence (SQLite + FTS5) + search | DONE |
 | 6 | UI polish pass (Dia-level clean/minimal) | TODO |
 
 Content/ad blocking is **not** in the MVP — tabled for post-MVP.
