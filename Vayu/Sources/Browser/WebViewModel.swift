@@ -111,6 +111,11 @@ extension WebViewModel: WKNavigationDelegate {
     }
 
     nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        Task { @MainActor in
+            let url = self.currentURL
+            let title = self.pageTitle
+            HistoryStore.shared.recordVisit(url: url, title: title)
+        }
     }
 
     nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

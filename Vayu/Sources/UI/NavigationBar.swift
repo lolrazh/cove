@@ -3,6 +3,7 @@ import SwiftUI
 struct NavigationBar: View {
     @ObservedObject var viewModel: WebViewModel
     @State private var addressText: String = ""
+    @State private var showHistory: Bool = false
     @FocusState private var isAddressFocused: Bool
 
     var body: some View {
@@ -30,6 +31,19 @@ struct NavigationBar: View {
 
             // Address bar
             addressBar
+
+            // History
+            navButton(
+                icon: "clock",
+                enabled: true,
+                action: { showHistory.toggle() }
+            )
+            .popover(isPresented: $showHistory, arrowEdge: .bottom) {
+                HistoryView(
+                    onNavigate: { url in viewModel.loadURL(url) },
+                    onDismiss: { showHistory = false }
+                )
+            }
 
         }
         .padding(.horizontal, 12)
