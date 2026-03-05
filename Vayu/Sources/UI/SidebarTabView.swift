@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isHoveringSidebar = false
 
@@ -10,6 +11,14 @@ struct SidebarTabView: View {
 
     private var sidebarWidth: CGFloat {
         tabManager.isSidebarVisible ? expandedWidth : collapsedWidth
+    }
+
+    private var tabOrder: [UUID] {
+        tabManager.tabs.map(\.id)
+    }
+
+    private var tabReorderAnimation: Animation? {
+        reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
     var body: some View {
@@ -65,6 +74,7 @@ struct SidebarTabView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.top, 8)
+                .animation(tabReorderAnimation, value: tabOrder)
             }
 
             Spacer()
@@ -138,14 +148,10 @@ struct SidebarTabItem: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(isActive ? Color.primary.opacity(0.08) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
         )
-        .animation(.easeInOut(duration: 0.15), value: isActive)
-        .animation(.easeInOut(duration: 0.12), value: isHovering)
+        .animation(.easeOut(duration: 0.1), value: isActive)
+        .animation(.easeOut(duration: 0.08), value: isHovering)
         .onHover { isHovering = $0 }
         .onTapGesture(perform: onSelect)
-        .transition(.asymmetric(
-            insertion: .move(edge: .top).combined(with: .opacity),
-            removal: .move(edge: .top).combined(with: .opacity)
-        ))
     }
 
     private var tabTitle: String {

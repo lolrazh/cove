@@ -3,9 +3,15 @@ import SwiftUI
 struct NavigationBar: View {
     @ObservedObject var viewModel: WebViewModel
     var onNavigate: ((String) -> Void)?
-    @State private var addressText: String = ""
+    @State private var addressText: String
     @State private var showHistory: Bool = false
     @FocusState private var isAddressFocused: Bool
+
+    init(viewModel: WebViewModel, onNavigate: ((String) -> Void)? = nil) {
+        self._viewModel = ObservedObject(wrappedValue: viewModel)
+        self.onNavigate = onNavigate
+        _addressText = State(initialValue: viewModel.currentURL)
+    }
 
     var body: some View {
         HStack(spacing: 6) {

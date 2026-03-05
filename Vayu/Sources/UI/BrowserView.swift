@@ -44,6 +44,10 @@ struct BrowserView: View {
                         .zIndex(tab.id == tabManager.activeTabID ? 1 : 0)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transaction { transaction in
+                transaction.animation = nil
+            }
         }
     }
 }
@@ -56,12 +60,15 @@ struct ActiveTabView: View {
             NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
                 tab.isNewTabPage = false
             })
-
-            if tab.viewModel.isLoading {
-                ProgressView(value: tab.viewModel.estimatedProgress)
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-                    .transition(.opacity)
+            .overlay(alignment: .bottom) {
+                if tab.viewModel.isLoading {
+                    ProgressView(value: tab.viewModel.estimatedProgress)
+                        .progressViewStyle(.linear)
+                        .tint(.accentColor)
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity)
+                        .allowsHitTesting(false)
+                }
             }
 
             if tab.isNewTabPage {
@@ -69,7 +76,6 @@ struct ActiveTabView: View {
                     tab.isNewTabPage = false
                     tab.viewModel.loadURL(input)
                 }
-                .transition(.opacity)
             } else {
                 WebViewRepresentable(webView: tab.viewModel.webView)
             }

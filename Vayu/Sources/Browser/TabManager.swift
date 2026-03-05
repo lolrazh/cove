@@ -26,9 +26,7 @@ final class TabManager: ObservableObject {
 
     func addTab(url: String? = nil) {
         let tab = Tab(url: url)
-        withAnimation(.easeOut(duration: 0.2)) {
-            tabs.append(tab)
-        }
+        tabs.append(tab)
         activeTabID = tab.id
     }
 
@@ -37,14 +35,17 @@ final class TabManager: ObservableObject {
 
         if let index = tabs.firstIndex(where: { $0.id == id }) {
             let wasActive = (id == activeTabID)
-            withAnimation(.easeIn(duration: 0.15)) {
-                tabs.remove(at: index)
+            if wasActive {
+                let replacementID: UUID
+                if index < tabs.count - 1 {
+                    replacementID = tabs[index + 1].id
+                } else {
+                    replacementID = tabs[index - 1].id
+                }
+                activeTabID = replacementID
             }
 
-            if wasActive {
-                let newIndex = min(index, tabs.count - 1)
-                activeTabID = tabs[newIndex].id
-            }
+            tabs.remove(at: index)
         }
     }
 
