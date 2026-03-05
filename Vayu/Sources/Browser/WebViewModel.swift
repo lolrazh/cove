@@ -99,14 +99,29 @@ final class WebViewModel: NSObject, ObservableObject {
     func stopLoading() { webView.stopLoading() }
 
     func fetchFavicon() {
+        // Grab ALL icon links with their sizes, then pick the best one.
+        // Priority: apple-touch-icon (always high-res) > largest sized icon > /favicon.ico
         let js = """
         (function() {
-            var icons = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]');
-            if (icons.length > 0) {
-                var best = icons[icons.length - 1];
-                return best.href;
+            var icons = [];
+            var links = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]');
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                var size = 0;
+                var sizes = link.getAttribute('sizes');
+                if (sizes && sizes !== 'any') {
+                    size = parseInt(sizes.split('x')[0]) || 0;
+                }
+                var isAppleTouch = link.rel.indexOf('apple-touch-icon') !== -1;
+                if (isAppleTouch && size === 0) size = 180;
+                icons.push({ href: link.href, size: size, apple: isAppleTouch });
             }
-            return null;
+            if (icons.length === 0) return null;
+            icons.sort(function(a, b) {
+                if (a.apple !== b.apple) return a.apple ? -1 : 1;
+                return b.size - a.size;
+            });
+            return icons[0].href;
         })();
         """
         webView.evaluateJavaScript(js) { [weak self] result, _ in
@@ -117,7 +132,7 @@ final class WebViewModel: NSObject, ObservableObject {
                     faviconURL = URL(string: href)
                 } else if let pageURL = URL(string: self.currentURL),
                           let scheme = pageURL.scheme, let host = pageURL.host {
-                    faviconURL = URL(string: "\(scheme)://\(host)/favicon.ico")
+                    faviconURL = URL(string: "\(scheme)://\(host)/apple-touch-icon.png")
                 } else {
                     faviconURL = nil
                 }
@@ -130,14 +145,36 @@ final class WebViewModel: NSObject, ObservableObject {
 
     private func downloadFavicon(from url: URL) {
         Task.detached {
-            guard let (data, _) = try? await URLSession.shared.data(from: url),
-                  let image = NSImage(data: data),
-                  image.isValid else { return }
+            // Try the given URL first
+            var data: Data?
+            if let (d, response) = try? await URLSession.shared.data(from: url),
+               let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                data = d
+            }
 
-            let resized = NSImage(size: NSSize(width: 16, height: 16), flipped: false) { rect in
-                image.draw(in: rect)
+            // Fallback to /favicon.ico if apple-touch-icon failed
+            if data == nil,
+               let host = url.host, let scheme = url.scheme,
+               !url.path.hasSuffix("favicon.ico"),
+               let fallback = URL(string: "\(scheme)://\(host)/favicon.ico"),
+               let (d, response) = try? await URLSession.shared.data(from: fallback),
+               let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                data = d
+            }
+
+            guard let data, let image = NSImage(data: data), image.isValid else { return }
+
+            // Render at 32x32 points (64x64 pixels on Retina) for crisp display
+            let targetSize = NSSize(width: 32, height: 32)
+            let resized = NSImage(size: targetSize, flipped: false) { rect in
+                NSGraphicsContext.current?.imageInterpolation = .high
+                image.draw(in: rect,
+                           from: NSRect(origin: .zero, size: image.size),
+                           operation: .copy,
+                           fraction: 1.0)
                 return true
             }
+            resized.isTemplate = false
 
             await MainActor.run { [weak self] in
                 self?.favicon = resized
