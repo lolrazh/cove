@@ -15,6 +15,7 @@ final class WebViewModel: NSObject, ObservableObject {
     private var observers: [NSKeyValueObservation] = []
     private var faviconTask: Task<Void, Never>?
     private var faviconSiteKey: String?
+    private var faviconRequestID: UUID?
 
     init(initialURL: String? = nil) {
         let config = WKWebViewConfiguration()
@@ -120,20 +121,30 @@ final class WebViewModel: NSObject, ObservableObject {
         }
 
         if let cached = FaviconStore.shared.get(domain: siteKey) {
+            faviconRequestID = nil
             favicon = cached
             return
         }
 
+        let requestID = UUID()
+        faviconRequestID = requestID
         faviconTask = Task(priority: .utility) { [weak self] in
             guard let data = await Self.fetchFaviconData(from: faviconURL),
                   !Task.isCancelled,
-                  let image = Self.renderFavicon(from: data) else { return }
+                  let image = Self.renderFavicon(from: data) else {
+                await MainActor.run { [weak self] in
+                    self?.completeFaviconRequest(ifMatches: requestID)
+                }
+                return
+            }
 
             await MainActor.run { [weak self] in
-                guard let self, self.faviconSiteKey == siteKey else { return }
+                guard let self,
+                      self.faviconRequestID == requestID,
+                      self.faviconSiteKey == siteKey else { return }
                 self.favicon = image
                 FaviconStore.shared.store(domain: siteKey, imageData: data)
-                self.faviconTask = nil
+                self.completeFaviconRequest(ifMatches: requestID)
             }
         }
     }
@@ -142,7 +153,14 @@ final class WebViewModel: NSObject, ObservableObject {
         faviconTask?.cancel()
         faviconTask = nil
         faviconSiteKey = nil
+        faviconRequestID = nil
         favicon = nil
+    }
+
+    private func completeFaviconRequest(ifMatches requestID: UUID) {
+        guard faviconRequestID == requestID else { return }
+        faviconTask = nil
+        faviconRequestID = nil
     }
 
     private func faviconSiteKey(for pageURL: URL) -> String? {
