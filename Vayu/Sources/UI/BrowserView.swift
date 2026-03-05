@@ -35,27 +35,35 @@ struct BrowserView: View {
     @ViewBuilder
     private var activeTabContent: some View {
         if let tab = tabManager.activeTab {
-            NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
-                tab.isNewTabPage = false
-            })
+            ActiveTabView(tab: tab)
+        }
+    }
+}
 
-            if tab.viewModel.isLoading {
-                ProgressView(value: tab.viewModel.estimatedProgress)
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-                    .transition(.opacity)
-            }
+struct ActiveTabView: View {
+    @ObservedObject var tab: Tab
 
-            if tab.isNewTabPage {
-                NewTabPage { input in
-                    tab.isNewTabPage = false
-                    tab.viewModel.loadURL(input)
-                }
+    var body: some View {
+        NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
+            tab.isNewTabPage = false
+        })
+
+        if tab.viewModel.isLoading {
+            ProgressView(value: tab.viewModel.estimatedProgress)
+                .progressViewStyle(.linear)
+                .tint(.accentColor)
                 .transition(.opacity)
-            } else {
-                WebViewRepresentable(webView: tab.viewModel.webView)
-                    .id(tab.id)
+        }
+
+        if tab.isNewTabPage {
+            NewTabPage { input in
+                tab.isNewTabPage = false
+                tab.viewModel.loadURL(input)
             }
+            .transition(.opacity)
+        } else {
+            WebViewRepresentable(webView: tab.viewModel.webView)
+                .id(tab.id)
         }
     }
 }
