@@ -28,6 +28,20 @@ struct TabStripView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+
+            // Layout toggle
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    tabManager.toggleLayout()
+                }
+            }) {
+                Image(systemName: "sidebar.left")
+                    .font(.system(size: 11, weight: .medium))
+                    .frame(width: 28, height: 28)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Switch to sidebar tabs")
             .padding(.trailing, 8)
         }
         .frame(height: 36)

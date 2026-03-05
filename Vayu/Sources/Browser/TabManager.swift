@@ -1,9 +1,20 @@
 import SwiftUI
 
+enum TabLayout: String {
+    case horizontal
+    case sidebar
+}
+
 @MainActor
 final class TabManager: ObservableObject {
     @Published var tabs: [Tab] = []
     @Published var activeTabID: UUID?
+    @Published var tabLayout: TabLayout = .horizontal
+    @Published var isSidebarVisible: Bool = true
+
+    func toggleLayout() {
+        tabLayout = tabLayout == .horizontal ? .sidebar : .horizontal
+    }
 
     var activeTab: Tab? {
         tabs.first { $0.id == activeTabID }
