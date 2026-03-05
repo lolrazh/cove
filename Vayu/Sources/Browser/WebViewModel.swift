@@ -14,6 +14,7 @@ final class WebViewModel: NSObject, ObservableObject {
 
     let webView: WKWebView
     private var observers: [NSKeyValueObservation] = []
+    private var faviconGeneration: UInt = 0
 
     init(initialURL: String? = nil) {
         let config = WKWebViewConfiguration()
@@ -92,6 +93,10 @@ final class WebViewModel: NSObject, ObservableObject {
     // Kicks off favicon resolution the instant we know the domain —
     // runs in parallel with the page load, not after it.
     private func prefetchFavicon(for url: URL) {
+        faviconGeneration &+= 1
+        let gen = faviconGeneration
+        self.favicon = nil
+
         guard let host = url.host else { return }
         let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
 
@@ -107,7 +112,8 @@ final class WebViewModel: NSObject, ObservableObject {
             if let data = await Self.fetchImageData(from: googleURL),
                let image = Self.renderFavicon(from: data) {
                 await MainActor.run { [weak self] in
-                    self?.favicon = image
+                    guard let self, self.faviconGeneration == gen else { return }
+                    self.favicon = image
                     FaviconStore.shared.store(domain: domain, imageData: data)
                 }
             }
@@ -133,6 +139,7 @@ final class WebViewModel: NSObject, ObservableObject {
               let host = pageURL.host else { return }
 
         let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+        let gen = faviconGeneration
 
         let js = """
         (function() {
@@ -156,24 +163,17 @@ final class WebViewModel: NSObject, ObservableObject {
         """
         webView.evaluateJavaScript(js) { [weak self] result, _ in
             let candidates = (result as? [String])?.compactMap { URL(string: $0) } ?? []
-            let domainCopy = domain
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.fetchPageDeclaredFavicon(candidates: candidates, domain: domainCopy)
-            }
-        }
-    }
-
-    private func fetchPageDeclaredFavicon(candidates: [URL], domain: String) {
-        Task.detached {
-            for candidate in candidates {
-                if let data = await Self.fetchImageData(from: candidate),
-                   let image = Self.renderFavicon(from: data) {
-                    await MainActor.run { [weak self] in
-                        self?.favicon = image
-                        FaviconStore.shared.store(domain: domain, imageData: data)
+            Task.detached {
+                for candidate in candidates {
+                    if let data = await Self.fetchImageData(from: candidate),
+                       let image = Self.renderFavicon(from: data) {
+                        await MainActor.run { [weak self] in
+                            guard let self, self.faviconGeneration == gen else { return }
+                            self.favicon = image
+                            FaviconStore.shared.store(domain: domain, imageData: data)
+                        }
+                        return
                     }
-                    return
                 }
             }
         }
