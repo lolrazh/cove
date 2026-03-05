@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import AppKit
 
 @MainActor
 final class WebViewModel: NSObject, ObservableObject {
@@ -16,6 +17,7 @@ final class WebViewModel: NSObject, ObservableObject {
     private var faviconTask: Task<Void, Never>?
     private var faviconSiteKey: String?
     private var faviconRequestID: UUID?
+    private static let browserUserAgent = makeBrowserUserAgent()
 
     init(initialURL: String? = nil) {
         let config = WKWebViewConfiguration()
@@ -25,6 +27,7 @@ final class WebViewModel: NSObject, ObservableObject {
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
 
+        applyBrowserUserAgent()
         webView.allowsBackForwardNavigationGestures = true
         webView.navigationDelegate = self
 
@@ -81,6 +84,7 @@ final class WebViewModel: NSObject, ObservableObject {
     func loadURL(_ input: String) {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        applyBrowserUserAgent()
 
         let url: URL?
         if looksLikeURL(trimmed) {
@@ -191,6 +195,7 @@ final class WebViewModel: NSObject, ObservableObject {
 
     func reload() {
         if webView.url != nil {
+            applyBrowserUserAgent()
             updateFavicon(for: webView.url, force: true)
             webView.reload()
         }
@@ -221,6 +226,28 @@ final class WebViewModel: NSObject, ObservableObject {
         }
         rendered.isTemplate = false
         return rendered
+    }
+
+    nonisolated private static func makeBrowserUserAgent() -> String {
+        let safariVersion = installedSafariVersion() ?? "18.0"
+        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(safariVersion) Safari/605.1.15"
+    }
+
+    nonisolated private static func installedSafariVersion() -> String? {
+        guard let safariURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari"),
+              let safariBundle = Bundle(url: safariURL),
+              let safariVersion = safariBundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+              !safariVersion.isEmpty else {
+            return nil
+        }
+
+        return safariVersion
+    }
+
+    private func applyBrowserUserAgent() {
+        if webView.customUserAgent != Self.browserUserAgent {
+            webView.customUserAgent = Self.browserUserAgent
+        }
     }
 
     private func looksLikeURL(_ input: String) -> Bool {
