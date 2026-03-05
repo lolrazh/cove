@@ -12,6 +12,7 @@ struct BrowserView: View {
                 sidebarLayout
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: tabManager.tabLayout)
         .frame(minWidth: 800, minHeight: 600)
     }
 
@@ -40,6 +41,7 @@ struct BrowserView: View {
                 ProgressView(value: tab.viewModel.estimatedProgress)
                     .progressViewStyle(.linear)
                     .tint(.accentColor)
+                    .transition(.opacity)
             }
 
             WebViewRepresentable(webView: tab.viewModel.webView)

@@ -26,19 +26,22 @@ final class TabManager: ObservableObject {
 
     func addTab(url: String = "https://www.google.com") {
         let tab = Tab(url: url)
-        tabs.append(tab)
-        activeTabID = tab.id
+        withAnimation(.easeOut(duration: 0.2)) {
+            tabs.append(tab)
+            activeTabID = tab.id
+        }
     }
 
     func closeTab(_ id: UUID) {
-        guard tabs.count > 1 else { return } // keep at least one tab
+        guard tabs.count > 1 else { return }
 
         if let index = tabs.firstIndex(where: { $0.id == id }) {
             let wasActive = (id == activeTabID)
-            tabs.remove(at: index)
+            withAnimation(.easeIn(duration: 0.15)) {
+                tabs.remove(at: index)
+            }
 
             if wasActive {
-                // Activate the tab at the same index, or the last one
                 let newIndex = min(index, tabs.count - 1)
                 activeTabID = tabs[newIndex].id
             }
@@ -46,6 +49,8 @@ final class TabManager: ObservableObject {
     }
 
     func selectTab(_ id: UUID) {
-        activeTabID = id
+        withAnimation(.easeInOut(duration: 0.15)) {
+            activeTabID = id
+        }
     }
 }

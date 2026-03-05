@@ -58,6 +58,10 @@ struct TabItemView: View {
 
     @State private var isHovering = false
 
+    private var showClose: Bool {
+        canClose && (isHovering || isActive)
+    }
+
     var body: some View {
         HStack(spacing: 6) {
             Text(tabTitle)
@@ -65,25 +69,31 @@ struct TabItemView: View {
                 .lineLimit(1)
                 .frame(maxWidth: 160, alignment: .leading)
 
-            if canClose && (isHovering || isActive) {
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16, height: 16)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .opacity(showClose ? 1 : 0)
+            .allowsHitTesting(showClose)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(isActive ? Color.primary.opacity(0.08) : Color.clear)
+                .fill(isActive ? Color.primary.opacity(0.08) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
         )
+        .animation(.easeInOut(duration: 0.15), value: isActive)
+        .animation(.easeInOut(duration: 0.12), value: isHovering)
         .onHover { isHovering = $0 }
         .onTapGesture(perform: onSelect)
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.8).combined(with: .opacity),
+            removal: .scale(scale: 0.8).combined(with: .opacity)
+        ))
     }
 
     private var tabTitle: String {
