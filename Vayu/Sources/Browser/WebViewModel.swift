@@ -79,13 +79,38 @@ final class WebViewModel: NSObject, ObservableObject {
                 url = URL(string: "https://\(trimmed)")
             }
         } else {
-            // Google search
             let query = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
             url = URL(string: "https://www.google.com/search?q=\(query)")
         }
 
         if let url {
             webView.load(URLRequest(url: url))
+            prefetchFavicon(for: url)
+        }
+    }
+
+    // Kicks off favicon resolution the instant we know the domain —
+    // runs in parallel with the page load, not after it.
+    private func prefetchFavicon(for url: URL) {
+        guard let host = url.host else { return }
+        let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+
+        // Cache hit → instant, done
+        if let cached = FaviconStore.shared.get(domain: domain) {
+            self.favicon = cached
+            return
+        }
+
+        // Cache miss → fire Google API immediately (tiny payload, fast CDN)
+        Task.detached {
+            let googleURL = URL(string: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://\(domain)&size=64")!
+            if let data = await Self.fetchImageData(from: googleURL),
+               let image = Self.renderFavicon(from: data) {
+                await MainActor.run { [weak self] in
+                    self?.favicon = image
+                    FaviconStore.shared.store(domain: domain, imageData: data)
+                }
+            }
         }
     }
 
@@ -100,19 +125,15 @@ final class WebViewModel: NSObject, ObservableObject {
 
     func stopLoading() { webView.stopLoading() }
 
-    func fetchFavicon() {
+    // Runs after page load — extracts page-declared icons and upgrades the
+    // favicon if a higher-quality source is found (SVG, large PNG).
+    // The result gets cached, so next visit uses the best version instantly.
+    private func upgradeFavicon() {
         guard let pageURL = URL(string: currentURL),
               let host = pageURL.host else { return }
 
         let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
 
-        // Check cache first — instant display
-        if let cached = FaviconStore.shared.get(domain: domain) {
-            self.favicon = cached
-            return
-        }
-
-        // Extract favicon URLs from page, then fetch with priority chain
         let js = """
         (function() {
             var icons = [];
@@ -126,7 +147,6 @@ final class WebViewModel: NSObject, ObservableObject {
                 var isSvg = type.indexOf('svg') !== -1 || link.href.endsWith('.svg');
                 icons.push({ href: link.href, size: size, svg: isSvg });
             }
-            // Sort: SVG first, then by size descending
             icons.sort(function(a, b) {
                 if (a.svg !== b.svg) return a.svg ? -1 : 1;
                 return b.size - a.size;
@@ -135,17 +155,17 @@ final class WebViewModel: NSObject, ObservableObject {
         })();
         """
         webView.evaluateJavaScript(js) { [weak self] result, _ in
+            let candidates = (result as? [String])?.compactMap { URL(string: $0) } ?? []
+            let domainCopy = domain
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                let candidates = (result as? [String])?.compactMap { URL(string: $0) } ?? []
-                self.resolveFavicon(candidates: candidates, domain: domain, pageURL: pageURL)
+                self.fetchPageDeclaredFavicon(candidates: candidates, domain: domainCopy)
             }
         }
     }
 
-    private func resolveFavicon(candidates: [URL], domain: String, pageURL: URL) {
+    private func fetchPageDeclaredFavicon(candidates: [URL], domain: String) {
         Task.detached {
-            // Try page-declared icons first (SVG and large PNGs, no apple-touch-icon)
             for candidate in candidates {
                 if let data = await Self.fetchImageData(from: candidate),
                    let image = Self.renderFavicon(from: data) {
@@ -154,28 +174,6 @@ final class WebViewModel: NSObject, ObservableObject {
                         FaviconStore.shared.store(domain: domain, imageData: data)
                     }
                     return
-                }
-            }
-
-            // Fallback: Google Favicon API (returns the clean logomark, not apple-touch-icon)
-            let googleURL = URL(string: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://\(domain)&size=64")!
-            if let data = await Self.fetchImageData(from: googleURL),
-               let image = Self.renderFavicon(from: data) {
-                await MainActor.run { [weak self] in
-                    self?.favicon = image
-                    FaviconStore.shared.store(domain: domain, imageData: data)
-                }
-                return
-            }
-
-            // Last resort: /favicon.ico
-            if let scheme = pageURL.scheme,
-               let fallback = URL(string: "\(scheme)://\(domain)/favicon.ico"),
-               let data = await Self.fetchImageData(from: fallback),
-               let image = Self.renderFavicon(from: data) {
-                await MainActor.run { [weak self] in
-                    self?.favicon = image
-                    FaviconStore.shared.store(domain: domain, imageData: data)
                 }
             }
         }
@@ -222,7 +220,7 @@ extension WebViewModel: WKNavigationDelegate {
             let url = self.currentURL
             let title = self.pageTitle
             HistoryStore.shared.recordVisit(url: url, title: title)
-            self.fetchFavicon()
+            self.upgradeFavicon()
         }
     }
 
