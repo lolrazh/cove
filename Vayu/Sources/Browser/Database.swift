@@ -50,6 +50,10 @@ final class Database {
                 sqlite3_bind_double(stmt, idx, v)
             case let v as Int:
                 sqlite3_bind_int64(stmt, idx, Int64(v))
+            case let v as Data:
+                v.withUnsafeBytes { ptr in
+                    sqlite3_bind_blob(stmt, idx, ptr.baseAddress, Int32(v.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+                }
             case nil:
                 sqlite3_bind_null(stmt, idx)
             default:
@@ -78,6 +82,10 @@ final class Database {
                 sqlite3_bind_double(stmt, idx, v)
             case let v as Int:
                 sqlite3_bind_int64(stmt, idx, Int64(v))
+            case let v as Data:
+                v.withUnsafeBytes { ptr in
+                    sqlite3_bind_blob(stmt, idx, ptr.baseAddress, Int32(v.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+                }
             case nil:
                 sqlite3_bind_null(stmt, idx)
             default:
@@ -99,6 +107,11 @@ final class Database {
                     row[name] = sqlite3_column_int64(stmt, i)
                 case SQLITE_FLOAT:
                     row[name] = sqlite3_column_double(stmt, i)
+                case SQLITE_BLOB:
+                    if let bytes = sqlite3_column_blob(stmt, i) {
+                        let count = Int(sqlite3_column_bytes(stmt, i))
+                        row[name] = Data(bytes: bytes, count: count)
+                    }
                 case SQLITE_NULL:
                     row[name] = nil
                 default:
