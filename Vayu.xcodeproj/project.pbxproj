@@ -22,11 +22,13 @@
 		EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDB7D08C77162092D1C04FC /* BrowserView.swift */; };
 		F5A71D6ADCB3FBE9629A6A71 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */; };
 		FDC50CF50BE640EB307F4135 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26D5B233886ECEE462216AF0 /* AppDelegate.swift */; };
+		FF035AB24A2502A46C690BE0 /* FaviconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28532C5BD138166D69E72729 /* FaviconStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		26D5B233886ECEE462216AF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		28532C5BD138166D69E72729 /* FaviconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconStore.swift; sourceTree = "<group>"; };
 		31FE42F1A95D5C81D01CE91E /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
 		49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
 		4D4D058DE29FAF4A0720B6A0 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				4D4D058DE29FAF4A0720B6A0 /* Database.swift */,
+				28532C5BD138166D69E72729 /* FaviconStore.swift */,
 				BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */,
 				31FE42F1A95D5C81D01CE91E /* Tab.swift */,
 				EEC6F27EFB83B8D47C75C908 /* TabManager.swift */,
@@ -165,6 +168,7 @@
 				FDC50CF50BE640EB307F4135 /* AppDelegate.swift in Sources */,
 				EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */,
 				5907C2DE21FD13C632628804 /* Database.swift in Sources */,
+				FF035AB24A2502A46C690BE0 /* FaviconStore.swift in Sources */,
 				8626C2ABDFA576134D2AA16D /* FaviconView.swift in Sources */,
 				321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */,
 				75BC2A592E01709E33FD93A4 /* HistoryView.swift in Sources */,

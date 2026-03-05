@@ -101,87 +101,107 @@ final class WebViewModel: NSObject, ObservableObject {
     func stopLoading() { webView.stopLoading() }
 
     func fetchFavicon() {
-        // Grab ALL icon links with their sizes, then pick the best one.
-        // Priority: apple-touch-icon (always high-res) > largest sized icon > /favicon.ico
+        guard let pageURL = URL(string: currentURL),
+              let host = pageURL.host else { return }
+
+        let domain = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
+
+        // Check cache first — instant display
+        if let cached = FaviconStore.shared.get(domain: domain) {
+            self.favicon = cached
+            return
+        }
+
+        // Extract favicon URLs from page, then fetch with priority chain
         let js = """
         (function() {
             var icons = [];
-            var links = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]');
+            var links = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"]');
             for (var i = 0; i < links.length; i++) {
                 var link = links[i];
                 var size = 0;
                 var sizes = link.getAttribute('sizes');
-                if (sizes && sizes !== 'any') {
-                    size = parseInt(sizes.split('x')[0]) || 0;
-                }
-                var isAppleTouch = link.rel.indexOf('apple-touch-icon') !== -1;
-                if (isAppleTouch && size === 0) size = 180;
-                icons.push({ href: link.href, size: size, apple: isAppleTouch });
+                if (sizes && sizes !== 'any') size = parseInt(sizes.split('x')[0]) || 0;
+                var type = link.getAttribute('type') || '';
+                var isSvg = type.indexOf('svg') !== -1 || link.href.endsWith('.svg');
+                icons.push({ href: link.href, size: size, svg: isSvg });
             }
-            if (icons.length === 0) return null;
+            // Sort: SVG first, then by size descending
             icons.sort(function(a, b) {
-                if (a.apple !== b.apple) return a.apple ? -1 : 1;
+                if (a.svg !== b.svg) return a.svg ? -1 : 1;
                 return b.size - a.size;
             });
-            return icons[0].href;
+            return icons.map(function(i) { return i.href; });
         })();
         """
         webView.evaluateJavaScript(js) { [weak self] result, _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                let faviconURL: URL?
-                if let href = result as? String {
-                    faviconURL = URL(string: href)
-                } else if let pageURL = URL(string: self.currentURL),
-                          let scheme = pageURL.scheme, let host = pageURL.host {
-                    faviconURL = URL(string: "\(scheme)://\(host)/apple-touch-icon.png")
-                } else {
-                    faviconURL = nil
-                }
-
-                guard let url = faviconURL else { return }
-                self.downloadFavicon(from: url)
+                let candidates = (result as? [String])?.compactMap { URL(string: $0) } ?? []
+                self.resolveFavicon(candidates: candidates, domain: domain, pageURL: pageURL)
             }
         }
     }
 
-    private func downloadFavicon(from url: URL) {
+    private func resolveFavicon(candidates: [URL], domain: String, pageURL: URL) {
         Task.detached {
-            // Try the given URL first
-            var data: Data?
-            if let (d, response) = try? await URLSession.shared.data(from: url),
-               let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                data = d
+            // Try page-declared icons first (SVG and large PNGs, no apple-touch-icon)
+            for candidate in candidates {
+                if let data = await Self.fetchImageData(from: candidate),
+                   let image = Self.renderFavicon(from: data) {
+                    await MainActor.run { [weak self] in
+                        self?.favicon = image
+                        FaviconStore.shared.store(domain: domain, imageData: data)
+                    }
+                    return
+                }
             }
 
-            // Fallback to /favicon.ico if apple-touch-icon failed
-            if data == nil,
-               let host = url.host, let scheme = url.scheme,
-               !url.path.hasSuffix("favicon.ico"),
-               let fallback = URL(string: "\(scheme)://\(host)/favicon.ico"),
-               let (d, response) = try? await URLSession.shared.data(from: fallback),
-               let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                data = d
+            // Fallback: Google Favicon API (returns the clean logomark, not apple-touch-icon)
+            let googleURL = URL(string: "https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://\(domain)&size=64")!
+            if let data = await Self.fetchImageData(from: googleURL),
+               let image = Self.renderFavicon(from: data) {
+                await MainActor.run { [weak self] in
+                    self?.favicon = image
+                    FaviconStore.shared.store(domain: domain, imageData: data)
+                }
+                return
             }
 
-            guard let data, let image = NSImage(data: data), image.isValid else { return }
-
-            // Render at 32x32 points (64x64 pixels on Retina) for crisp display
-            let targetSize = NSSize(width: 32, height: 32)
-            let resized = NSImage(size: targetSize, flipped: false) { rect in
-                NSGraphicsContext.current?.imageInterpolation = .high
-                image.draw(in: rect,
-                           from: NSRect(origin: .zero, size: image.size),
-                           operation: .copy,
-                           fraction: 1.0)
-                return true
-            }
-            resized.isTemplate = false
-
-            await MainActor.run { [weak self] in
-                self?.favicon = resized
+            // Last resort: /favicon.ico
+            if let scheme = pageURL.scheme,
+               let fallback = URL(string: "\(scheme)://\(domain)/favicon.ico"),
+               let data = await Self.fetchImageData(from: fallback),
+               let image = Self.renderFavicon(from: data) {
+                await MainActor.run { [weak self] in
+                    self?.favicon = image
+                    FaviconStore.shared.store(domain: domain, imageData: data)
+                }
             }
         }
+    }
+
+    nonisolated private static func fetchImageData(from url: URL) async -> Data? {
+        guard let (data, response) = try? await URLSession.shared.data(from: url),
+              let http = response as? HTTPURLResponse,
+              http.statusCode == 200,
+              !data.isEmpty else { return nil }
+        return data
+    }
+
+    nonisolated private static func renderFavicon(from data: Data) -> NSImage? {
+        guard let image = NSImage(data: data), image.isValid else { return nil }
+        let targetSize = NSSize(width: 32, height: 32)
+        let rendered = NSImage(size: targetSize, flipped: false) { rect in
+            NSGraphicsContext.current?.imageInterpolation = .high
+            image.draw(in: rect,
+                       from: NSRect(origin: .zero, size: image.size),
+                       operation: .copy,
+                       fraction: 1.0)
+            return true
+        }
+        rendered.isTemplate = false
+        return rendered
     }
 
     private func looksLikeURL(_ input: String) -> Bool {
