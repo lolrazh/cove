@@ -28,8 +28,8 @@ final class TabManager: ObservableObject {
         let tab = Tab(url: url)
         withAnimation(.easeOut(duration: 0.2)) {
             tabs.append(tab)
-            activeTabID = tab.id
         }
+        activeTabID = tab.id
     }
 
     func closeTab(_ id: UUID) {
@@ -49,8 +49,6 @@ final class TabManager: ObservableObject {
     }
 
     func selectTab(_ id: UUID) {
-        withAnimation(.easeInOut(duration: 0.15)) {
-            activeTabID = id
-        }
+        activeTabID = id
     }
 }

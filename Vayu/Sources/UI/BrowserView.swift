@@ -34,9 +34,16 @@ struct BrowserView: View {
 
     @ViewBuilder
     private var activeTabContent: some View {
-        if let tab = tabManager.activeTab {
-            ActiveTabView(tab: tab)
-                .id(tab.id)
+        if !tabManager.tabs.isEmpty {
+            ZStack {
+                ForEach(tabManager.tabs) { tab in
+                    ActiveTabView(tab: tab)
+                        .opacity(tab.id == tabManager.activeTabID ? 1 : 0)
+                        .allowsHitTesting(tab.id == tabManager.activeTabID)
+                        .accessibilityHidden(tab.id != tabManager.activeTabID)
+                        .zIndex(tab.id == tabManager.activeTabID ? 1 : 0)
+                }
+            }
         }
     }
 }
@@ -45,26 +52,28 @@ struct ActiveTabView: View {
     @ObservedObject var tab: Tab
 
     var body: some View {
-        NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
-            tab.isNewTabPage = false
-        })
-
-        if tab.viewModel.isLoading {
-            ProgressView(value: tab.viewModel.estimatedProgress)
-                .progressViewStyle(.linear)
-                .tint(.accentColor)
-                .transition(.opacity)
-        }
-
-        if tab.isNewTabPage {
-            NewTabPage { input in
+        VStack(spacing: 0) {
+            NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
                 tab.isNewTabPage = false
-                tab.viewModel.loadURL(input)
+            })
+
+            if tab.viewModel.isLoading {
+                ProgressView(value: tab.viewModel.estimatedProgress)
+                    .progressViewStyle(.linear)
+                    .tint(.accentColor)
+                    .transition(.opacity)
             }
-            .transition(.opacity)
-        } else {
-            WebViewRepresentable(webView: tab.viewModel.webView)
-                .id(tab.id)
+
+            if tab.isNewTabPage {
+                NewTabPage { input in
+                    tab.isNewTabPage = false
+                    tab.viewModel.loadURL(input)
+                }
+                .transition(.opacity)
+            } else {
+                WebViewRepresentable(webView: tab.viewModel.webView)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
