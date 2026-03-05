@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NavigationBar: View {
     @ObservedObject var viewModel: WebViewModel
+    var onNavigate: ((String) -> Void)?
     @State private var addressText: String = ""
     @State private var showHistory: Bool = false
     @FocusState private var isAddressFocused: Bool
@@ -40,7 +41,10 @@ struct NavigationBar: View {
             )
             .popover(isPresented: $showHistory, arrowEdge: .bottom) {
                 HistoryView(
-                    onNavigate: { url in viewModel.loadURL(url) },
+                    onNavigate: { url in
+                        onNavigate?(url)
+                        viewModel.loadURL(url)
+                    },
                     onDismiss: { showHistory = false }
                 )
             }
@@ -77,6 +81,7 @@ struct NavigationBar: View {
             )
             .focused($isAddressFocused)
             .onSubmit {
+                onNavigate?(addressText)
                 viewModel.loadURL(addressText)
                 isAddressFocused = false
             }

@@ -24,7 +24,7 @@ final class TabManager: ObservableObject {
         addTab()
     }
 
-    func addTab(url: String = "https://www.google.com") {
+    func addTab(url: String? = nil) {
         let tab = Tab(url: url)
         withAnimation(.easeOut(duration: 0.2)) {
             tabs.append(tab)

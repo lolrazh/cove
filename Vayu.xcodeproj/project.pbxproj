@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2424788002B1FB2EEAB80312 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FE42F1A95D5C81D01CE91E /* Tab.swift */; };
+		27157FF977CA45E072A73ED1 /* NewTabPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */; };
 		290C95EF032BAED876630D4F /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC6F27EFB83B8D47C75C908 /* TabManager.swift */; };
 		321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */; };
 		32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */; };
@@ -31,6 +32,7 @@
 		4D4D058DE29FAF4A0720B6A0 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		63E1FCD90678B959918330A5 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
 		7EDB7D08C77162092D1C04FC /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
+		8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
 		9F9A431D677E8E3B574A064B /* FaviconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconView.swift; sourceTree = "<group>"; };
 		AEF72D8F49C637395117C1C9 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		BD3BFF8975CD621ABB5C43EF /* VayuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VayuApp.swift; sourceTree = "<group>"; };
@@ -49,6 +51,7 @@
 				9F9A431D677E8E3B574A064B /* FaviconView.swift */,
 				AEF72D8F49C637395117C1C9 /* HistoryView.swift */,
 				E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */,
+				8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */,
 				63E1FCD90678B959918330A5 /* SidebarTabView.swift */,
 				C38124B0BAFC31DA29121D83 /* TabStripView.swift */,
 			);
@@ -166,6 +169,7 @@
 				321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */,
 				75BC2A592E01709E33FD93A4 /* HistoryView.swift in Sources */,
 				C2DEBF4AF425EA9FCC03DE93 /* NavigationBar.swift in Sources */,
+				27157FF977CA45E072A73ED1 /* NewTabPage.swift in Sources */,
 				879ACDEE28F43705D27C7BF7 /* SidebarTabView.swift in Sources */,
 				2424788002B1FB2EEAB80312 /* Tab.swift in Sources */,
 				290C95EF032BAED876630D4F /* TabManager.swift in Sources */,

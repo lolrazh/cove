@@ -35,7 +35,9 @@ struct BrowserView: View {
     @ViewBuilder
     private var activeTabContent: some View {
         if let tab = tabManager.activeTab {
-            NavigationBar(viewModel: tab.viewModel)
+            NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
+                tab.isNewTabPage = false
+            })
 
             if tab.viewModel.isLoading {
                 ProgressView(value: tab.viewModel.estimatedProgress)
@@ -44,8 +46,16 @@ struct BrowserView: View {
                     .transition(.opacity)
             }
 
-            WebViewRepresentable(webView: tab.viewModel.webView)
-                .id(tab.id)
+            if tab.isNewTabPage {
+                NewTabPage { input in
+                    tab.isNewTabPage = false
+                    tab.viewModel.loadURL(input)
+                }
+                .transition(.opacity)
+            } else {
+                WebViewRepresentable(webView: tab.viewModel.webView)
+                    .id(tab.id)
+            }
         }
     }
 }
