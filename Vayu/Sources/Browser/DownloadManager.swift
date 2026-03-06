@@ -44,7 +44,7 @@ final class DownloadItem: ObservableObject, Identifiable {
     }
 
     var fileExtension: String {
-        (filename as NSString).pathExtension.uppercased()
+        (filename as NSString).pathExtension.lowercased()
     }
 
     var fileIcon: NSImage {
@@ -84,6 +84,15 @@ final class DownloadManager: NSObject, ObservableObject {
 
     var hasActiveDownloads: Bool {
         items.contains { $0.state == .downloading }
+    }
+
+    // Aggregate progress across all active downloads (0.0–1.0)
+    var overallProgress: Double {
+        let active = items.filter { $0.state == .downloading }
+        guard !active.isEmpty else { return 0 }
+        let total = active.reduce(Int64(0)) { $0 + max($1.totalBytes, 0) }
+        let done = active.reduce(Int64(0)) { $0 + $1.bytesDownloaded }
+        return total > 0 ? Double(done) / Double(total) : active.map(\.progress).reduce(0, +) / Double(active.count)
     }
 
     private var downloadToItem: [WKDownload: DownloadItem] = [:]
