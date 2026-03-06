@@ -15,10 +15,18 @@ enum ChromeMetrics {
     static var tabCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
     static let shellStripHeight: CGFloat = 36
     static let shellStripBottomSpacing: CGFloat = shellGutter
-    static let shellControlsLeadingInset: CGFloat = 14
     static let shellControlsInterButtonSpacing: CGFloat = 6
-    static let shellControlsReservedWidth: CGFloat = 92
-    static let shellControlsVerticalOffset: CGFloat = 2
+    static let shellControlsInsetWithinShell: CGFloat = 4
+    static let shellControlsButtonSize: CGFloat = 14
+    static let shellControlsGapToTabs: CGFloat = 8
+    static let shellControlsLeadingInset: CGFloat = shellGutter + shellControlsInsetWithinShell
+    static var shellControlsClusterWidth: CGFloat {
+        (shellControlsButtonSize * 3) + (shellControlsInterButtonSpacing * 2)
+    }
+    static var shellControlsReservedWidth: CGFloat {
+        shellControlsClusterWidth + shellControlsInsetWithinShell + shellControlsGapToTabs
+    }
+    static let shellControlsVerticalOffset: CGFloat = 0
     static let mainPanelInnerPadding: CGFloat = 8
     static let topNavigationHorizontalPadding: CGFloat = 10
     static let topNavigationVerticalPadding: CGFloat = 6
