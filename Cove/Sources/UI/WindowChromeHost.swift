@@ -1,18 +1,15 @@
 import SwiftUI
 
 struct WindowChromeHost<Content: View>: View {
-    let topBandHeight: CGFloat
     let controlsStyle: WindowChromeControlsStyle
     let content: Content
 
     @State private var titlebarHeight: CGFloat = 0
 
     init(
-        topBandHeight: CGFloat,
         controlsStyle: WindowChromeControlsStyle,
         @ViewBuilder content: () -> Content
     ) {
-        self.topBandHeight = topBandHeight
         self.controlsStyle = controlsStyle
         self.content = content()
     }

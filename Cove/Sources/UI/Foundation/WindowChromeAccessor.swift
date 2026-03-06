@@ -6,7 +6,7 @@ struct WindowChromeControlsStyle: Equatable {
     var interButtonSpacing: CGFloat
     var verticalOffset: CGFloat
     var isVisible: Bool
-    var bandHeight: CGFloat
+    var centerlineFromTop: CGFloat?
 }
 
 struct WindowChromeAccessor: NSViewRepresentable {
@@ -32,7 +32,7 @@ final class WindowChromeTrackingView: NSView {
         interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
         verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
         isVisible: true,
-        bandHeight: 0
+        centerlineFromTop: nil
     ) {
         didSet {
             let shouldAnimate = oldValue != controlsStyle
@@ -155,8 +155,11 @@ enum WindowChromeController {
         guard buttons.count == 3 else { return }
         var nextX = style.leadingInset
         let buttonHeight = buttons[0].frame.height
-        let centerlineOverflow = max(0, style.bandHeight - titlebarHeight) / 2
-        let baseY = max(0, (titlebarHeight - buttonHeight) / 2) + centerlineOverflow + style.verticalOffset
+        let baseY = resolvedBaseY(
+            style: style,
+            titlebarHeight: titlebarHeight,
+            buttonHeight: buttonHeight
+        )
         let hiddenOffset: CGFloat = 10
 
         for button in buttons {
@@ -177,6 +180,21 @@ enum WindowChromeController {
 
             nextX += button.frame.width + style.interButtonSpacing
         }
+    }
+
+    private static func resolvedBaseY(
+        style: WindowChromeControlsStyle,
+        titlebarHeight: CGFloat,
+        buttonHeight: CGFloat
+    ) -> CGFloat {
+        // The browser strip is anchored to the top edge of the window, not
+        // centered inside the native titlebar. When a shared strip centerline
+        // is provided, solve the button origin from that top-anchored target.
+        if let centerlineFromTop = style.centerlineFromTop {
+            return (titlebarHeight - centerlineFromTop - (buttonHeight / 2)) + style.verticalOffset
+        }
+
+        return max(0, (titlebarHeight - buttonHeight) / 2) + style.verticalOffset
     }
 
     private static func show(button: NSButton, at origin: CGPoint, animated: Bool) {

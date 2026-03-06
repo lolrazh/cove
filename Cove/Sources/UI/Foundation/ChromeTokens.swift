@@ -34,6 +34,7 @@ enum ChromeMetrics {
     static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
     static let topStripLaneHeight: CGFloat = 32
+    static let topStripLaneCenterFromTop: CGFloat = shellGutter + (topStripLaneHeight / 2)
     static let tabStripHeight: CGFloat = topStripLaneHeight
     static let topBandHeight: CGFloat = topStripLaneHeight + (shellGutter * 2)
     static let iconButtonSize = CGSize(width: 30, height: 30)
