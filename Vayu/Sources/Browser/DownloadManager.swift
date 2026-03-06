@@ -1,5 +1,7 @@
 import Foundation
 import WebKit
+import AppKit
+import UniformTypeIdentifiers
 
 @MainActor
 final class DownloadItem: ObservableObject, Identifiable {
@@ -9,10 +11,12 @@ final class DownloadItem: ObservableObject, Identifiable {
 
     @Published var state: State = .downloading
     @Published var progress: Double = 0
+    @Published var bytesDownloaded: Int64 = 0
+    @Published var totalBytes: Int64 = -1
     @Published var fileURL: URL?
 
     private(set) var resumeData: Data?
-    private var progressObserver: NSKeyValueObservation?
+    private var progressObservers: [NSKeyValueObservation] = []
 
     enum State {
         case downloading, completed, failed, cancelled
@@ -25,26 +29,50 @@ final class DownloadItem: ObservableObject, Identifiable {
     }
 
     func observeProgress(of download: WKDownload) {
-        progressObserver = download.progress.observe(\.fractionCompleted) { [weak self] p, _ in
-            Task { @MainActor in self?.progress = p.fractionCompleted }
-        }
+        let p = download.progress
+        progressObservers = [
+            p.observe(\.fractionCompleted) { [weak self] p, _ in
+                Task { @MainActor in self?.progress = p.fractionCompleted }
+            },
+            p.observe(\.completedUnitCount) { [weak self] p, _ in
+                Task { @MainActor in self?.bytesDownloaded = p.completedUnitCount }
+            },
+            p.observe(\.totalUnitCount) { [weak self] p, _ in
+                Task { @MainActor in self?.totalBytes = p.totalUnitCount }
+            },
+        ]
+    }
+
+    var fileExtension: String {
+        (filename as NSString).pathExtension.uppercased()
+    }
+
+    var fileIcon: NSImage {
+        NSWorkspace.shared.icon(for: .init(filenameExtension: (filename as NSString).pathExtension) ?? .data)
     }
 
     func markCompleted() {
         progress = 1
+        // Read final file size from disk
+        if let url = fileURL,
+           let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+           let size = attrs[.size] as? Int64 {
+            totalBytes = size
+            bytesDownloaded = size
+        }
         state = .completed
-        progressObserver = nil
+        progressObservers = []
     }
 
     func markFailed(resumeData: Data?) {
         self.resumeData = resumeData
         state = .failed
-        progressObserver = nil
+        progressObservers = []
     }
 
     func markCancelled() {
         state = .cancelled
-        progressObserver = nil
+        progressObservers = []
     }
 }
 

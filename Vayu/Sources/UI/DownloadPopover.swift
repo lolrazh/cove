@@ -9,7 +9,7 @@ struct DownloadPopover: View {
             Divider()
             downloadList
         }
-        .frame(width: 300, height: min(CGFloat(max(manager.items.count, 1)) * 56 + 40, 360))
+        .frame(width: 300, height: min(CGFloat(max(manager.items.count, 1)) * 60 + 40, 360))
     }
 
     private var header: some View {
@@ -56,20 +56,36 @@ struct DownloadItemRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            fileIcon
+            iconWithProgress
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.filename)
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
 
-                statusView
+                HStack(spacing: 4) {
+                    if !item.fileExtension.isEmpty {
+                        Text(item.fileExtension)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text(sizeText)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+
+                    if item.state == .failed {
+                        Text("— Failed")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.red)
+                    }
+                }
             }
 
             Spacer()
 
-            actionButtons
+            actionButton
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -77,61 +93,47 @@ struct DownloadItemRow: View {
         .onHover { isHovering = $0 }
     }
 
-    private var fileIcon: some View {
-        Group {
-            switch item.state {
-            case .downloading:
-                ZStack {
-                    Circle()
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 2)
-                    Circle()
-                        .trim(from: 0, to: item.progress)
-                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                }
-                .frame(width: 20, height: 20)
-                .animation(.linear(duration: 0.3), value: item.progress)
-            case .completed:
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .font(.system(size: 18))
-            case .failed:
-                Image(systemName: "exclamationmark.circle.fill")
-                    .foregroundStyle(.red)
-                    .font(.system(size: 18))
-            case .cancelled:
-                Image(systemName: "minus.circle.fill")
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 18))
+    // Circle with file icon inside; during download the ring fills
+    private var iconWithProgress: some View {
+        ZStack {
+            // Progress ring (background track always visible during download)
+            if item.state == .downloading {
+                Circle()
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: item.progress)
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 0.3), value: item.progress)
             }
+
+            // File icon — always shown
+            Image(nsImage: item.fileIcon)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 18, height: 18)
         }
-        .frame(width: 24)
+        .frame(width: 28, height: 28)
     }
 
-    @ViewBuilder
-    private var statusView: some View {
+    private var sizeText: String {
         switch item.state {
         case .downloading:
-            ProgressView(value: item.progress)
-                .progressViewStyle(.linear)
-                .tint(.accentColor)
+            if item.totalBytes > 0 {
+                return "\(formatBytes(item.bytesDownloaded)) / \(formatBytes(item.totalBytes))"
+            } else if item.bytesDownloaded > 0 {
+                return formatBytes(item.bytesDownloaded)
+            }
+            return ""
         case .completed:
-            Text("Completed")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-        case .failed:
-            Text("Failed")
-                .font(.system(size: 10))
-                .foregroundStyle(.red)
-        case .cancelled:
-            Text("Cancelled")
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+            return item.totalBytes > 0 ? formatBytes(item.totalBytes) : ""
+        case .failed, .cancelled:
+            return item.bytesDownloaded > 0 ? formatBytes(item.bytesDownloaded) : ""
         }
     }
 
     @ViewBuilder
-    private var actionButtons: some View {
+    private var actionButton: some View {
         switch item.state {
         case .downloading:
             Button { manager.cancelDownload(item) } label: {
@@ -156,5 +158,11 @@ struct DownloadItemRow: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
 }
