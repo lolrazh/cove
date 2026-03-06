@@ -300,4 +300,24 @@ extension WebViewModel: WKNavigationDelegate {
 
         return .allow
     }
+
+    // If the response can't be displayed (e.g. zip, dmg, pdf download), convert to download
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse
+    ) async -> WKNavigationResponsePolicy {
+        if !navigationResponse.canShowMIMEType {
+            return .download
+        }
+        return .allow
+    }
+
+    // Hand off downloads to DownloadManager
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        DownloadManager.shared.handleDownload(download)
+    }
+
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        DownloadManager.shared.handleDownload(download)
+    }
 }
