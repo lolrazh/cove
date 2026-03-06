@@ -18,7 +18,7 @@ enum ChromeMetrics {
     static let shellControlsInterButtonSpacing: CGFloat = 6
     static let shellControlsInsetWithinShell: CGFloat = 4
     static let shellControlsButtonSize: CGFloat = 14
-    static let shellControlsGapToTabs: CGFloat = 8
+    static let shellControlsGapToTabs: CGFloat = 4
     static let shellControlsLeadingInset: CGFloat = shellGutter + shellControlsInsetWithinShell
     static var shellControlsClusterWidth: CGFloat {
         (shellControlsButtonSize * 3) + (shellControlsInterButtonSpacing * 2)
@@ -33,8 +33,9 @@ enum ChromeMetrics {
     static let mainPanelSectionSpacing: CGFloat = 0
     static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
-    static let tabStripHeight: CGFloat = 32
-    static let topBandHeight: CGFloat = tabStripHeight + (shellGutter * 2)
+    static let topStripLaneHeight: CGFloat = 32
+    static let tabStripHeight: CGFloat = topStripLaneHeight
+    static let topBandHeight: CGFloat = topStripLaneHeight + (shellGutter * 2)
     static let iconButtonSize = CGSize(width: 30, height: 30)
     static let sidebarWidth: CGFloat = 240
     static let sidebarRevealHandleWidth: CGFloat = 12

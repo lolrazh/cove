@@ -51,12 +51,7 @@ struct TopBrowserShellView<Content: View>: View {
     private var topSlot: some View {
         ZStack(alignment: .leading) {
             if showsTopStrip {
-                HStack(spacing: 0) {
-                    Color.clear
-                        .frame(width: ChromeMetrics.shellControlsReservedWidth)
-
-                    TabStripView(tabManager: tabManager)
-                }
+                topStripLane
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -69,6 +64,24 @@ struct TopBrowserShellView<Content: View>: View {
         .contentShape(Rectangle())
         .colorScheme(.dark)
         .onHover(perform: handleTopChromeHover)
+    }
+
+    private var topStripLane: some View {
+        HStack(spacing: 0) {
+            Color.clear
+                .frame(width: ChromeMetrics.shellControlsReservedWidth)
+
+            TabStripView(
+                tabManager: tabManager,
+                laneHeight: ChromeMetrics.topStripLaneHeight
+            )
+        }
+        .frame(
+            maxWidth: .infinity,
+            minHeight: ChromeMetrics.topStripLaneHeight,
+            maxHeight: ChromeMetrics.topStripLaneHeight,
+            alignment: .center
+        )
     }
 
     private var mainPanel: some View {
