@@ -52,9 +52,15 @@ struct BrowserView: View {
     }
 
     private func sidebarShell(for activeTab: Tab) -> some View {
-        VStack(spacing: ChromeMetrics.shellStripBottomSpacing) {
-            sidebarTopChrome(for: activeTab)
-            sidebarContentArea
+        HStack(spacing: ChromeMetrics.shellStripBottomSpacing) {
+            if showsIntegratedSidebarRail {
+                SidebarTabView(
+                    tabManager: tabManager,
+                    presentation: .integrated
+                )
+            }
+
+            sidebarMainPanel(for: activeTab)
         }
         .padding(ChromeMetrics.windowInset)
         .chromeWindowSurface()
@@ -105,29 +111,37 @@ struct BrowserView: View {
         .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
-    private func sidebarTopChrome(for activeTab: Tab) -> some View {
-        NavigationBar(
-            viewModel: activeTab.viewModel,
-            onNavigate: { _ in
-                activeTab.isNewTabPage = false
-            }
-        )
-        .id(activeTab.id)
-        .padding(ChromeMetrics.topChromePadding)
-        .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
-    }
-
-    private var sidebarContentArea: some View {
+    private func sidebarMainPanel(for activeTab: Tab) -> some View {
         ZStack(alignment: .leading) {
-            activeTabContent
+            VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
+                NavigationBar(
+                    viewModel: activeTab.viewModel,
+                    onNavigate: { _ in
+                        activeTab.isNewTabPage = false
+                    }
+                )
+                .id(activeTab.id)
+                .padding(ChromeMetrics.mainPanelInnerPadding)
 
-            if tabManager.tabLayout == .sidebar {
+                Rectangle()
+                    .fill(ChromePalette.chromeStroke)
+                    .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
+
+                ZStack(alignment: .top) {
+                    activeTabContent
+                    contentLoadingIndicator(for: activeTab)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if showsOverlaySidebarRail {
                 SidebarTabView(tabManager: tabManager)
                     .zIndex(1)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.windowCornerRadius)
+        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
     @ViewBuilder
@@ -164,6 +178,14 @@ struct BrowserView: View {
 
     private var showsTopRevealArea: Bool {
         tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
+    }
+
+    private var showsIntegratedSidebarRail: Bool {
+        tabManager.tabLayout == .sidebar && !settings.hideTabs
+    }
+
+    private var showsOverlaySidebarRail: Bool {
+        tabManager.tabLayout == .sidebar && settings.hideTabs
     }
 
     private var topTabsRevealArea: some View {

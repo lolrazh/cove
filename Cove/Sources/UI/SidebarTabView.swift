@@ -1,7 +1,13 @@
 import SwiftUI
 
+enum SidebarTabPresentation: Equatable {
+    case overlay
+    case integrated
+}
+
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    var presentation: SidebarTabPresentation = .overlay
     @ObservedObject private var settings = BrowserSettingsStore.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -16,14 +22,23 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
-    private var showsOverlay: Bool {
-        !settings.hideTabs || tabManager.areTabsVisible
+    private var showsOverlayContent: Bool {
+        tabManager.areTabsVisible || !settings.hideTabs
     }
 
+    @ViewBuilder
     var body: some View {
+        if presentation == .integrated {
+            integratedSidebarContent
+        } else {
+            overlaySidebar
+        }
+    }
+
+    private var overlaySidebar: some View {
         ZStack(alignment: .leading) {
-            if showsOverlay {
-                sidebarContent
+            if showsOverlayContent {
+                overlaySidebarContent
                     .padding(.leading, 10)
                     .padding(.vertical, 10)
                     .transition(.move(edge: .leading).combined(with: .opacity))
@@ -35,45 +50,80 @@ struct SidebarTabView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    private var sidebarContent: some View {
+    private var overlaySidebarContent: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-
-                DownloadsStatusButton()
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 4) {
-                    ForEach(tabManager.tabs) { tab in
-                        ChromeTabItem(
-                            tab: tab,
-                            presentation: .sidebar,
-                            isActive: tab.id == tabManager.activeTabID,
-                            onSelect: { tabManager.selectTab(tab.id) },
-                            onClose: { tabManager.closeTab(tab.id) },
-                            canClose: tabManager.tabs.count > 1
-                        )
-                    }
-
-                    SidebarNewTabItem {
-                        tabManager.addTab()
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 10)
-                .animation(tabReorderAnimation, value: tabOrder)
-            }
-
+            overlayHeader
+            sidebarTabList
             Spacer()
         }
         .frame(width: ChromeMetrics.sidebarWidth)
         .chromePanelSurface(.sidebar, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
         .onHover { hovering in
             handleSidebarHover(hovering)
+        }
+    }
+
+    private var integratedSidebarContent: some View {
+        VStack(spacing: 0) {
+            integratedHeader
+            sidebarTabList
+            Spacer(minLength: 0)
+        }
+        .frame(width: ChromeMetrics.sidebarWidth)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background {
+            VisualEffectMaterialBackground(material: .sidebar, blendingMode: .withinWindow)
+        }
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(ChromePalette.chromeStroke)
+                .frame(width: ChromeMetrics.mainPanelSeparatorHeight)
+        }
+    }
+
+    private var overlayHeader: some View {
+        HStack {
+            Spacer()
+
+            DownloadsStatusButton()
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+    }
+
+    private var integratedHeader: some View {
+        HStack {
+            Spacer()
+
+            DownloadsStatusButton()
+        }
+        .padding(.horizontal, 12)
+        .frame(height: ChromeMetrics.shellStripHeight + 18, alignment: .bottom)
+        .padding(.bottom, 8)
+    }
+
+    private var sidebarTabList: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 4) {
+                ForEach(tabManager.tabs) { tab in
+                    ChromeTabItem(
+                        tab: tab,
+                        presentation: .sidebar,
+                        isActive: tab.id == tabManager.activeTabID,
+                        onSelect: { tabManager.selectTab(tab.id) },
+                        onClose: { tabManager.closeTab(tab.id) },
+                        canClose: tabManager.tabs.count > 1
+                    )
+                }
+
+                SidebarNewTabItem {
+                    tabManager.addTab()
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+            .animation(tabReorderAnimation, value: tabOrder)
         }
     }
 
