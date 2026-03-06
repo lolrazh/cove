@@ -253,9 +253,27 @@ final class WebViewModel: NSObject, ObservableObject {
     private func looksLikeURL(_ input: String) -> Bool {
         if input.hasPrefix("http://") || input.hasPrefix("https://") { return true }
         if input.contains(" ") { return false }
-        // Has a dot followed by at least 2 chars (like .com, .org, .io)
-        let domainPattern = #"^[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}"#
-        return input.range(of: domainPattern, options: .regularExpression) != nil
+
+        // Strip path/query/fragment for host detection
+        let host = input.split(separator: "/").first.map(String.init) ?? input
+        let hostWithoutPort = host.split(separator: ":").first.map(String.init) ?? host
+
+        // localhost (with optional port/path)
+        if hostWithoutPort == "localhost" { return true }
+
+        // IPv4: 192.168.1.1, 127.0.0.1, etc.
+        let parts = hostWithoutPort.split(separator: ".")
+        if parts.count == 4 && parts.allSatisfy({ $0.allSatisfy(\.isNumber) }) { return true }
+
+        // IPv6: [::1], [fe80::1], etc.
+        if input.hasPrefix("[") { return true }
+
+        // Domain with TLD: example.com, sub.example.co.uk
+        if parts.count >= 2, let tld = parts.last, tld.count >= 2, tld.allSatisfy(\.isLetter) {
+            return true
+        }
+
+        return false
     }
 }
 
