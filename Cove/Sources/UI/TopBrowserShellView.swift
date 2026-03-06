@@ -67,15 +67,7 @@ struct TopBrowserShellView<Content: View>: View {
     }
 
     private var topStripLane: some View {
-        HStack(spacing: 0) {
-            Color.clear
-                .frame(width: ChromeMetrics.shellControlsReservedWidth)
-
-            TabStripView(
-                tabManager: tabManager,
-                laneHeight: ChromeMetrics.topStripLaneHeight
-            )
-        }
+        Color.clear
         .frame(
             maxWidth: .infinity,
             minHeight: ChromeMetrics.topStripLaneHeight,

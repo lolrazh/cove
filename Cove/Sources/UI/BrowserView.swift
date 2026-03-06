@@ -33,6 +33,12 @@ struct BrowserView: View {
                 TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
                     activeTabContent
                 }
+                .background {
+                    TitlebarTabStripAccessory(
+                        tabManager: tabManager,
+                        isVisible: showsTopWindowStrip
+                    )
+                }
             }
         } else {
             sidebarShell(for: activeTab)
