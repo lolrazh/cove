@@ -3,8 +3,6 @@ import SwiftUI
 struct BrowserView: View {
     @StateObject private var tabManager = TabManager()
     @ObservedObject private var settings = BrowserSettingsStore.shared
-    @State private var isHoveringTopChrome = false
-    @State private var topTabsHideTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -15,10 +13,12 @@ struct BrowserView: View {
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
         .background {
-            WindowChromeAccessor(
-                controlsStyle: windowChromeControlsStyle
-            )
-            .allowsHitTesting(false)
+            if tabManager.tabLayout == .sidebar {
+                WindowChromeAccessor(
+                    controlsStyle: sidebarWindowChromeControlsStyle
+                )
+                .allowsHitTesting(false)
+            }
         }
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
@@ -27,27 +27,11 @@ struct BrowserView: View {
     @ViewBuilder
     private func chromeShell(for activeTab: Tab) -> some View {
         if tabManager.tabLayout == .horizontal {
-            horizontalShell(for: activeTab)
+            TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                activeTabContent
+            }
         } else {
             sidebarShell(for: activeTab)
-        }
-    }
-
-    private func horizontalShell(for activeTab: Tab) -> some View {
-        VStack(spacing: 0) {
-            if showsTopStrip {
-                diaTopStrip
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
-            horizontalContentColumn(for: activeTab)
-        }
-        .padding(ChromeMetrics.windowInset)
-        .chromeWindowSurface()
-        .overlay(alignment: .top) {
-            if showsTopRevealArea {
-                topTabsRevealArea
-            }
         }
     }
 
@@ -64,49 +48,6 @@ struct BrowserView: View {
         }
         .padding(ChromeMetrics.windowInset)
         .chromeWindowSurface()
-    }
-
-    private var diaTopStrip: some View {
-        HStack(spacing: 0) {
-            Color.clear
-                .frame(width: ChromeMetrics.shellControlsReservedWidth)
-
-            TabStripView(tabManager: tabManager)
-        }
-        .frame(maxWidth: .infinity, minHeight: ChromeMetrics.shellStripHeight, maxHeight: ChromeMetrics.shellStripHeight)
-        .padding(.trailing, ChromeMetrics.shellStripTrailingPadding)
-        .background(ChromePalette.topStripFill)
-        .colorScheme(.dark)
-        .contentShape(Rectangle())
-        .onHover(perform: handleTopChromeHover)
-    }
-
-    private func horizontalContentColumn(for activeTab: Tab) -> some View {
-        VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
-            NavigationBar(
-                viewModel: activeTab.viewModel,
-                onNavigate: { _ in
-                    activeTab.isNewTabPage = false
-                }
-            )
-            .id(activeTab.id)
-            .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
-            .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)
-            .contentShape(Rectangle())
-            .onHover(perform: handleTopChromeHover)
-
-            Rectangle()
-                .fill(ChromePalette.chromeStroke)
-                .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
-
-            ZStack(alignment: .top) {
-                activeTabContent
-                contentLoadingIndicator(for: activeTab)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ChromePalette.window)
     }
 
     private func sidebarMainPanel(for activeTab: Tab) -> some View {
@@ -190,18 +131,6 @@ struct BrowserView: View {
         tabManager.tabLayout == .sidebar && settings.hideTabs
     }
 
-    private var topTabsRevealArea: some View {
-        Color.clear
-            .frame(height: 12)
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                if hovering {
-                    topTabsHideTask?.cancel()
-                    tabManager.revealTabs()
-                }
-            }
-    }
-
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
             showsTabsInSidebar: tabManager.tabLayout == .sidebar,
@@ -219,43 +148,13 @@ struct BrowserView: View {
         )
     }
 
-    private var windowChromeControlsStyle: WindowChromeControlsStyle {
+    private var sidebarWindowChromeControlsStyle: WindowChromeControlsStyle {
         WindowChromeControlsStyle(
             leadingInset: ChromeMetrics.shellControlsLeadingInset,
             interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: !hidesTopChromeControls
+            isVisible: true
         )
-    }
-
-    private var hidesTopChromeControls: Bool {
-        tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
-    }
-
-    private func handleTopChromeHover(_ hovering: Bool) {
-        guard tabManager.tabLayout == .horizontal else { return }
-
-        isHoveringTopChrome = hovering
-        topTabsHideTask?.cancel()
-
-        guard settings.hideTabs else {
-            tabManager.areTabsVisible = true
-            return
-        }
-
-        if hovering {
-            guard tabManager.areTabsVisible else { return }
-        } else {
-            topTabsHideTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(700))
-                guard !Task.isCancelled,
-                      !isHoveringTopChrome,
-                      tabManager.tabLayout == .horizontal,
-                      settings.hideTabs else { return }
-
-                tabManager.hideTabsIfNeeded()
-            }
-        }
     }
 }
 

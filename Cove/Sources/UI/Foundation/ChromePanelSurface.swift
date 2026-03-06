@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 
 enum ChromeSurfaceTone {
+    case browserShell
     case window
     case topChrome
     case panel
@@ -36,6 +37,8 @@ struct ChromePanelSurface: ViewModifier {
     @ViewBuilder
     private func backgroundView(shape: RoundedRectangle) -> some View {
         switch tone {
+        case .browserShell:
+            shape.fill(ChromePalette.shellFill)
         case .window:
             shape.fill(ChromePalette.window)
         case .topChrome:
@@ -52,6 +55,8 @@ struct ChromePanelSurface: ViewModifier {
 
     private var borderColor: Color {
         switch tone {
+        case .browserShell:
+            return ChromePalette.chromeStrokeStrong
         case .window:
             return ChromePalette.chromeStrokeStrong
         case .topChrome, .panel, .sidebar:
@@ -67,6 +72,8 @@ struct ChromePanelSurface: ViewModifier {
         }
 
         switch tone {
+        case .browserShell:
+            return ChromeMetrics.windowBorderWidth
         case .window:
             return ChromeMetrics.windowBorderWidth
         case .topChrome, .panel, .sidebar, .card:

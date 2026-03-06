@@ -10,15 +10,18 @@ struct WindowChromeControlsStyle: Equatable {
 
 struct WindowChromeAccessor: NSViewRepresentable {
     let controlsStyle: WindowChromeControlsStyle
+    var titlebarHeight: Binding<CGFloat>? = nil
 
     func makeNSView(context: Context) -> WindowChromeTrackingView {
         let view = WindowChromeTrackingView()
         view.controlsStyle = controlsStyle
+        view.titlebarHeight = titlebarHeight
         return view
     }
 
     func updateNSView(_ nsView: WindowChromeTrackingView, context: Context) {
         nsView.controlsStyle = controlsStyle
+        nsView.titlebarHeight = titlebarHeight
     }
 }
 
@@ -35,7 +38,10 @@ final class WindowChromeTrackingView: NSView {
         }
     }
 
+    var titlebarHeight: Binding<CGFloat>?
+
     private weak var observedWindow: NSWindow?
+    private var buttonMetrics: WindowChromeButtonMetrics?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -69,6 +75,7 @@ final class WindowChromeTrackingView: NSView {
 
         stopObservingWindow()
         observedWindow = window
+        buttonMetrics = nil
 
         guard let window else { return }
 
@@ -106,22 +113,67 @@ final class WindowChromeTrackingView: NSView {
 
     private func applyControlsIfPossible(animated: Bool) {
         guard let window else { return }
-        WindowChromeController.applyControls(to: window, style: controlsStyle, animated: animated)
+        reportTitlebarHeight(for: window)
+        captureButtonMetricsIfNeeded(for: window)
+
+        guard let buttonMetrics else { return }
+
+        WindowChromeController.applyControls(
+            to: window,
+            style: controlsStyle,
+            metrics: buttonMetrics,
+            animated: animated
+        )
+    }
+
+    private func captureButtonMetricsIfNeeded(for window: NSWindow) {
+        guard buttonMetrics == nil else { return }
+
+        let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
+
+        guard buttons.count == buttonTypes.count else { return }
+
+        buttonMetrics = WindowChromeButtonMetrics(
+            baseY: buttons[0].frame.origin.y,
+            widths: buttons.map { $0.frame.width }
+        )
+    }
+
+    private func reportTitlebarHeight(for window: NSWindow) {
+        guard let titlebarHeight else { return }
+
+        let resolvedHeight = max(0, window.frame.height - window.contentLayoutRect.height)
+        guard titlebarHeight.wrappedValue != resolvedHeight else { return }
+
+        DispatchQueue.main.async {
+            self.titlebarHeight?.wrappedValue = resolvedHeight
+        }
     }
 }
 
+struct WindowChromeButtonMetrics {
+    let baseY: CGFloat
+    let widths: [CGFloat]
+}
+
 enum WindowChromeController {
-    static func applyControls(to window: NSWindow, style: WindowChromeControlsStyle, animated: Bool) {
+    static func applyControls(
+        to window: NSWindow,
+        style: WindowChromeControlsStyle,
+        metrics: WindowChromeButtonMetrics,
+        animated: Bool
+    ) {
         let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
 
         guard buttons.count == buttonTypes.count else { return }
 
         var nextX = style.leadingInset
-        let baseY = buttons[0].frame.origin.y + style.verticalOffset
+        let baseY = metrics.baseY + style.verticalOffset
         let hiddenOffset: CGFloat = 10
 
-        for button in buttons {
+        for (index, button) in buttons.enumerated() {
             let visibleOrigin = CGPoint(
                 x: round(nextX),
                 y: round(baseY)
@@ -137,7 +189,7 @@ enum WindowChromeController {
                 hide(button: button, at: hiddenOrigin, animated: animated)
             }
 
-            nextX += button.frame.width + style.interButtonSpacing
+            nextX += metrics.widths[index] + style.interButtonSpacing
         }
     }
 

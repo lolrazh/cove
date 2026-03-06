@@ -20,6 +20,7 @@ enum ChromeMetrics {
     static let shellControlsReservedWidth: CGFloat = 92
     static let shellControlsVerticalOffset: CGFloat = 2
     static let mainPanelInnerPadding: CGFloat = 8
+    static let topMainPanelInset: CGFloat = 4
     static let topNavigationHorizontalPadding: CGFloat = 10
     static let topNavigationVerticalPadding: CGFloat = 6
     static let mainPanelSectionSpacing: CGFloat = 0
@@ -41,7 +42,7 @@ enum ChromeMetrics {
 
 enum ChromePalette {
     static let window = Color(nsColor: .windowBackgroundColor)
-    static let topStripFill = Color(nsColor: NSColor(calibratedWhite: 0.12, alpha: 1))
+    static let shellFill = Color(nsColor: NSColor(calibratedWhite: 0.12, alpha: 1))
     static let topStripDivider = Color.white.opacity(0.08)
     static let chromeFill = Color.primary.opacity(0.035)
     static let chromeStroke = Color.primary.opacity(0.08)
