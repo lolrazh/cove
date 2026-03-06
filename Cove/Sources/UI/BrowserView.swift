@@ -28,7 +28,7 @@ struct BrowserView: View {
     private func chromeShell(for activeTab: Tab) -> some View {
         if tabManager.tabLayout == .horizontal {
             WindowChromeHost(
-                topBandHeight: showsTopWindowStrip ? ChromeMetrics.shellStripHeight : 0,
+                topBandHeight: showsTopWindowStrip ? topWindowBandHeight : 0,
                 controlsStyle: topWindowChromeControlsStyle
             ) {
                 TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
@@ -173,6 +173,10 @@ struct BrowserView: View {
 
     private var showsTopWindowStrip: Bool {
         tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
+    }
+
+    private var topWindowBandHeight: CGFloat {
+        ChromeMetrics.shellStripHeight + (ChromeMetrics.topMainPanelInset * 2)
     }
 }
 
