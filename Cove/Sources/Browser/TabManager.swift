@@ -11,7 +11,7 @@ final class TabManager: ObservableObject {
     @Published var tabs: [Tab] = []
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
-    @Published var isSidebarVisible: Bool
+    @Published var areTabsVisible: Bool
 
     private let settings = BrowserSettingsStore.shared
     private var cancellables: Set<AnyCancellable> = []
@@ -31,7 +31,7 @@ final class TabManager: ObservableObject {
 
     init() {
         tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
-        isSidebarVisible = settings.showsTabsInSidebar ? !settings.hideTabs : false
+        areTabsVisible = !settings.hideTabs
 
         settings.$showsTabsInSidebar
             .sink { [weak self] showsTabsInSidebar in
@@ -43,9 +43,7 @@ final class TabManager: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] hideTabs in
                 guard let self else { return }
-                if self.tabLayout == .sidebar {
-                    self.isSidebarVisible = !hideTabs
-                }
+                self.areTabsVisible = !hideTabs
             }
             .store(in: &cancellables)
 
@@ -97,21 +95,22 @@ final class TabManager: ObservableObject {
         activeTabID = id
     }
 
-    func revealSidebar() {
-        guard tabLayout == .sidebar else { return }
+    func revealTabs() {
         withAnimation(ChromeMotion.shell) {
-            isSidebarVisible = true
+            areTabsVisible = true
+        }
+    }
+
+    func hideTabsIfNeeded() {
+        guard settings.hideTabs else { return }
+        withAnimation(ChromeMotion.shell) {
+            areTabsVisible = false
         }
     }
 
     private func apply(layout: TabLayout, persistsPreference: Bool) {
         tabLayout = layout
-
-        if layout == .sidebar {
-            isSidebarVisible = !settings.hideTabs
-        } else {
-            isSidebarVisible = false
-        }
+        areTabsVisible = !settings.hideTabs
 
         if persistsPreference {
             settings.setShowsTabsInSidebar(layout == .sidebar)

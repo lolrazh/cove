@@ -17,7 +17,7 @@ struct SidebarTabView: View {
     }
 
     private var showsOverlay: Bool {
-        !settings.hideTabs || tabManager.isSidebarVisible
+        !settings.hideTabs || tabManager.areTabsVisible
     }
 
     var body: some View {
@@ -102,12 +102,12 @@ struct SidebarTabView: View {
         hideTask?.cancel()
 
         guard settings.hideTabs else {
-            tabManager.isSidebarVisible = true
+            tabManager.areTabsVisible = true
             return
         }
 
         if hovering {
-            tabManager.isSidebarVisible = true
+            tabManager.areTabsVisible = true
         } else {
             hideTask = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(750))
@@ -116,18 +116,14 @@ struct SidebarTabView: View {
                       tabManager.tabLayout == .sidebar,
                       settings.hideTabs else { return }
 
-                withAnimation(ChromeMotion.shell) {
-                    tabManager.isSidebarVisible = false
-                }
+                tabManager.hideTabsIfNeeded()
             }
         }
     }
 
     private func revealSidebar() {
         hideTask?.cancel()
-        withAnimation(ChromeMotion.shell) {
-            tabManager.isSidebarVisible = true
-        }
+        tabManager.revealTabs()
     }
 }
 

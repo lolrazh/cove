@@ -2,6 +2,9 @@ import SwiftUI
 
 struct BrowserView: View {
     @StateObject private var tabManager = TabManager()
+    @ObservedObject private var settings = BrowserSettingsStore.shared
+    @State private var isHoveringTopChrome = false
+    @State private var topTabsHideTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -12,6 +15,11 @@ struct BrowserView: View {
                 }
                 .padding(ChromeMetrics.windowInset)
                 .chromeWindowSurface()
+                .overlay(alignment: .top) {
+                    if showsTopRevealArea {
+                        topTabsRevealArea
+                    }
+                }
             }
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
@@ -22,7 +30,7 @@ struct BrowserView: View {
 
     private func topChrome(for activeTab: Tab) -> some View {
         VStack(spacing: ChromeMetrics.topChromeSpacing) {
-            if tabManager.tabLayout == .horizontal {
+            if tabManager.tabLayout == .horizontal && tabManager.areTabsVisible {
                 TabStripView(tabManager: tabManager)
             }
 
@@ -36,6 +44,9 @@ struct BrowserView: View {
         }
         .padding(ChromeMetrics.topChromePadding)
         .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
+        .onHover { hovering in
+            handleTopChromeHover(hovering)
+        }
         .overlay(alignment: .bottom) {
             if activeTab.viewModel.isLoading {
                 ProgressView(value: activeTab.viewModel.estimatedProgress)
@@ -81,6 +92,22 @@ struct BrowserView: View {
         }
     }
 
+    private var showsTopRevealArea: Bool {
+        tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
+    }
+
+    private var topTabsRevealArea: some View {
+        Color.clear
+            .frame(height: 12)
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                if hovering {
+                    topTabsHideTask?.cancel()
+                    tabManager.revealTabs()
+                }
+            }
+    }
+
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
             showsTabsInSidebar: tabManager.tabLayout == .sidebar,
@@ -90,6 +117,32 @@ struct BrowserView: View {
                 }
             }
         )
+    }
+
+    private func handleTopChromeHover(_ hovering: Bool) {
+        guard tabManager.tabLayout == .horizontal else { return }
+
+        isHoveringTopChrome = hovering
+        topTabsHideTask?.cancel()
+
+        guard settings.hideTabs else {
+            tabManager.areTabsVisible = true
+            return
+        }
+
+        if hovering {
+            guard tabManager.areTabsVisible else { return }
+        } else {
+            topTabsHideTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(700))
+                guard !Task.isCancelled,
+                      !isHoveringTopChrome,
+                      tabManager.tabLayout == .horizontal,
+                      settings.hideTabs else { return }
+
+                tabManager.hideTabsIfNeeded()
+            }
+        }
     }
 }
 
