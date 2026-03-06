@@ -12,14 +12,16 @@ enum ChromeMetrics {
     static var controlCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
     static var fieldCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 1.5) }
     static var tabCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
-    static let shellStripHeight: CGFloat = 34
-    static let shellStripTrailingPadding: CGFloat = 6
+    static let shellStripHeight: CGFloat = 36
+    static let shellStripTrailingPadding: CGFloat = 10
     static let shellStripBottomSpacing: CGFloat = 4
-    static let shellControlsLeadingInset: CGFloat = 16
+    static let shellControlsLeadingInset: CGFloat = 14
     static let shellControlsInterButtonSpacing: CGFloat = 6
-    static let shellControlsReservedWidth: CGFloat = 86
-    static let shellControlsVerticalOffset: CGFloat = 0
+    static let shellControlsReservedWidth: CGFloat = 92
+    static let shellControlsVerticalOffset: CGFloat = 2
     static let mainPanelInnerPadding: CGFloat = 8
+    static let topNavigationHorizontalPadding: CGFloat = 10
+    static let topNavigationVerticalPadding: CGFloat = 6
     static let mainPanelSectionSpacing: CGFloat = 0
     static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
@@ -39,6 +41,8 @@ enum ChromeMetrics {
 
 enum ChromePalette {
     static let window = Color(nsColor: .windowBackgroundColor)
+    static let topStripFill = Color(nsColor: NSColor(calibratedWhite: 0.12, alpha: 1))
+    static let topStripDivider = Color.white.opacity(0.08)
     static let chromeFill = Color.primary.opacity(0.035)
     static let chromeStroke = Color.primary.opacity(0.08)
     static let chromeStrokeStrong = Color.primary.opacity(0.12)
