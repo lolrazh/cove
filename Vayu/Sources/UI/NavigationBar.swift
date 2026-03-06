@@ -61,9 +61,9 @@ struct NavigationBar: View {
                                         .animation(.linear(duration: 0.3), value: downloadManager.overallProgress)
                                 }
                             }
-                            .frame(width: 20, height: 2.5)
+                            .frame(width: 20, height: 4)
                         } else {
-                            Spacer().frame(height: 2.5)
+                            Spacer().frame(height: 4)
                         }
                     }
                     .frame(width: 28, height: 28)

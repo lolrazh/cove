@@ -2,6 +2,7 @@ import Foundation
 import WebKit
 import AppKit
 import UniformTypeIdentifiers
+import Combine
 
 @MainActor
 final class DownloadItem: ObservableObject, Identifiable {
@@ -81,6 +82,7 @@ final class DownloadManager: NSObject, ObservableObject {
     static let shared = DownloadManager()
 
     @Published var items: [DownloadItem] = []
+    private var itemCancellables: [UUID: AnyCancellable] = [:]
 
     var hasActiveDownloads: Bool {
         items.contains { $0.state == .downloading }
@@ -109,6 +111,8 @@ final class DownloadManager: NSObject, ObservableObject {
     }
 
     func clearCompleted() {
+        let removed = items.filter { $0.state != .downloading }
+        for item in removed { itemCancellables.removeValue(forKey: item.id) }
         items.removeAll { $0.state != .downloading }
     }
 
@@ -120,6 +124,7 @@ final class DownloadManager: NSObject, ObservableObject {
     func remove(_ item: DownloadItem) {
         items.removeAll { $0.id == item.id }
         downloadToItem = downloadToItem.filter { $0.value.id != item.id }
+        itemCancellables.removeValue(forKey: item.id)
     }
 }
 
@@ -141,6 +146,8 @@ extension DownloadManager: WKDownloadDelegate {
             item.observeProgress(of: download)
             self.items.insert(item, at: 0)
             self.downloadToItem[download] = item
+            self.itemCancellables[item.id] = item.objectWillChange
+                .sink { [weak self] _ in self?.objectWillChange.send() }
         }
 
         return destination
