@@ -43,17 +43,14 @@ struct TopBrowserShellView<Content: View>: View {
     }
 
     private var shellLayout: some View {
-        VStack(spacing: shellMode == .regular ? ChromeMetrics.shellStripBottomSpacing : 0) {
+        VStack(spacing: 0) {
             if showsTopStrip {
                 topStrip
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             mainPanel
-                .padding(.horizontal, mainPanelInsets.leading)
-                .padding(.top, mainPanelInsets.top)
-                .padding(.trailing, mainPanelInsets.trailing)
-                .padding(.bottom, mainPanelInsets.bottom)
+                .padding(ChromeMetrics.topMainPanelInset)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .chromePanelSurface(
@@ -80,7 +77,7 @@ struct TopBrowserShellView<Content: View>: View {
     private var mainPanel: some View {
         panelContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .modifier(MainPanelSurfaceModifier(isImmersive: shellMode == .immersive))
+            .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
     @ViewBuilder
@@ -106,25 +103,6 @@ struct TopBrowserShellView<Content: View>: View {
 
     private var showsTopRevealArea: Bool {
         shellMode == .immersive
-    }
-
-    private var mainPanelInsets: EdgeInsets {
-        switch shellMode {
-        case .regular:
-            return EdgeInsets(
-                top: 0,
-                leading: ChromeMetrics.topMainPanelInset,
-                bottom: ChromeMetrics.topMainPanelInset,
-                trailing: ChromeMetrics.topMainPanelInset
-            )
-        case .immersive:
-            return EdgeInsets(
-                top: 0,
-                leading: 0,
-                bottom: 0,
-                trailing: 0
-            )
-        }
     }
 
     private var windowChromeControlsStyle: WindowChromeControlsStyle {
@@ -193,20 +171,6 @@ struct TopBrowserShellView<Content: View>: View {
                 contentLoadingIndicator
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-}
-
-private struct MainPanelSurfaceModifier: ViewModifier {
-    let isImmersive: Bool
-
-    func body(content: Content) -> some View {
-        if isImmersive {
-            content
-                .background(ChromePalette.window)
-        } else {
-            content
-                .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
         }
     }
 }
