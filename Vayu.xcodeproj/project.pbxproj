@@ -13,6 +13,7 @@
 		321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */; };
 		32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */; };
 		3E4948AE5A6C5D9C0BE941B6 /* VayuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3BFF8975CD621ABB5C43EF /* VayuApp.swift */; };
+		4CD29CC70DB7F7998EB81C13 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 513671406A086B5A71520DB1 /* DownloadManager.swift */; };
 		5907C2DE21FD13C632628804 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4D058DE29FAF4A0720B6A0 /* Database.swift */; };
 		75BC2A592E01709E33FD93A4 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEF72D8F49C637395117C1C9 /* HistoryView.swift */; };
 		8626C2ABDFA576134D2AA16D /* FaviconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9A431D677E8E3B574A064B /* FaviconView.swift */; };
@@ -32,6 +33,7 @@
 		31FE42F1A95D5C81D01CE91E /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
 		49471FE3B87A5FBDC949EA1D /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
 		4D4D058DE29FAF4A0720B6A0 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
+		513671406A086B5A71520DB1 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		63E1FCD90678B959918330A5 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
 		7EDB7D08C77162092D1C04FC /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				4D4D058DE29FAF4A0720B6A0 /* Database.swift */,
+				513671406A086B5A71520DB1 /* DownloadManager.swift */,
 				28532C5BD138166D69E72729 /* FaviconStore.swift */,
 				BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */,
 				31FE42F1A95D5C81D01CE91E /* Tab.swift */,
@@ -168,6 +171,7 @@
 				FDC50CF50BE640EB307F4135 /* AppDelegate.swift in Sources */,
 				EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */,
 				5907C2DE21FD13C632628804 /* Database.swift in Sources */,
+				4CD29CC70DB7F7998EB81C13 /* DownloadManager.swift in Sources */,
 				FF035AB24A2502A46C690BE0 /* FaviconStore.swift in Sources */,
 				8626C2ABDFA576134D2AA16D /* FaviconView.swift in Sources */,
 				321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */,
