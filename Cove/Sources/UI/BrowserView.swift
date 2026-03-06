@@ -23,6 +23,7 @@ struct BrowserView: View {
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
+        .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
 
     private func topChrome(for activeTab: Tab) -> some View {
@@ -33,7 +34,6 @@ struct BrowserView: View {
 
             NavigationBar(
                 viewModel: activeTab.viewModel,
-                tabManager: tabManager,
                 onNavigate: { _ in
                     activeTab.isNewTabPage = false
                 }
@@ -85,6 +85,22 @@ struct BrowserView: View {
                 transaction.animation = nil
             }
         }
+    }
+
+    private var browserCommandContext: BrowserCommandContext {
+        BrowserCommandContext(
+            currentTabLayout: tabManager.tabLayout,
+            showHorizontalTabs: {
+                withAnimation(ChromeMotion.shell) {
+                    tabManager.setLayout(.horizontal)
+                }
+            },
+            showSidebarTabs: {
+                withAnimation(ChromeMotion.shell) {
+                    tabManager.setLayout(.sidebar)
+                }
+            }
+        )
     }
 }
 

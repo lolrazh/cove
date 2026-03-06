@@ -10,6 +10,9 @@ struct CoveApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowBackgroundDragBehavior(.enabled)
+        .commands {
+            BrowserViewCommands()
+        }
 
         Settings {
             SettingsView()

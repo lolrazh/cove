@@ -21,6 +21,10 @@ final class TabManager: ObservableObject {
         apply(layout: nextLayout, persistsPreference: true)
     }
 
+    func setLayout(_ layout: TabLayout) {
+        apply(layout: layout, persistsPreference: true)
+    }
+
     var activeTab: Tab? {
         tabs.first { $0.id == activeTabID }
     }

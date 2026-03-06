@@ -2,7 +2,6 @@ import SwiftUI
 
 struct NavigationBar: View {
     @ObservedObject var viewModel: WebViewModel
-    @ObservedObject var tabManager: TabManager
     var onNavigate: ((String) -> Void)?
 
     @State private var addressText: String
@@ -12,27 +11,14 @@ struct NavigationBar: View {
     @FocusState private var isAddressFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(viewModel: WebViewModel, tabManager: TabManager, onNavigate: ((String) -> Void)? = nil) {
+    init(viewModel: WebViewModel, onNavigate: ((String) -> Void)? = nil) {
         self._viewModel = ObservedObject(wrappedValue: viewModel)
-        self._tabManager = ObservedObject(wrappedValue: tabManager)
         self.onNavigate = onNavigate
         _addressText = State(initialValue: viewModel.currentURL)
     }
 
     var body: some View {
         HStack(spacing: 8) {
-            if tabManager.tabLayout == .sidebar {
-                toolbarButton(
-                    isSelected: tabManager.isSidebarVisible,
-                    action: tabManager.revealSidebar
-                ) {
-                    Image(systemName: ChromeSymbols.Navigation.sidebar)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(tabManager.isSidebarVisible ? .primary : .secondary)
-                }
-                .help("Reveal sidebar")
-            }
-
             navCluster
             addressBar
             utilityCluster

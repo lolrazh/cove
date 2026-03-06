@@ -38,31 +38,7 @@ struct TabStripView: View {
             }
             .buttonStyle(ChromeButtonStyle(kind: .toolbar))
             .help("New tab")
-
-            Button(action: {
-                withAnimation(ChromeMotion.shell) {
-                    tabManager.toggleLayout()
-                }
-            }) {
-                layoutToggleIcon
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(ChromeButtonStyle(kind: .toolbar))
-            .help("Switch to sidebar tabs")
         }
         .frame(height: ChromeMetrics.tabStripHeight)
-    }
-
-    private var layoutToggleIcon: some View {
-        let icon = Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
-            .font(.system(size: 11, weight: .medium))
-
-        return Group {
-            if reduceMotion {
-                icon
-            } else {
-                icon.symbolEffect(.bounce, value: tabManager.tabLayout)
-            }
-        }
     }
 }

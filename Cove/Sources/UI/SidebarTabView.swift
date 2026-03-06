@@ -74,27 +74,6 @@ struct SidebarTabView: View {
             }
 
             Spacer()
-
-            HStack {
-                Spacer()
-
-                Button(action: {
-                    withAnimation(ChromeMotion.shell) {
-                        tabManager.toggleLayout()
-                    }
-                }) {
-                    HStack(spacing: 6) {
-                        layoutToggleIcon
-                        Text("Top Tabs")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundStyle(.secondary)
-                }
-                .buttonStyle(ChromeButtonStyle(kind: .panelAction))
-                .help("Switch to horizontal tabs")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
         }
         .frame(width: ChromeMetrics.sidebarWidth)
         .chromePanelSurface(.sidebar, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
@@ -119,19 +98,6 @@ struct SidebarTabView: View {
         .onHover { hovering in
             if hovering {
                 revealSidebar()
-            }
-        }
-    }
-
-    private var layoutToggleIcon: some View {
-        let icon = Image(systemName: ChromeSymbols.Tabs.topLayout)
-            .font(.system(size: 12, weight: .medium))
-
-        return Group {
-            if reduceMotion {
-                icon
-            } else {
-                icon.symbolEffect(.bounce, value: tabManager.tabLayout)
             }
         }
     }

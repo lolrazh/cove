@@ -15,6 +15,7 @@
 		2696BD260215037EBBAF6FE4 /* ChromePanelSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A1C50D1F888EB6D17F41A1 /* ChromePanelSurface.swift */; };
 		288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAD4F48AAADD750585F40AB /* NavigationBar.swift */; };
 		2BCB31FC3951B522E8BAD297 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6949A5A721596A8C82526E29 /* AppDelegate.swift */; };
+		2E68D5EC61BEEF96F135EBBF /* BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */; };
 		4C2FEE8AE947A015057A4659 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2241AFE931B02B48465503 /* WebViewModel.swift */; };
 		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
 		4FC7B1AFFCADD998D88AAC01 /* ChromeTabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E085EBC7AAE7AC011C39A11A /* ChromeTabItem.swift */; };
@@ -63,6 +64,7 @@
 		AD4F5F1B365705A427FDEC1A /* CoveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoveApp.swift; sourceTree = "<group>"; };
 		B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadPopover.swift; sourceTree = "<group>"; };
 		B521F2DECB254B5E3D0FEE1E /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
+		B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
 		C8A4E68B430D945E3968A4B9 /* TabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabStripView.swift; sourceTree = "<group>"; };
 		D8E34BC62111CB1B5E23952B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E085EBC7AAE7AC011C39A11A /* ChromeTabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTabItem.swift; sourceTree = "<group>"; };
@@ -105,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				6949A5A721596A8C82526E29 /* AppDelegate.swift */,
+				B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */,
 				AD4F5F1B365705A427FDEC1A /* CoveApp.swift */,
 			);
 			path = App;
@@ -242,6 +245,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BCB31FC3951B522E8BAD297 /* AppDelegate.swift in Sources */,
+				2E68D5EC61BEEF96F135EBBF /* BrowserCommands.swift in Sources */,
 				CD0A025EF47EBB1B1BC6648A /* BrowserSettingKeys.swift in Sources */,
 				745719A6F44F27C9E5FA4316 /* BrowserSettingsStore.swift in Sources */,
 				AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */,
