@@ -34,15 +34,15 @@ struct TopBrowserShellView<Content: View>: View {
     }
 
     private var shellLayout: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: ChromeMetrics.shellGutter) {
             if showsTopStrip {
                 topStrip
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             mainPanel
-                .padding(ChromeMetrics.topMainPanelInset)
         }
+        .padding(ChromeMetrics.shellGutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .chromePanelSurface(
             .browserShell,
@@ -58,8 +58,7 @@ struct TopBrowserShellView<Content: View>: View {
 
             TabStripView(tabManager: tabManager)
         }
-        .frame(maxWidth: .infinity, minHeight: ChromeMetrics.shellStripHeight, maxHeight: ChromeMetrics.shellStripHeight)
-        .padding(.trailing, ChromeMetrics.shellStripTrailingPadding)
+        .frame(maxWidth: .infinity, minHeight: ChromeMetrics.tabStripHeight, maxHeight: ChromeMetrics.tabStripHeight)
         .contentShape(Rectangle())
         .colorScheme(.dark)
         .onHover(perform: handleTopChromeHover)
