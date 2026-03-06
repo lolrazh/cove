@@ -5,6 +5,8 @@ struct NavigationBar: View {
     var onNavigate: ((String) -> Void)?
     @State private var addressText: String
     @State private var showHistory: Bool = false
+    @State private var showDownloads: Bool = false
+    @ObservedObject private var downloadManager = DownloadManager.shared
     @FocusState private var isAddressFocused: Bool
 
     init(viewModel: WebViewModel, onNavigate: ((String) -> Void)? = nil) {
@@ -38,6 +40,28 @@ struct NavigationBar: View {
 
             // Address bar
             addressBar
+
+            // Downloads (only visible when there are items)
+            if downloadManager.items.count > 0 {
+                ZStack {
+                    navButton(
+                        icon: "arrow.down.circle",
+                        enabled: true,
+                        action: { showDownloads.toggle() }
+                    )
+
+                    // Active download indicator
+                    if downloadManager.hasActiveDownloads {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 8, y: -8)
+                    }
+                }
+                .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
+                    DownloadPopover(manager: downloadManager)
+                }
+            }
 
             // History
             navButton(

@@ -10,6 +10,7 @@
 		2424788002B1FB2EEAB80312 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FE42F1A95D5C81D01CE91E /* Tab.swift */; };
 		27157FF977CA45E072A73ED1 /* NewTabPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */; };
 		290C95EF032BAED876630D4F /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC6F27EFB83B8D47C75C908 /* TabManager.swift */; };
+		2CA2621570C2A1A84E0497CC /* DownloadPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F02BDE9D86E6637DDFCAA52 /* DownloadPopover.swift */; };
 		321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */; };
 		32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */; };
 		3E4948AE5A6C5D9C0BE941B6 /* VayuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3BFF8975CD621ABB5C43EF /* VayuApp.swift */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
+		1F02BDE9D86E6637DDFCAA52 /* DownloadPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadPopover.swift; sourceTree = "<group>"; };
 		26D5B233886ECEE462216AF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		28532C5BD138166D69E72729 /* FaviconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconStore.swift; sourceTree = "<group>"; };
 		31FE42F1A95D5C81D01CE91E /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
@@ -52,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				7EDB7D08C77162092D1C04FC /* BrowserView.swift */,
+				1F02BDE9D86E6637DDFCAA52 /* DownloadPopover.swift */,
 				9F9A431D677E8E3B574A064B /* FaviconView.swift */,
 				AEF72D8F49C637395117C1C9 /* HistoryView.swift */,
 				E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */,
@@ -172,6 +175,7 @@
 				EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */,
 				5907C2DE21FD13C632628804 /* Database.swift in Sources */,
 				4CD29CC70DB7F7998EB81C13 /* DownloadManager.swift in Sources */,
+				2CA2621570C2A1A84E0497CC /* DownloadPopover.swift in Sources */,
 				FF035AB24A2502A46C690BE0 /* FaviconStore.swift in Sources */,
 				8626C2ABDFA576134D2AA16D /* FaviconView.swift in Sources */,
 				321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */,
