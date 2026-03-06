@@ -78,31 +78,9 @@ struct TopBrowserShellView<Content: View>: View {
     }
 
     private var mainPanel: some View {
-        VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
-            NavigationBar(
-                viewModel: activeTab.viewModel,
-                onNavigate: { _ in
-                    activeTab.isNewTabPage = false
-                }
-            )
-            .id(activeTab.id)
-            .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
-            .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)
-            .contentShape(Rectangle())
-            .onHover(perform: handleTopChromeHover)
-
-            Rectangle()
-                .fill(ChromePalette.chromeStroke)
-                .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
-
-            ZStack(alignment: .top) {
-                content
-                contentLoadingIndicator
-            }
+        panelContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
+            .modifier(MainPanelSurfaceModifier(isImmersive: shellMode == .immersive))
     }
 
     @ViewBuilder
@@ -141,10 +119,10 @@ struct TopBrowserShellView<Content: View>: View {
             )
         case .immersive:
             return EdgeInsets(
-                top: ChromeMetrics.topMainPanelInset,
-                leading: ChromeMetrics.topMainPanelInset,
-                bottom: ChromeMetrics.topMainPanelInset,
-                trailing: ChromeMetrics.topMainPanelInset
+                top: 0,
+                leading: 0,
+                bottom: 0,
+                trailing: 0
             )
         }
     }
@@ -189,6 +167,46 @@ struct TopBrowserShellView<Content: View>: View {
 
                 tabManager.hideTabsIfNeeded()
             }
+        }
+    }
+
+    private var panelContent: some View {
+        VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
+            NavigationBar(
+                viewModel: activeTab.viewModel,
+                onNavigate: { _ in
+                    activeTab.isNewTabPage = false
+                }
+            )
+            .id(activeTab.id)
+            .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
+            .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)
+            .contentShape(Rectangle())
+            .onHover(perform: handleTopChromeHover)
+
+            Rectangle()
+                .fill(ChromePalette.chromeStroke)
+                .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
+
+            ZStack(alignment: .top) {
+                content
+                contentLoadingIndicator
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+private struct MainPanelSurfaceModifier: ViewModifier {
+    let isImmersive: Bool
+
+    func body(content: Content) -> some View {
+        if isImmersive {
+            content
+                .background(ChromePalette.window)
+        } else {
+            content
+                .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
         }
     }
 }
