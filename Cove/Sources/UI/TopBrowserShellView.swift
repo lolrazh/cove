@@ -34,15 +34,12 @@ struct TopBrowserShellView<Content: View>: View {
     }
 
     private var shellLayout: some View {
-        VStack(spacing: ChromeMetrics.shellGutter) {
-            if showsTopStrip {
-                topStrip
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-
+        VStack(spacing: 0) {
+            topSlot
             mainPanel
         }
-        .padding(ChromeMetrics.shellGutter)
+        .padding(.horizontal, ChromeMetrics.shellGutter)
+        .padding(.bottom, ChromeMetrics.shellGutter)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .chromePanelSurface(
             .browserShell,
@@ -51,14 +48,24 @@ struct TopBrowserShellView<Content: View>: View {
         )
     }
 
-    private var topStrip: some View {
-        HStack(spacing: 0) {
-            Color.clear
-                .frame(width: ChromeMetrics.shellControlsReservedWidth)
+    private var topSlot: some View {
+        ZStack(alignment: .leading) {
+            if showsTopStrip {
+                HStack(spacing: 0) {
+                    Color.clear
+                        .frame(width: ChromeMetrics.shellControlsReservedWidth)
 
-            TabStripView(tabManager: tabManager)
+                    TabStripView(tabManager: tabManager)
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: ChromeMetrics.tabStripHeight, maxHeight: ChromeMetrics.tabStripHeight)
+        .frame(
+            maxWidth: .infinity,
+            minHeight: topSlotHeight,
+            maxHeight: topSlotHeight,
+            alignment: .center
+        )
         .contentShape(Rectangle())
         .colorScheme(.dark)
         .onHover(perform: handleTopChromeHover)
@@ -93,6 +100,10 @@ struct TopBrowserShellView<Content: View>: View {
 
     private var showsTopRevealArea: Bool {
         shellMode == .immersive
+    }
+
+    private var topSlotHeight: CGFloat {
+        showsTopStrip ? ChromeMetrics.topBandHeight : ChromeMetrics.shellGutter
     }
 
     private var topTabsRevealArea: some View {

@@ -6,6 +6,7 @@ struct WindowChromeControlsStyle: Equatable {
     var interButtonSpacing: CGFloat
     var verticalOffset: CGFloat
     var isVisible: Bool
+    var bandHeight: CGFloat
 }
 
 struct WindowChromeAccessor: NSViewRepresentable {
@@ -30,7 +31,8 @@ final class WindowChromeTrackingView: NSView {
         leadingInset: ChromeMetrics.shellControlsLeadingInset,
         interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
         verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-        isVisible: true
+        isVisible: true,
+        bandHeight: 0
     ) {
         didSet {
             let shouldAnimate = oldValue != controlsStyle
@@ -153,7 +155,8 @@ enum WindowChromeController {
         guard buttons.count == 3 else { return }
         var nextX = style.leadingInset
         let buttonHeight = buttons[0].frame.height
-        let baseY = max(0, (titlebarHeight - buttonHeight) / 2) + style.verticalOffset
+        let centerlineOverflow = max(0, style.bandHeight - titlebarHeight) / 2
+        let baseY = max(0, (titlebarHeight - buttonHeight) / 2) + centerlineOverflow + style.verticalOffset
         let hiddenOffset: CGFloat = 10
 
         for button in buttons {

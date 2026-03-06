@@ -31,8 +31,6 @@ struct WindowChromeHost<Content: View>: View {
 
     private var chromeCompensationOffset: CGFloat {
         guard titlebarHeight > 0 else { return 0 }
-
-        let centerlineOverflow = max(0, topBandHeight - titlebarHeight) / 2
-        return titlebarHeight + centerlineOverflow
+        return titlebarHeight
     }
 }

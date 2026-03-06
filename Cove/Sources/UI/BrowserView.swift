@@ -150,7 +150,8 @@ struct BrowserView: View {
             leadingInset: ChromeMetrics.shellControlsLeadingInset,
             interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: true
+            isVisible: true,
+            bandHeight: 0
         )
     }
 
@@ -159,7 +160,8 @@ struct BrowserView: View {
             leadingInset: ChromeMetrics.shellControlsLeadingInset,
             interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: showsTopWindowStrip
+            isVisible: showsTopWindowStrip,
+            bandHeight: showsTopWindowStrip ? ChromeMetrics.topBandHeight : 0
         )
     }
 
