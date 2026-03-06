@@ -111,9 +111,15 @@ struct BrowserView: View {
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
             showsTabsInSidebar: tabManager.tabLayout == .sidebar,
+            hidesTabs: settings.hideTabs,
             setShowsTabsInSidebar: { showsTabsInSidebar in
                 withAnimation(ChromeMotion.shell) {
                     tabManager.setLayout(showsTabsInSidebar ? .sidebar : .horizontal)
+                }
+            },
+            setHidesTabs: { hidesTabs in
+                withAnimation(ChromeMotion.shell) {
+                    settings.setHideTabs(hidesTabs)
                 }
             }
         )

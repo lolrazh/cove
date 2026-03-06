@@ -89,6 +89,10 @@ final class BrowserSettingsStore: ObservableObject {
         defaults.set(showsTabsInSidebar, forKey: BrowserSettingKeys.showTabsInSidebar)
     }
 
+    func setHideTabs(_ hideTabs: Bool) {
+        defaults.set(hideTabs, forKey: BrowserSettingKeys.hideTabs)
+    }
+
     func clearHistory() {
         HistoryStore.shared.clearAll()
     }

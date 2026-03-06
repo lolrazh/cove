@@ -72,9 +72,7 @@ struct NavigationBar: View {
 
     private var utilityCluster: some View {
         HStack(spacing: 4) {
-            if !downloadManager.items.isEmpty {
-                DownloadsStatusButton()
-            }
+            DownloadsStatusButton()
 
             toolbarButton(action: { showHistory.toggle() }) {
                 Image(systemName: ChromeSymbols.Navigation.history)
