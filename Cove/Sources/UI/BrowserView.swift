@@ -27,8 +27,13 @@ struct BrowserView: View {
     @ViewBuilder
     private func chromeShell(for activeTab: Tab) -> some View {
         if tabManager.tabLayout == .horizontal {
-            TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
-                activeTabContent
+            WindowChromeHost(
+                topBandHeight: showsTopWindowStrip ? ChromeMetrics.shellStripHeight : 0,
+                controlsStyle: topWindowChromeControlsStyle
+            ) {
+                TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                    activeTabContent
+                }
             }
         } else {
             sidebarShell(for: activeTab)
@@ -155,6 +160,19 @@ struct BrowserView: View {
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
             isVisible: true
         )
+    }
+
+    private var topWindowChromeControlsStyle: WindowChromeControlsStyle {
+        WindowChromeControlsStyle(
+            leadingInset: ChromeMetrics.shellControlsLeadingInset,
+            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
+            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
+            isVisible: showsTopWindowStrip
+        )
+    }
+
+    private var showsTopWindowStrip: Bool {
+        tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
     }
 }
 

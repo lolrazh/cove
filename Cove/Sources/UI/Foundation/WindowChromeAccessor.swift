@@ -41,7 +41,6 @@ final class WindowChromeTrackingView: NSView {
     var titlebarHeight: Binding<CGFloat>?
 
     private weak var observedWindow: NSWindow?
-    private var buttonMetrics: WindowChromeButtonMetrics?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -75,7 +74,6 @@ final class WindowChromeTrackingView: NSView {
 
         stopObservingWindow()
         observedWindow = window
-        buttonMetrics = nil
 
         guard let window else { return }
 
@@ -113,37 +111,30 @@ final class WindowChromeTrackingView: NSView {
 
     private func applyControlsIfPossible(animated: Bool) {
         guard let window else { return }
-        reportTitlebarHeight(for: window)
-        captureButtonMetricsIfNeeded(for: window)
+        let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+        let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
 
-        guard let buttonMetrics else { return }
+        let resolvedTitlebarHeight = resolvedTitlebarHeight(for: window, buttons: buttons)
+        reportTitlebarHeight(resolvedTitlebarHeight)
 
         WindowChromeController.applyControls(
-            to: window,
+            buttons: buttons,
             style: controlsStyle,
-            metrics: buttonMetrics,
+            titlebarHeight: resolvedTitlebarHeight,
             animated: animated
         )
     }
 
-    private func captureButtonMetricsIfNeeded(for window: NSWindow) {
-        guard buttonMetrics == nil else { return }
+    private func resolvedTitlebarHeight(for window: NSWindow, buttons: [NSButton]) -> CGFloat {
+        if let containerHeight = buttons.first?.superview?.bounds.height, containerHeight > 0 {
+            return containerHeight
+        }
 
-        let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-        let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
-
-        guard buttons.count == buttonTypes.count else { return }
-
-        buttonMetrics = WindowChromeButtonMetrics(
-            baseY: buttons[0].frame.origin.y,
-            widths: buttons.map { $0.frame.width }
-        )
+        return max(0, window.frame.height - window.contentLayoutRect.height)
     }
 
-    private func reportTitlebarHeight(for window: NSWindow) {
+    private func reportTitlebarHeight(_ resolvedHeight: CGFloat) {
         guard let titlebarHeight else { return }
-
-        let resolvedHeight = max(0, window.frame.height - window.contentLayoutRect.height)
         guard titlebarHeight.wrappedValue != resolvedHeight else { return }
 
         DispatchQueue.main.async {
@@ -152,28 +143,20 @@ final class WindowChromeTrackingView: NSView {
     }
 }
 
-struct WindowChromeButtonMetrics {
-    let baseY: CGFloat
-    let widths: [CGFloat]
-}
-
 enum WindowChromeController {
     static func applyControls(
-        to window: NSWindow,
+        buttons: [NSButton],
         style: WindowChromeControlsStyle,
-        metrics: WindowChromeButtonMetrics,
+        titlebarHeight: CGFloat,
         animated: Bool
     ) {
-        let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-        let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
-
-        guard buttons.count == buttonTypes.count else { return }
-
+        guard buttons.count == 3 else { return }
         var nextX = style.leadingInset
-        let baseY = metrics.baseY + style.verticalOffset
+        let buttonHeight = buttons[0].frame.height
+        let baseY = max(0, (titlebarHeight - buttonHeight) / 2) + style.verticalOffset
         let hiddenOffset: CGFloat = 10
 
-        for (index, button) in buttons.enumerated() {
+        for button in buttons {
             let visibleOrigin = CGPoint(
                 x: round(nextX),
                 y: round(baseY)
@@ -189,7 +172,7 @@ enum WindowChromeController {
                 hide(button: button, at: hiddenOrigin, animated: animated)
             }
 
-            nextX += metrics.widths[index] + style.interButtonSpacing
+            nextX += button.frame.width + style.interButtonSpacing
         }
     }
 

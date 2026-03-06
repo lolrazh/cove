@@ -11,7 +11,6 @@ struct TopBrowserShellView<Content: View>: View {
     let content: Content
 
     @ObservedObject private var settings = BrowserSettingsStore.shared
-    @State private var titlebarHeight: CGFloat = 0
     @State private var isHoveringTopChrome = false
     @State private var topTabsHideTask: Task<Void, Never>?
 
@@ -27,14 +26,6 @@ struct TopBrowserShellView<Content: View>: View {
 
     var body: some View {
         shellLayout
-            .padding(.top, -titlebarHeight)
-            .background {
-                WindowChromeAccessor(
-                    controlsStyle: windowChromeControlsStyle,
-                    titlebarHeight: $titlebarHeight
-                )
-                .allowsHitTesting(false)
-            }
             .overlay(alignment: .top) {
                 if showsTopRevealArea {
                     topTabsRevealArea
@@ -103,15 +94,6 @@ struct TopBrowserShellView<Content: View>: View {
 
     private var showsTopRevealArea: Bool {
         shellMode == .immersive
-    }
-
-    private var windowChromeControlsStyle: WindowChromeControlsStyle {
-        WindowChromeControlsStyle(
-            leadingInset: ChromeMetrics.shellControlsLeadingInset,
-            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
-            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: showsTopStrip
-        )
     }
 
     private var topTabsRevealArea: some View {
