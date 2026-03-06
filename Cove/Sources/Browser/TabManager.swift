@@ -76,17 +76,21 @@ final class TabManager: ObservableObject {
 
         if let index = tabs.firstIndex(where: { $0.id == id }) {
             let wasActive = (id == activeTabID)
-            if wasActive {
-                let replacementID: UUID
+            let replacementID: UUID? = if wasActive {
                 if index < tabs.count - 1 {
-                    replacementID = tabs[index + 1].id
+                    tabs[index + 1].id
                 } else {
-                    replacementID = tabs[index - 1].id
+                    tabs[index - 1].id
                 }
-                activeTabID = replacementID
+            } else {
+                nil
             }
 
             tabs.remove(at: index)
+
+            if let replacementID {
+                activeTabID = replacementID
+            }
         }
     }
 

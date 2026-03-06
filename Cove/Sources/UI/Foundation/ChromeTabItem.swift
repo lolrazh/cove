@@ -37,7 +37,6 @@ struct ChromeTabItem: View {
         .padding(.vertical, presentation == .horizontal ? 7 : 8)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil, alignment: .leading)
         .chromeInteractiveSurface(isSelected: isActive, cornerRadius: ChromeMetrics.tabCornerRadius, showsBorder: isActive)
-        .animation(ChromeMotion.hover, value: isActive)
         .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)
     }

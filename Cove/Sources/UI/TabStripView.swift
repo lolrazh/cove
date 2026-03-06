@@ -15,16 +15,19 @@ struct TabStripView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(tabManager.tabs) { tab in
-                    ChromeTabItem(
-                        tab: tab,
-                        presentation: .horizontal,
-                        isActive: tab.id == tabManager.activeTabID,
-                        onSelect: { tabManager.selectTab(tab.id) },
-                        onClose: { tabManager.closeTab(tab.id) },
-                        canClose: tabManager.tabs.count > 1
-                    )
+                HStack(spacing: 4) {
+                    ForEach(tabManager.tabs) { tab in
+                        ChromeTabItem(
+                            tab: tab,
+                            presentation: .horizontal,
+                            isActive: tab.id == tabManager.activeTabID,
+                            onSelect: { tabManager.selectTab(tab.id) },
+                            onClose: { tabManager.closeTab(tab.id) },
+                            canClose: tabManager.tabs.count > 1
+                        )
+                    }
                 }
+                .animation(tabReorderAnimation, value: tabOrder)
 
                 Button(action: { tabManager.addTab() }) {
                     Image(systemName: ChromeSymbols.Tabs.add)
@@ -36,7 +39,6 @@ struct TabStripView: View {
             }
             .padding(.horizontal, 2)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(tabReorderAnimation, value: tabOrder)
         }
         .frame(height: ChromeMetrics.tabStripHeight)
     }
