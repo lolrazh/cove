@@ -38,18 +38,9 @@ struct SidebarTabView: View {
     private var sidebarContent: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Tabs")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
                 Spacer()
 
-                Button(action: { tabManager.addTab() }) {
-                    Image(systemName: ChromeSymbols.Tabs.add)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(ChromeButtonStyle(kind: .toolbar))
+                DownloadsStatusButton()
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
@@ -66,6 +57,10 @@ struct SidebarTabView: View {
                             onClose: { tabManager.closeTab(tab.id) },
                             canClose: tabManager.tabs.count > 1
                         )
+                    }
+
+                    SidebarNewTabItem {
+                        tabManager.addTab()
                     }
                 }
                 .padding(.horizontal, 10)
@@ -133,5 +128,31 @@ struct SidebarTabView: View {
         withAnimation(ChromeMotion.shell) {
             tabManager.isSidebarVisible = true
         }
+    }
+}
+
+private struct SidebarNewTabItem: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: ChromeSymbols.Tabs.add)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 14, height: 14)
+
+            Text("New Tab")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .chromeInteractiveSurface(cornerRadius: ChromeMetrics.tabCornerRadius, showsBorder: isHovered)
+        .onHover { isHovered = $0 }
+        .onTapGesture(perform: action)
     }
 }

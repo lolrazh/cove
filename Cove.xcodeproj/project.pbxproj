@@ -35,6 +35,7 @@
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
 		D992157DF99D6BA4DD04FBB0 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAC9B2AA42F20914791E7C2 /* Tab.swift */; };
 		E15406F2815B902D35964435 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */; };
+		EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */; };
 		F2EBBDA1FA1B344B886766C1 /* ChromeButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */; };
 		F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */; };
 /* End PBXBuildFile section */
@@ -51,6 +52,7 @@
 		47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSettingKeys.swift; sourceTree = "<group>"; };
 		4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeFieldStyle.swift; sourceTree = "<group>"; };
+		5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsStatusButton.swift; sourceTree = "<group>"; };
 		6949A5A721596A8C82526E29 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		752524CBC59FC53BFE4BFB71 /* ChromeSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeSymbols.swift; sourceTree = "<group>"; };
 		76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeButtonStyle.swift; sourceTree = "<group>"; };
@@ -79,6 +81,7 @@
 			children = (
 				A24428BD2191574360191520 /* BrowserView.swift */,
 				B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */,
+				5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */,
 				3C182C3B5A43907E9CB570F4 /* FaviconView.swift */,
 				77B0EAF91613F28C5F78E5FE /* HistoryView.swift */,
 				AAAD4F48AAADD750585F40AB /* NavigationBar.swift */,
@@ -260,6 +263,7 @@
 				082942FAB006646A2CDB8DA5 /* Database.swift in Sources */,
 				E15406F2815B902D35964435 /* DownloadManager.swift in Sources */,
 				B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */,
+				EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */,
 				F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */,
 				5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */,
 				13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */,
