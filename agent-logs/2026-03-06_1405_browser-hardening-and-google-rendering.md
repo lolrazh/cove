@@ -1,11 +1,11 @@
-# Vayu Browser — Browser Hardening & Google Rendering Session
+# Cove Browser — Browser Hardening & Google Rendering Session
 
 **Date:** 2026-03-06
 **Agent:** Codex GPT-5
 **Status:** ✅ Completed
 
 ## User Intention
-User wanted a serious hardening pass on Vayu rather than surface polish: review the codebase for real bugs, fix the important runtime issues, make favicon behavior fast and deterministic, eliminate tab-switch/tab-close flicker so the browser feels native and responsive, and investigate why Google was rendering an obviously outdated/basic homepage compared with modern browsers like Dia.
+User wanted a serious hardening pass on Cove rather than surface polish: review the codebase for real bugs, fix the important runtime issues, make favicon behavior fast and deterministic, eliminate tab-switch/tab-close flicker so the browser feels native and responsive, and investigate why Google was rendering an obviously outdated/basic homepage compared with modern browsers like Dia.
 
 ## What We Accomplished
 - ✅ **Validated the earlier review findings against the real tree** — confirmed which issues were already fixed versus still active
@@ -16,7 +16,7 @@ User wanted a serious hardening pass on Vayu rather than surface polish: review 
 - ✅ **Stabilized top chrome during tab changes** — moved the loading progress indicator into an overlay so the navigation bar no longer changes layout height when tabs differ in loading state
 - ✅ **Fixed navigation-bar state initialization** — seeded the address field from each tab’s current URL so hidden tabs do not reveal blank or stale address state when activated
 - ✅ **Investigated Google’s legacy/basic homepage rendering with live `WKWebView` probes** — compared runtime UA/body output against the expected modern homepage structure
-- ✅ **Added a Safari-style browser UA for Vayu** — derived from the installed Safari version and applied to every `WKWebView`
+- ✅ **Added a Safari-style browser UA for Cove** — derived from the installed Safari version and applied to every `WKWebView`
 - ✅ **Hardened UA application on every load/reload** — reasserted the browser UA before top-level navigations so Google compatibility does not depend only on initial view creation
 - ✅ **Verified the patched `WKWebView` gets the modern Google homepage** — fresh runtime checks returned modern markers (`About`, `Store`, `AI Mode`, `How Search works`) instead of the old/basic homepage markers (`Advanced search`, classic footer layout)
 
@@ -45,20 +45,20 @@ User wanted a serious hardening pass on Vayu rather than surface polish: review 
 
 ### Google Rendering Investigation
 - Confirmed the “old Google” screen was not just styling drift; it was Google’s classic/basic homepage variant
-- Measured the actual runtime `navigator.userAgent` coming from Vayu before the fix and verified it looked like an embedded `WKWebView`, not full Safari
+- Measured the actual runtime `navigator.userAgent` coming from Cove before the fix and verified it looked like an embedded `WKWebView`, not full Safari
 - Added a Safari-style desktop UA using the installed Safari bundle version and applied it to `WKWebView`
 - Re-ran live `WKWebView` checks after the fix and confirmed the page body now matches the modern homepage structure
 - Reapplied the UA before `loadURL(...)` and `reload()` so the browser identity is stable on future navigations
 
 **Files Modified/Relevant:**
-- `Vayu/Sources/Browser/WebViewModel.swift` — favicon request identity/cancellation, Safari-style user agent, load/reload UA reapplication
-- `Vayu/Sources/Browser/TabManager.swift` — removed broad animation on add/close/select and stabilized active-tab replacement during close
-- `Vayu/Sources/UI/BrowserView.swift` — stable stacked active-tab content, animation suppression for content swaps, navigation progress overlay
-- `Vayu/Sources/UI/NavigationBar.swift` — seeded address field state from current URL
-- `Vayu/Sources/UI/TabStripView.swift` — tab-list reorder animation only, removed insertion/removal transitions
-- `Vayu/Sources/UI/SidebarTabView.swift` — sidebar tab-list reorder animation only, removed insertion/removal transitions
-- `Vayu/Sources/Browser/Tab.swift` — verified nested `WebViewModel` updates are forwarded through `Tab`
-- `Vayu/Sources/Browser/HistoryStore.swift` — verified sanitized FTS5 search fix is present
+- `Cove/Sources/Browser/WebViewModel.swift` — favicon request identity/cancellation, Safari-style user agent, load/reload UA reapplication
+- `Cove/Sources/Browser/TabManager.swift` — removed broad animation on add/close/select and stabilized active-tab replacement during close
+- `Cove/Sources/UI/BrowserView.swift` — stable stacked active-tab content, animation suppression for content swaps, navigation progress overlay
+- `Cove/Sources/UI/NavigationBar.swift` — seeded address field state from current URL
+- `Cove/Sources/UI/TabStripView.swift` — tab-list reorder animation only, removed insertion/removal transitions
+- `Cove/Sources/UI/SidebarTabView.swift` — sidebar tab-list reorder animation only, removed insertion/removal transitions
+- `Cove/Sources/Browser/Tab.swift` — verified nested `WebViewModel` updates are forwarded through `Tab`
+- `Cove/Sources/Browser/HistoryStore.swift` — verified sanitized FTS5 search fix is present
 
 ## Bugs & Issues Encountered
 1. **Favicons could race and overwrite later navigations**
@@ -74,7 +74,7 @@ User wanted a serious hardening pass on Vayu rather than surface polish: review 
    - **Fix:** overlay progress presentation and explicit address-field initialization from `viewModel.currentURL`
 
 4. **Google rendered the classic/basic homepage instead of the modern homepage**
-   - **Root cause:** Vayu initially identified itself like an embedded `WKWebView`, which pushed Google onto its old/basic compatibility path
+   - **Root cause:** Cove initially identified itself like an embedded `WKWebView`, which pushed Google onto its old/basic compatibility path
    - **Fix:** Safari-style desktop UA derived from installed Safari and re-applied at creation/load/reload time
 
 5. **Google still appeared old in a user screenshot even after the UA fix landed**
@@ -99,4 +99,4 @@ User wanted a serious hardening pass on Vayu rather than surface polish: review 
 - 🔧 **Open item:** there is still no regression test coverage for browser identity, history behavior, or favicon lifecycle
 
 ## Context for Future
-This session moved Vayu from “works as an MVP” toward “feels like a browser.” The meaningful changes were not cosmetic: favicon work is tied to real navigation state, tab content stays alive instead of getting rebuilt, motion is constrained to chrome rearrangement, the navigation bar no longer jumps around, and Google compatibility was investigated with live runtime evidence instead of guesswork. If a future session continues the compatibility work, the next high-value step is to validate the actual launched app binary/process path and then add lightweight instrumentation or regression checks around browser identity (`navigator.userAgent` / page markers) so issues like the Google basic-page fallback are caught immediately.
+This session moved Cove from “works as an MVP” toward “feels like a browser.” The meaningful changes were not cosmetic: favicon work is tied to real navigation state, tab content stays alive instead of getting rebuilt, motion is constrained to chrome rearrangement, the navigation bar no longer jumps around, and Google compatibility was investigated with live runtime evidence instead of guesswork. If a future session continues the compatibility work, the next high-value step is to validate the actual launched app binary/process path and then add lightweight instrumentation or regression checks around browser identity (`navigator.userAgent` / page markers) so issues like the Google basic-page fallback are caught immediately.

@@ -1,10 +1,10 @@
-# Vayu — The Browser That Breathes
+# Cove — The Browser That Breathes
 
 *Sanskrit: वायु — God of Wind. Swift, invisible, essential.*
 
 ---
 
-## Why Vayu Exists
+## Why Cove Exists
 
 Every browser today is broken in some way:
 
@@ -16,7 +16,7 @@ Every browser today is broken in some way:
 - **Comet / Atlas** — Tried and hated.
 - **Helium** — Chromium = too heavy. Not even worth trying.
 
-Vayu is the browser that should exist: **Dia's skin, Safari's soul, zero bullshit.**
+Cove is the browser that should exist: **Dia's skin, Safari's soul, zero bullshit.**
 
 ---
 
@@ -123,14 +123,14 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 ## Architecture
 
 ```
-Vayu/
+Cove/
 ├── project.yml                    # xcodegen spec → generates .xcodeproj
 ├── PRODUCT.md                     # this file
-├── Vayu.xcodeproj/                # generated, don't edit by hand
-├── Vayu/
+├── Cove.xcodeproj/                # generated, don't edit by hand
+├── Cove/
 │   ├── Sources/
 │   │   ├── App/
-│   │   │   ├── VayuApp.swift              # @main, WindowGroup, hiddenTitleBar
+│   │   │   ├── CoveApp.swift              # @main, WindowGroup, hiddenTitleBar
 │   │   │   └── AppDelegate.swift          # NSWindow config, anti-Liquid Glass
 │   │   ├── Browser/
 │   │   │   ├── WebViewModel.swift         # ObservableObject wrapping WKWebView
@@ -143,7 +143,7 @@ Vayu/
 │   │       └── TabStripView.swift         # Horizontal tab strip
 │   └── Resources/
 │       ├── Info.plist                     # UIDesignRequiresCompatibility = YES
-│       └── Vayu.entitlements              # Sandbox + network
+│       └── Cove.entitlements              # Sandbox + network
 ```
 
 ### Key Classes
@@ -168,7 +168,7 @@ In rough priority order:
 - **Keyboard shortcuts** — Cmd+T (new tab), Cmd+W (close tab), Cmd+L (focus URL bar), Cmd+[ / Cmd+] (back/forward), etc.
 
 ### Phase 3 — WebExtensions
-The big lift. A compatibility layer that lets Chrome/Firefox extensions run in Vayu.
+The big lift. A compatibility layer that lets Chrome/Firefox extensions run in Cove.
 
 - **Extension runtime** — JavaScriptCore for background scripts, WKUserScript for content scripts, WKWebView popover for popup UIs.
 - **Tier 1 APIs** (covers ~80% of extensions): `tabs`, `runtime`, `storage`, `webRequest`, `scripting`, `action`, `contextMenus`, `permissions`, `cookies`, `i18n`.
@@ -195,7 +195,7 @@ The big lift. A compatibility layer that lets Chrome/Firefox extensions run in V
 
 ---
 
-## What Vayu Is NOT
+## What Cove Is NOT
 
 - Not a Chromium wrapper (no Electron, no CEF, no WebView2 on macOS)
 - Not an "AI browser" — no copilot, no summaries, no suggestions, no LLM anything

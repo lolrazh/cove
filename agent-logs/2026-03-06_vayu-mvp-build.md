@@ -1,4 +1,4 @@
-# Vayu Browser — MVP Build Session
+# Cove Browser — MVP Build Session
 
 **Date:** 2026-03-06
 **Agent:** Claude Opus 4.6
@@ -18,14 +18,14 @@ User wants to build a native macOS browser from scratch because every existing b
 - ✅ **Smooth animations** — Tab open/close scale+fade, hover transitions, layout crossfade, progress bar opacity
 - ✅ **Favicon support** — High-res fetching (apple-touch-icon preferred), 32x32pt Retina rendering, globe placeholder
 - ✅ **New tab page** — Clean centered search bar with auto-focus, recent sites grid (deduplicated by domain from history)
-- ✅ **Private GitHub repo** — All work pushed to github.com/lolrazh/vayu with descriptive commits at each step
+- ✅ **Private GitHub repo** — All work pushed to github.com/lolrazh/cove with descriptive commits at each step
 - ✅ **Detailed PRODUCT.md** — Full product doc capturing vision, design decisions, technical spec, architecture, and roadmap
 
 ## Technical Implementation
 
 ### Architecture
 ```
-VayuApp (@main) → WindowGroup → BrowserView
+CoveApp (@main) → WindowGroup → BrowserView
   ├── TabStripView (horizontal) OR SidebarTabView (vertical)
   └── ActiveTabView (@ObservedObject Tab)
        ├── NavigationBar (URL bar + nav buttons + history popover)
@@ -42,23 +42,23 @@ VayuApp (@main) → WindowGroup → BrowserView
 
 **Files Created/Modified:**
 - `project.yml` — xcodegen project definition
-- `Vayu/Sources/App/VayuApp.swift` — @main entry, hiddenTitleBar window style
-- `Vayu/Sources/App/AppDelegate.swift` — NSWindow config, anti-Liquid Glass
-- `Vayu/Sources/Browser/WebViewModel.swift` — WKWebView wrapper with KVO, favicon fetching, navigation delegate
-- `Vayu/Sources/Browser/WebViewRepresentable.swift` — NSViewRepresentable for WKWebView
-- `Vayu/Sources/Browser/Tab.swift` — Tab model (ID + WebViewModel + isNewTabPage)
-- `Vayu/Sources/Browser/TabManager.swift` — Tab lifecycle, layout toggle
-- `Vayu/Sources/Browser/Database.swift` — SQLite C API wrapper
-- `Vayu/Sources/Browser/HistoryStore.swift` — History with FTS5
-- `Vayu/Sources/UI/BrowserView.swift` — Main composition view
-- `Vayu/Sources/UI/NavigationBar.swift` — URL bar + nav buttons + history
-- `Vayu/Sources/UI/TabStripView.swift` — Horizontal tab strip
-- `Vayu/Sources/UI/SidebarTabView.swift` — Vertical sidebar tabs
-- `Vayu/Sources/UI/HistoryView.swift` — History search popover
-- `Vayu/Sources/UI/NewTabPage.swift` — New tab page with search + recents
-- `Vayu/Sources/UI/FaviconView.swift` — Favicon display component
-- `Vayu/Resources/Info.plist` — UIDesignRequiresCompatibility = YES
-- `Vayu/Resources/Vayu.entitlements` — Sandbox + network client
+- `Cove/Sources/App/CoveApp.swift` — @main entry, hiddenTitleBar window style
+- `Cove/Sources/App/AppDelegate.swift` — NSWindow config, anti-Liquid Glass
+- `Cove/Sources/Browser/WebViewModel.swift` — WKWebView wrapper with KVO, favicon fetching, navigation delegate
+- `Cove/Sources/Browser/WebViewRepresentable.swift` — NSViewRepresentable for WKWebView
+- `Cove/Sources/Browser/Tab.swift` — Tab model (ID + WebViewModel + isNewTabPage)
+- `Cove/Sources/Browser/TabManager.swift` — Tab lifecycle, layout toggle
+- `Cove/Sources/Browser/Database.swift` — SQLite C API wrapper
+- `Cove/Sources/Browser/HistoryStore.swift` — History with FTS5
+- `Cove/Sources/UI/BrowserView.swift` — Main composition view
+- `Cove/Sources/UI/NavigationBar.swift` — URL bar + nav buttons + history
+- `Cove/Sources/UI/TabStripView.swift` — Horizontal tab strip
+- `Cove/Sources/UI/SidebarTabView.swift` — Vertical sidebar tabs
+- `Cove/Sources/UI/HistoryView.swift` — History search popover
+- `Cove/Sources/UI/NewTabPage.swift` — New tab page with search + recents
+- `Cove/Sources/UI/FaviconView.swift` — Favicon display component
+- `Cove/Resources/Info.plist` — UIDesignRequiresCompatibility = YES
+- `Cove/Resources/Cove.entitlements` — Sandbox + network client
 - `PRODUCT.md` — Full product doc
 
 ## Bugs & Issues Encountered
@@ -99,4 +99,4 @@ VayuApp (@main) → WindowGroup → BrowserView
 - 🔧 **Keyboard shortcuts** — No shortcuts yet (Cmd+T, Cmd+W, Cmd+L, etc.)
 
 ## Context for Future
-This session built the complete MVP of Vayu — a native macOS browser on WKWebView. The foundation is solid: clean architecture, zero deps, working tabs/navigation/history. The next phase per PRODUCT.md is either UI polish (auto-hide URL bar, keyboard shortcuts) or starting Phase 2 features (content blocking via WKContentRuleList, bookmarks, downloads). The long-term vision includes a WebExtensions compatibility layer for Chrome extension support — that's the "big lift" described in PRODUCT.md.
+This session built the complete MVP of Cove — a native macOS browser on WKWebView. The foundation is solid: clean architecture, zero deps, working tabs/navigation/history. The next phase per PRODUCT.md is either UI polish (auto-hide URL bar, keyboard shortcuts) or starting Phase 2 features (content blocking via WKContentRuleList, bookmarks, downloads). The long-term vision includes a WebExtensions compatibility layer for Chrome extension support — that's the "big lift" described in PRODUCT.md.

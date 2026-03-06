@@ -1,11 +1,11 @@
-# Vayu Browser — Review & Favicon Fixes Session
+# Cove Browser — Review & Favicon Fixes Session
 
 **Date:** 2026-03-06
 **Agent:** Codex GPT-5
 **Status:** ✅ Completed
 
 ## User Intention
-User wanted a real codebase review of Vayu, focused on concrete bugs and regressions rather than a vague overview, then wanted the important issues fixed. The follow-up priority became favicon behavior: understand why favicon loading felt slower than other browsers, make the implementation fast and deterministic, remove fallback chains, fix the async race where stale favicon work could overwrite the current page, and confirm which review findings were already resolved versus still open.
+User wanted a real codebase review of Cove, focused on concrete bugs and regressions rather than a vague overview, then wanted the important issues fixed. The follow-up priority became favicon behavior: understand why favicon loading felt slower than other browsers, make the implementation fast and deterministic, remove fallback chains, fix the async race where stale favicon work could overwrite the current page, and confirm which review findings were already resolved versus still open.
 
 ## What We Accomplished
 - ✅ **Reviewed the current app as a runtime/code-review pass** — inspected the SwiftUI + WKWebView architecture, verified the project builds, and identified concrete state-flow, history, and favicon defects
@@ -17,7 +17,7 @@ User wanted a real codebase review of Vayu, focused on concrete bugs and regress
 - ✅ **Added request-scoped favicon task management** — each favicon request now has explicit cancellation and request identity so stale completions cannot win
 - ✅ **Ensured favicon state is cleared on site change** — navigating to a different site now clears the old icon immediately instead of leaking the previous site’s image
 - ✅ **Confirmed other major review fixes were already present in the tree** — Tab forwarding, active-tab `.id`, direct history capture from `WKWebView`, and sanitized history search were all applied
-- ✅ **Rebuilt after every meaningful browser-layer change** — final `xcodebuild -project Vayu.xcodeproj -scheme Vayu -configuration Debug -sdk macosx build` succeeded
+- ✅ **Rebuilt after every meaningful browser-layer change** — final `xcodebuild -project Cove.xcodeproj -scheme Cove -configuration Debug -sdk macosx build` succeeded
 
 ## Technical Implementation
 
@@ -35,11 +35,11 @@ User wanted a real codebase review of Vayu, focused on concrete bugs and regress
 - **Reset semantics:** navigating to a new site cancels the current favicon task, clears old state, and either loads cached data instantly or starts one fresh request
 
 **Files Modified/Relevant:**
-- `Vayu/Sources/Browser/WebViewModel.swift` — rewrote favicon lifecycle, request cancellation, request identity, and navigation-start triggering
-- `Vayu/Sources/Browser/Tab.swift` — forwards `WebViewModel.objectWillChange` so tab chrome actually re-renders
-- `Vayu/Sources/UI/BrowserView.swift` — `.id(tab.id)` isolates per-tab SwiftUI state
-- `Vayu/Sources/Browser/HistoryStore.swift` — sanitized FTS5 input to avoid syntax-error empty results
-- `Vayu/Sources/Browser/FaviconStore.swift` — existing persistent favicon cache reused by the new pipeline
+- `Cove/Sources/Browser/WebViewModel.swift` — rewrote favicon lifecycle, request cancellation, request identity, and navigation-start triggering
+- `Cove/Sources/Browser/Tab.swift` — forwards `WebViewModel.objectWillChange` so tab chrome actually re-renders
+- `Cove/Sources/UI/BrowserView.swift` — `.id(tab.id)` isolates per-tab SwiftUI state
+- `Cove/Sources/Browser/HistoryStore.swift` — sanitized FTS5 input to avoid syntax-error empty results
+- `Cove/Sources/Browser/FaviconStore.swift` — existing persistent favicon cache reused by the new pipeline
 
 ## Bugs & Issues Encountered
 1. **Tab chrome was not reacting to nested `WebViewModel` updates**
@@ -83,4 +83,4 @@ User wanted a real codebase review of Vayu, focused on concrete bugs and regress
 - 🔧 **Still open:** there is still no test target covering history, tab state, or favicon behavior
 
 ## Context for Future
-This session was not greenfield product work; it was a hardening pass after the MVP build. The user wanted continuity across sessions, so the key takeaway is that Vayu now has a much cleaner runtime story than the initial MVP: tab chrome updates propagate, active-tab UI state is isolated, history persistence is less racy, FTS history search is safer, and favicon loading is deterministic and fast-starting. The remaining browser-layer issue called out explicitly is local-dev URL detection (`localhost`, `127.0.0.1`, etc.). If the next session continues in this area, the highest-value follow-up is to fix URL classification and then add lightweight regression coverage around tab state, history search, and favicon lifecycle.
+This session was not greenfield product work; it was a hardening pass after the MVP build. The user wanted continuity across sessions, so the key takeaway is that Cove now has a much cleaner runtime story than the initial MVP: tab chrome updates propagate, active-tab UI state is isolated, history persistence is less racy, FTS history search is safer, and favicon loading is deterministic and fast-starting. The remaining browser-layer issue called out explicitly is local-dev URL detection (`localhost`, `127.0.0.1`, etc.). If the next session continues in this area, the highest-value follow-up is to fix URL classification and then add lightweight regression coverage around tab state, history search, and favicon lifecycle.

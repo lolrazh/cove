@@ -5,7 +5,7 @@
 **Status:** ✅ Completed
 
 ## User Intention
-User wanted to continue building on Vayu's feature set — polish the download progress indicator (replace circle with horizontal bar), then implement content blocking so ads are blocked by default. User wants content blocking always-on for now, with a settings toggle deferred to a future Settings feature.
+User wanted to continue building on Cove's feature set — polish the download progress indicator (replace circle with horizontal bar), then implement content blocking so ads are blocked by default. User wants content blocking always-on for now, with a settings toggle deferred to a future Settings feature.
 
 ## What We Accomplished
 - ✅ **Download progress bar redesign** — replaced circle progress ring around download icon with a horizontal bar underneath it (capsule shape, fills left-to-right)
@@ -30,12 +30,12 @@ User wanted to continue building on Vayu's feature set — polish the download p
 - `AppDelegate.applicationDidFinishLaunching` triggers `Task { await ContentBlockerManager.shared.load() }`
 
 **Files Modified/Created:**
-- `Vayu/Sources/UI/NavigationBar.swift` — download button: circle → horizontal bar
-- `Vayu/Sources/Browser/DownloadManager.swift` — Combine import, itemCancellables for objectWillChange forwarding
-- `Vayu/Sources/Browser/ContentBlockerManager.swift` — new, compile/cache/attach content rules
-- `Vayu/Sources/Browser/WebViewModel.swift` — attach content blocker to WKWebViewConfiguration
-- `Vayu/Sources/App/AppDelegate.swift` — trigger content blocker load at launch
-- `Vayu/Resources/easylist.json` — new, bundled EasyList filter rules
+- `Cove/Sources/UI/NavigationBar.swift` — download button: circle → horizontal bar
+- `Cove/Sources/Browser/DownloadManager.swift` — Combine import, itemCancellables for objectWillChange forwarding
+- `Cove/Sources/Browser/ContentBlockerManager.swift` — new, compile/cache/attach content rules
+- `Cove/Sources/Browser/WebViewModel.swift` — attach content blocker to WKWebViewConfiguration
+- `Cove/Sources/App/AppDelegate.swift` — trigger content blocker load at launch
+- `Cove/Resources/easylist.json` — new, bundled EasyList filter rules
 - `project.yml` — added easylist.json as source with buildPhase: resources
 
 ## Bugs & Issues Encountered
@@ -51,7 +51,7 @@ User wanted to continue building on Vayu's feature set — polish the download p
    - **Root cause:** `load()` is async — the first WebView is created before rules finish compiling, so `attach(to:)` finds `ruleList` nil and does nothing
    - **Fix:** Pending controller queue — controllers registered before compilation are stored and flushed once rules are ready
 
-4. **Keychain modal on launch ("Vayu WebCrypto Master Key")**
+4. **Keychain modal on launch ("Cove WebCrypto Master Key")**
    - **Root cause:** WKWebView's WebCrypto API needs keychain access; ad-hoc signing ("Sign to Run Locally") doesn't have implicit keychain entitlements like Xcode's debugger does
    - **Fix:** One-time "Always Allow" click. Won't occur in production builds with proper code signing.
 
@@ -76,4 +76,4 @@ User wanted to continue building on Vayu's feature set — polish the download p
 - 🔧 **Settings pane** — search engine, content blocking toggle, downloads location
 
 ## Context for Future
-Content blocking completes the core browsing experience — Vayu now has tabs, navigation, history, favicons, downloads, and ad blocking. The next highest-impact feature is keyboard shortcuts (essential browser UX), followed by bookmarks and settings. The ContentBlockerManager is designed for easy extension: add more filter lists, per-site allowlisting, or a settings toggle by calling the existing attach/detach methods.
+Content blocking completes the core browsing experience — Cove now has tabs, navigation, history, favicons, downloads, and ad blocking. The next highest-impact feature is keyboard shortcuts (essential browser UX), followed by bookmarks and settings. The ContentBlockerManager is designed for easy extension: add more filter lists, per-site allowlisting, or a settings toggle by calling the existing attach/detach methods.

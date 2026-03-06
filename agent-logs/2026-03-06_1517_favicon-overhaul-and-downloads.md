@@ -5,7 +5,7 @@
 **Status:** ✅ Completed
 
 ## User Intention
-User wanted to improve Vayu's favicon quality and performance to match Chromium browsers like Dia and Helium (clean logomarks instead of ugly apple-touch-icon squares, instant loading via caching and parallel fetching), then build a full downloads feature with Safari-style UX — download button in the nav bar with progress ring, popover with file details, and proper state handling for active/completed/cancelled/failed downloads.
+User wanted to improve Cove's favicon quality and performance to match Chromium browsers like Dia and Helium (clean logomarks instead of ugly apple-touch-icon squares, instant loading via caching and parallel fetching), then build a full downloads feature with Safari-style UX — download button in the nav bar with progress ring, popover with file details, and proper state handling for active/completed/cancelled/failed downloads.
 
 ## What We Accomplished
 - ✅ **BLOB support in SQLite Database wrapper** — enables storing binary favicon image data
@@ -48,17 +48,17 @@ User wanted to improve Vayu's favicon quality and performance to match Chromium 
 5. **Favicon generation counter** (later replaced by siteKey + requestID by user)
 
 **Files Modified/Created:**
-- `Vayu/Sources/Browser/Database.swift` — BLOB bind/read support
-- `Vayu/Sources/Browser/FaviconStore.swift` — new, SQLite disk cache + memory cache
-- `Vayu/Sources/Browser/WebViewModel.swift` — favicon rewrite, parallel fetching, download delegate hooks, localhost URL detection
-- `Vayu/Sources/Browser/Tab.swift` — objectWillChange forwarding via Combine
-- `Vayu/Sources/Browser/HistoryStore.swift` — FTS5 sanitization
-- `Vayu/Sources/Browser/DownloadManager.swift` — new, WKDownload lifecycle
-- `Vayu/Sources/UI/BrowserView.swift` — .id(tab.id) fix
-- `Vayu/Sources/UI/FaviconView.swift` — corner rounding
-- `Vayu/Sources/UI/NavigationBar.swift` — download button with progress ring
-- `Vayu/Sources/UI/DownloadPopover.swift` — new, download list popover
-- `Vayu/Resources/Vayu.entitlements` — files.downloads.read-write
+- `Cove/Sources/Browser/Database.swift` — BLOB bind/read support
+- `Cove/Sources/Browser/FaviconStore.swift` — new, SQLite disk cache + memory cache
+- `Cove/Sources/Browser/WebViewModel.swift` — favicon rewrite, parallel fetching, download delegate hooks, localhost URL detection
+- `Cove/Sources/Browser/Tab.swift` — objectWillChange forwarding via Combine
+- `Cove/Sources/Browser/HistoryStore.swift` — FTS5 sanitization
+- `Cove/Sources/Browser/DownloadManager.swift` — new, WKDownload lifecycle
+- `Cove/Sources/UI/BrowserView.swift` — .id(tab.id) fix
+- `Cove/Sources/UI/FaviconView.swift` — corner rounding
+- `Cove/Sources/UI/NavigationBar.swift` — download button with progress ring
+- `Cove/Sources/UI/DownloadPopover.swift` — new, download list popover
+- `Cove/Resources/Cove.entitlements` — files.downloads.read-write
 
 ## Bugs & Issues Encountered
 1. **URL bar auto-hide on scroll failed (3 attempts)**
@@ -102,4 +102,4 @@ User wanted to improve Vayu's favicon quality and performance to match Chromium 
 - 🔧 **Phase 2 remaining** — bookmarks, settings, content blocking
 
 ## Context for Future
-This session moved Vayu from MVP into Phase 2 territory. The favicon system now matches Chromium browsers in quality and speed. Downloads are fully functional with Safari-style UX. The "parallel everything" philosophy is now a core project principle — documented in MEMORY.md. Next high-value features are bookmarks (SQLite-backed, similar architecture to history/favicons) and keyboard shortcuts (essential browser UX). Content blocking (WKContentRuleList) is the biggest remaining user-facing upgrade.
+This session moved Cove from MVP into Phase 2 territory. The favicon system now matches Chromium browsers in quality and speed. Downloads are fully functional with Safari-style UX. The "parallel everything" philosophy is now a core project principle — documented in MEMORY.md. Next high-value features are bookmarks (SQLite-backed, similar architecture to history/favicons) and keyboard shortcuts (essential browser UX). Content blocking (WKContentRuleList) is the biggest remaining user-facing upgrade.
