@@ -9,17 +9,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                VStack(spacing: ChromeMetrics.topChromeSpacing) {
-                    topChrome(for: activeTab)
-                    contentArea
-                }
-                .padding(ChromeMetrics.windowInset)
-                .chromeWindowSurface()
-                .overlay(alignment: .top) {
-                    if showsTopRevealArea {
-                        topTabsRevealArea
-                    }
-                }
+                chromeShell(for: activeTab)
             }
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
@@ -38,12 +28,58 @@ struct BrowserView: View {
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
 
-    private func topChrome(for activeTab: Tab) -> some View {
-        VStack(spacing: ChromeMetrics.topChromeSpacing) {
-            if tabManager.tabLayout == .horizontal && tabManager.areTabsVisible {
-                TabStripView(tabManager: tabManager)
-            }
+    @ViewBuilder
+    private func chromeShell(for activeTab: Tab) -> some View {
+        if tabManager.tabLayout == .horizontal {
+            horizontalShell(for: activeTab)
+        } else {
+            sidebarShell(for: activeTab)
+        }
+    }
 
+    private func horizontalShell(for activeTab: Tab) -> some View {
+        VStack(spacing: ChromeMetrics.shellStripBottomSpacing) {
+            horizontalShellStrip
+            horizontalMainPanel(for: activeTab)
+        }
+        .padding(ChromeMetrics.windowInset)
+        .chromeWindowSurface()
+        .overlay(alignment: .top) {
+            if showsTopRevealArea {
+                topTabsRevealArea
+            }
+        }
+    }
+
+    private func sidebarShell(for activeTab: Tab) -> some View {
+        VStack(spacing: ChromeMetrics.shellStripBottomSpacing) {
+            sidebarTopChrome(for: activeTab)
+            sidebarContentArea
+        }
+        .padding(ChromeMetrics.windowInset)
+        .chromeWindowSurface()
+    }
+
+    private var horizontalShellStrip: some View {
+        HStack(spacing: 0) {
+            Color.clear
+                .frame(width: ChromeMetrics.shellControlsReservedWidth)
+
+            if tabManager.areTabsVisible {
+                TabStripView(tabManager: tabManager)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            } else {
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: ChromeMetrics.shellStripHeight, maxHeight: ChromeMetrics.shellStripHeight)
+        .padding(.trailing, ChromeMetrics.shellStripTrailingPadding)
+        .contentShape(Rectangle())
+        .onHover(perform: handleTopChromeHover)
+    }
+
+    private func horizontalMainPanel(for activeTab: Tab) -> some View {
+        VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
             NavigationBar(
                 viewModel: activeTab.viewModel,
                 onNavigate: { _ in
@@ -51,26 +87,37 @@ struct BrowserView: View {
                 }
             )
             .id(activeTab.id)
-        }
-        .padding(ChromeMetrics.topChromePadding)
-        .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
-        .onHover { hovering in
-            handleTopChromeHover(hovering)
-        }
-        .overlay(alignment: .bottom) {
-            if activeTab.viewModel.isLoading {
-                ProgressView(value: activeTab.viewModel.estimatedProgress)
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-                    .labelsHidden()
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
-                    .allowsHitTesting(false)
+            .padding(ChromeMetrics.mainPanelInnerPadding)
+            .contentShape(Rectangle())
+            .onHover(perform: handleTopChromeHover)
+
+            Rectangle()
+                .fill(ChromePalette.chromeStroke)
+                .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
+
+            ZStack(alignment: .top) {
+                activeTabContent
+                contentLoadingIndicator(for: activeTab)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
-    private var contentArea: some View {
+    private func sidebarTopChrome(for activeTab: Tab) -> some View {
+        NavigationBar(
+            viewModel: activeTab.viewModel,
+            onNavigate: { _ in
+                activeTab.isNewTabPage = false
+            }
+        )
+        .id(activeTab.id)
+        .padding(ChromeMetrics.topChromePadding)
+        .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
+    }
+
+    private var sidebarContentArea: some View {
         ZStack(alignment: .leading) {
             activeTabContent
 
@@ -81,6 +128,19 @@ struct BrowserView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .chromePanelSurface(.window, cornerRadius: ChromeMetrics.windowCornerRadius)
+    }
+
+    @ViewBuilder
+    private func contentLoadingIndicator(for activeTab: Tab) -> some View {
+        if activeTab.viewModel.isLoading {
+            ProgressView(value: activeTab.viewModel.estimatedProgress)
+                .progressViewStyle(.linear)
+                .tint(.accentColor)
+                .labelsHidden()
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder

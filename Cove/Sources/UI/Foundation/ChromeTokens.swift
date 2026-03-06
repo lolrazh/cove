@@ -6,8 +6,8 @@ enum ChromeMetrics {
     static let windowInset: CGFloat = 4
     static let windowBorderWidth: CGFloat = 0.75
     static let surfaceBorderWidth: CGFloat = 1
-    static let topChromeSpacing: CGFloat = 0
-    static let topChromePadding: CGFloat = 0
+    static let topChromeSpacing: CGFloat = 6
+    static let topChromePadding: CGFloat = 8
     static var panelCornerRadius: CGFloat { nestedCornerRadius(inside: windowCornerRadius, inset: windowInset) }
     static var controlCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
     static var fieldCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 1.5) }
@@ -23,7 +23,7 @@ enum ChromeMetrics {
     static let mainPanelSectionSpacing: CGFloat = 0
     static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
-    static let tabStripHeight: CGFloat = 38
+    static let tabStripHeight: CGFloat = 32
     static let iconButtonSize = CGSize(width: 30, height: 30)
     static let sidebarWidth: CGFloat = 240
     static let sidebarRevealHandleWidth: CGFloat = 12
