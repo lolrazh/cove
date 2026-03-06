@@ -3,7 +3,7 @@ import AppKit
 
 enum ChromeMetrics {
     static let windowCornerRadius: CGFloat = 14
-    static let windowInset: CGFloat = 6
+    static let windowInset: CGFloat = 4
     static let windowBorderWidth: CGFloat = 0.75
     static let surfaceBorderWidth: CGFloat = 1
     static let topChromeSpacing: CGFloat = 6
@@ -20,7 +20,7 @@ enum ChromeMetrics {
     static let shellControlsReservedWidth: CGFloat = 92
     static let shellControlsVerticalOffset: CGFloat = 2
     static let mainPanelInnerPadding: CGFloat = 8
-    static let topMainPanelInset: CGFloat = windowInset
+    static let topMainPanelInset: CGFloat = 4
     static let topNavigationHorizontalPadding: CGFloat = 10
     static let topNavigationVerticalPadding: CGFloat = 6
     static let mainPanelSectionSpacing: CGFloat = 0

@@ -37,8 +37,6 @@ struct TopBrowserShellView<Content: View>: View {
         VStack(spacing: 0) {
             if showsTopStrip {
                 topStrip
-                    .padding(.top, ChromeMetrics.topMainPanelInset)
-                    .padding(.horizontal, ChromeMetrics.topMainPanelInset)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
