@@ -18,6 +18,7 @@
 		5907C2DE21FD13C632628804 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D4D058DE29FAF4A0720B6A0 /* Database.swift */; };
 		75BC2A592E01709E33FD93A4 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEF72D8F49C637395117C1C9 /* HistoryView.swift */; };
 		8626C2ABDFA576134D2AA16D /* FaviconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F9A431D677E8E3B574A064B /* FaviconView.swift */; };
+		86BA829621709A5A509EA7D3 /* ContentBlockerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E099C70035BA02759063D27 /* ContentBlockerManager.swift */; };
 		879ACDEE28F43705D27C7BF7 /* SidebarTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1FCD90678B959918330A5 /* SidebarTabView.swift */; };
 		97AC062B50EB14B95E9026F9 /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38124B0BAFC31DA29121D83 /* TabStripView.swift */; };
 		C2DEBF4AF425EA9FCC03DE93 /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9BF5C90C2C944BA72276F87 /* NavigationBar.swift */; };
@@ -37,6 +38,7 @@
 		4D4D058DE29FAF4A0720B6A0 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		513671406A086B5A71520DB1 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		63E1FCD90678B959918330A5 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
+		7E099C70035BA02759063D27 /* ContentBlockerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentBlockerManager.swift; sourceTree = "<group>"; };
 		7EDB7D08C77162092D1C04FC /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
 		9F9A431D677E8E3B574A064B /* FaviconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconView.swift; sourceTree = "<group>"; };
@@ -68,6 +70,7 @@
 		5FECCBA669DD830974B1527B /* Browser */ = {
 			isa = PBXGroup;
 			children = (
+				7E099C70035BA02759063D27 /* ContentBlockerManager.swift */,
 				4D4D058DE29FAF4A0720B6A0 /* Database.swift */,
 				513671406A086B5A71520DB1 /* DownloadManager.swift */,
 				28532C5BD138166D69E72729 /* FaviconStore.swift */,
@@ -173,6 +176,7 @@
 			files = (
 				FDC50CF50BE640EB307F4135 /* AppDelegate.swift in Sources */,
 				EFFA00B6526EA1E927518F19 /* BrowserView.swift in Sources */,
+				86BA829621709A5A509EA7D3 /* ContentBlockerManager.swift in Sources */,
 				5907C2DE21FD13C632628804 /* Database.swift in Sources */,
 				4CD29CC70DB7F7998EB81C13 /* DownloadManager.swift in Sources */,
 				2CA2621570C2A1A84E0497CC /* DownloadPopover.swift in Sources */,

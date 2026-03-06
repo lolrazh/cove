@@ -6,6 +6,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         for window in NSApplication.shared.windows {
             configureWindow(window)
         }
+
+        // Pre-compile content blocking rules
+        Task { await ContentBlockerManager.shared.load() }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {

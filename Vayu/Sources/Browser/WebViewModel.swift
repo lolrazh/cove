@@ -23,6 +23,7 @@ final class WebViewModel: NSObject, ObservableObject {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.preferences.isElementFullscreenEnabled = true
+        ContentBlockerManager.shared.attach(to: config.userContentController)
 
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
