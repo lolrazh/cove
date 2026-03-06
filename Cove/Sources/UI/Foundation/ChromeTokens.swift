@@ -3,15 +3,25 @@ import AppKit
 
 enum ChromeMetrics {
     static let windowCornerRadius: CGFloat = 14
-    static let windowInset: CGFloat = 6
+    static let windowInset: CGFloat = 4
     static let windowBorderWidth: CGFloat = 0.75
     static let surfaceBorderWidth: CGFloat = 1
-    static let topChromeSpacing: CGFloat = 6
-    static let topChromePadding: CGFloat = 8
+    static let topChromeSpacing: CGFloat = 0
+    static let topChromePadding: CGFloat = 0
     static var panelCornerRadius: CGFloat { nestedCornerRadius(inside: windowCornerRadius, inset: windowInset) }
     static var controlCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
     static var fieldCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 1.5) }
     static var tabCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
+    static let shellStripHeight: CGFloat = 34
+    static let shellStripTrailingPadding: CGFloat = 6
+    static let shellStripBottomSpacing: CGFloat = 4
+    static let shellControlsLeadingInset: CGFloat = 16
+    static let shellControlsInterButtonSpacing: CGFloat = 6
+    static let shellControlsReservedWidth: CGFloat = 86
+    static let shellControlsVerticalOffset: CGFloat = 0
+    static let mainPanelInnerPadding: CGFloat = 8
+    static let mainPanelSectionSpacing: CGFloat = 0
+    static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
     static let tabStripHeight: CGFloat = 38
     static let iconButtonSize = CGSize(width: 30, height: 30)

@@ -24,6 +24,16 @@ struct BrowserView: View {
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
+        .background {
+            WindowChromeAccessor(
+                controlsStyle: WindowChromeControlsStyle(
+                    leadingInset: ChromeMetrics.shellControlsLeadingInset,
+                    interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
+                    verticalOffset: ChromeMetrics.shellControlsVerticalOffset
+                )
+            )
+            .allowsHitTesting(false)
+        }
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
