@@ -9,14 +9,17 @@ final class Tab: Identifiable, ObservableObject {
 
     private var cancellables: Set<AnyCancellable> = []
 
-    init(url: String? = nil) {
+    init(url: String? = nil, showsStartPage: Bool = true) {
         self.id = UUID()
-        if let url {
+        if showsStartPage {
+            self.viewModel = WebViewModel(initialURL: nil)
+            self.isNewTabPage = true
+        } else if let url {
             self.viewModel = WebViewModel(initialURL: url)
             self.isNewTabPage = false
         } else {
             self.viewModel = WebViewModel(initialURL: nil)
-            self.isNewTabPage = true
+            self.isNewTabPage = false
         }
 
         // Forward viewModel changes so views observing Tab re-render

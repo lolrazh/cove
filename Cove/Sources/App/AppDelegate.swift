@@ -8,7 +8,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Pre-compile content blocking rules
-        Task { await ContentBlockerManager.shared.load() }
+        if BrowserSettingsStore.shared.contentBlockingEnabled {
+            Task { await ContentBlockerManager.shared.load() }
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -20,6 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureWindow(_ window: NSWindow) {
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        window.titlebarSeparatorStyle = .none
         window.isOpaque = true
         window.backgroundColor = .windowBackgroundColor
     }

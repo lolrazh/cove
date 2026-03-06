@@ -2,16 +2,11 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    @ObservedObject private var settings = BrowserSettingsStore.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var isHoveringSidebar = false
-
-    private let collapsedWidth: CGFloat = 0
-    private let expandedWidth: CGFloat = 200
-
-    private var sidebarWidth: CGFloat {
-        tabManager.isSidebarVisible ? expandedWidth : collapsedWidth
-    }
+    @State private var hideTask: Task<Void, Never>?
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
@@ -21,50 +16,51 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
-    var body: some View {
-        HStack(spacing: 0) {
-            if tabManager.isSidebarVisible {
-                sidebarContent
-                    .frame(width: expandedWidth)
-                    .transition(.move(edge: .leading))
-            }
+    private var showsOverlay: Bool {
+        !settings.autoHideSidebar || tabManager.isSidebarVisible
+    }
 
-            // Hover edge to reveal sidebar when collapsed
-            if !tabManager.isSidebarVisible {
-                Color.clear
-                    .frame(width: 6)
-                    .onHover { hovering in
-                        if hovering {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                tabManager.isSidebarVisible = true
-                            }
-                        }
-                    }
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if showsOverlay {
+                sidebarContent
+                    .padding(.leading, 10)
+                    .padding(.vertical, 10)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            } else if settings.autoHideSidebar {
+                revealHandle
+                    .padding(.leading, 4)
             }
         }
-        .onHover { isHoveringSidebar = $0 }
-        .onChange(of: isHoveringSidebar) { _, hovering in
-            if !hovering && tabManager.tabLayout == .sidebar {
-                // Auto-hide after a delay when mouse leaves
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    if !self.isHoveringSidebar {
-                        withAnimation(.easeIn(duration: 0.2)) {
-                            tabManager.isSidebarVisible = false
-                        }
-                    }
-                }
-            }
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
     private var sidebarContent: some View {
         VStack(spacing: 0) {
-            // Tab list
+            HStack {
+                Text("Tabs")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button(action: { tabManager.addTab() }) {
+                    Image(systemName: ChromeSymbols.Tabs.add)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(ChromeButtonStyle(kind: .toolbar))
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 2) {
+                VStack(spacing: 4) {
                     ForEach(tabManager.tabs) { tab in
-                        SidebarTabItem(
+                        ChromeTabItem(
                             tab: tab,
+                            presentation: .sidebar,
                             isActive: tab.id == tabManager.activeTabID,
                             onSelect: { tabManager.selectTab(tab.id) },
                             onClose: { tabManager.closeTab(tab.id) },
@@ -72,90 +68,104 @@ struct SidebarTabView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 10)
                 .animation(tabReorderAnimation, value: tabOrder)
             }
 
             Spacer()
 
-            // Bottom controls
             HStack {
-                Button(action: { tabManager.addTab() }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-
                 Spacer()
 
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(ChromeMotion.shell) {
                         tabManager.toggleLayout()
                     }
                 }) {
-                    Image(systemName: "rectangle.topthird.inset.filled")
-                        .font(.system(size: 12, weight: .medium))
+                    HStack(spacing: 6) {
+                        layoutToggleIcon
+                        Text("Top Tabs")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
+                .buttonStyle(ChromeButtonStyle(kind: .panelAction))
                 .help("Switch to horizontal tabs")
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, 12)
         }
-        .background(Color.primary.opacity(0.03))
-    }
-}
-
-struct SidebarTabItem: View {
-    @ObservedObject var tab: Tab
-    let isActive: Bool
-    let onSelect: () -> Void
-    let onClose: () -> Void
-    let canClose: Bool
-
-    @State private var isHovering = false
-
-    private var showClose: Bool {
-        canClose && (isHovering || isActive)
+        .frame(width: ChromeMetrics.sidebarWidth)
+        .chromePanelSurface(.sidebar, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
+        .onHover { hovering in
+            handleSidebarHover(hovering)
+        }
     }
 
-    var body: some View {
-        HStack(spacing: 8) {
-            FaviconView(image: tab.viewModel.favicon, size: 14)
+    private var revealHandle: some View {
+        VStack {
+            Spacer()
 
-            Text(tabTitle)
-                .font(.system(size: 12, weight: isActive ? .medium : .regular))
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Capsule()
+                .fill(ChromePalette.handleFill)
+                .frame(width: 4, height: 48)
+                .padding(.horizontal, 4)
 
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 16, height: 16)
-                    .contentShape(Rectangle())
+            Spacer()
+        }
+        .frame(width: ChromeMetrics.sidebarRevealHandleWidth)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            if hovering {
+                revealSidebar()
             }
-            .buttonStyle(.plain)
-            .opacity(showClose ? 1 : 0)
-            .allowsHitTesting(showClose)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isActive ? Color.primary.opacity(0.08) : (isHovering ? Color.primary.opacity(0.04) : Color.clear))
-        )
-        .animation(.easeOut(duration: 0.1), value: isActive)
-        .animation(.easeOut(duration: 0.08), value: isHovering)
-        .onHover { isHovering = $0 }
-        .onTapGesture(perform: onSelect)
     }
 
-    private var tabTitle: String {
-        let title = tab.viewModel.pageTitle
-        return title.isEmpty ? "New Tab" : title
+    private var layoutToggleIcon: some View {
+        let icon = Image(systemName: ChromeSymbols.Tabs.topLayout)
+            .font(.system(size: 12, weight: .medium))
+
+        return Group {
+            if reduceMotion {
+                icon
+            } else {
+                icon.symbolEffect(.bounce, value: tabManager.tabLayout)
+            }
+        }
+    }
+
+    private func handleSidebarHover(_ hovering: Bool) {
+        isHoveringSidebar = hovering
+        hideTask?.cancel()
+
+        guard settings.autoHideSidebar else {
+            tabManager.isSidebarVisible = true
+            return
+        }
+
+        if hovering {
+            tabManager.isSidebarVisible = true
+        } else {
+            hideTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(750))
+                guard !Task.isCancelled,
+                      !isHoveringSidebar,
+                      tabManager.tabLayout == .sidebar,
+                      settings.autoHideSidebar else { return }
+
+                withAnimation(ChromeMotion.shell) {
+                    tabManager.isSidebarVisible = false
+                }
+            }
+        }
+    }
+
+    private func revealSidebar() {
+        hideTask?.cancel()
+        withAnimation(ChromeMotion.shell) {
+            tabManager.isSidebarVisible = true
+        }
     }
 }

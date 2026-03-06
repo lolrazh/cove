@@ -69,6 +69,7 @@ final class HistoryStore {
 
     func recordVisit(url: String, title: String) {
         guard let db else { return }
+        guard BrowserSettingsStore.shared.saveBrowsingHistory else { return }
         // Skip blank/internal pages
         guard !url.isEmpty, url.hasPrefix("http") else { return }
 
@@ -81,6 +82,7 @@ final class HistoryStore {
 
     func search(query: String, limit: Int = 50) -> [HistoryEntry] {
         guard let db else { return [] }
+        guard BrowserSettingsStore.shared.saveBrowsingHistory else { return [] }
 
         let results: [[String: Any]]
         if query.isEmpty {

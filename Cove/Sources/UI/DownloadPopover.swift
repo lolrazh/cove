@@ -10,6 +10,7 @@ struct DownloadPopover: View {
             downloadList
         }
         .frame(width: 300, height: min(CGFloat(max(manager.items.count, 1)) * 60 + 40, 360))
+        .chromePanelSurface(.panel, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
     }
 
     private var header: some View {
@@ -20,8 +21,8 @@ struct DownloadPopover: View {
             if manager.items.contains(where: { $0.state != .downloading }) {
                 Button("Clear") { manager.clearCompleted() }
                     .font(.system(size: 12))
-                    .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .buttonStyle(ChromeButtonStyle(kind: .panelAction))
             }
         }
         .padding(.horizontal, 12)
@@ -52,8 +53,6 @@ private struct DownloadItemRow: View {
     @ObservedObject var item: DownloadItem
     let manager: DownloadManager
 
-    @State private var isHovering = false
-
     var body: some View {
         HStack(spacing: 10) {
             iconWithProgress
@@ -81,9 +80,8 @@ private struct DownloadItemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .chromeInteractiveSurface(cornerRadius: ChromeMetrics.controlCornerRadius)
         .contentShape(Rectangle())
-        .background(isHovering ? Color.primary.opacity(0.03) : .clear)
-        .onHover { isHovering = $0 }
         .onTapGesture { openFile() }
     }
 
@@ -155,26 +153,26 @@ private struct DownloadItemRow: View {
         switch item.state {
         case .downloading:
             Button { manager.cancelDownload(item) } label: {
-                Image(systemName: "xmark")
+                Image(systemName: ChromeSymbols.Tabs.close)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
         case .completed:
             Button { manager.revealInFinder(item) } label: {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: ChromeSymbols.Navigation.search)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
             .help("Show in Finder")
         case .failed, .cancelled:
             Button { manager.remove(item) } label: {
-                Image(systemName: "xmark")
+                Image(systemName: ChromeSymbols.Tabs.close)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
         }
     }
 

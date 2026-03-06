@@ -1,7 +1,10 @@
 import SwiftUI
+import AppKit
 
 struct NewTabPage: View {
     let onNavigate: (String) -> Void
+
+    @ObservedObject private var settings = BrowserSettingsStore.shared
     @State private var searchText: String = ""
     @State private var recentSites: [HistoryEntry] = []
     @FocusState private var isSearchFocused: Bool
@@ -19,7 +22,7 @@ struct NewTabPage: View {
 
             // Search bar
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: ChromeSymbols.Navigation.search)
                     .font(.system(size: 14, weight: .light))
                     .foregroundStyle(.tertiary)
 
@@ -32,24 +35,12 @@ struct NewTabPage: View {
                         onNavigate(searchText)
                     }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.primary.opacity(0.05))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(
-                        isSearchFocused ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.06),
-                        lineWidth: 1
-                    )
-            )
+            .chromeFieldStyle(focused: isSearchFocused, prominence: .hero)
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
 
             // Recent sites
-            if !recentSites.isEmpty {
+            if settings.shouldShowRecentSites && !recentSites.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recent")
                         .font(.system(size: 11, weight: .medium))
@@ -60,8 +51,12 @@ struct NewTabPage: View {
 
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                         ForEach(recentSites) { entry in
-                            RecentSiteCard(entry: entry)
-                                .onTapGesture { onNavigate(entry.url) }
+                            Button {
+                                onNavigate(entry.url)
+                            } label: {
+                                RecentSiteCard(entry: entry)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -77,9 +72,20 @@ struct NewTabPage: View {
             isSearchFocused = true
             loadRecent()
         }
+        .onChange(of: settings.showRecentSites) { _, _ in
+            loadRecent()
+        }
+        .onChange(of: settings.saveBrowsingHistory) { _, _ in
+            loadRecent()
+        }
     }
 
     private func loadRecent() {
+        guard settings.shouldShowRecentSites else {
+            recentSites = []
+            return
+        }
+
         let history = HistoryStore.shared.search(query: "", limit: 100)
         // Deduplicate by domain, keep most recent
         var seen = Set<String>()
@@ -98,19 +104,26 @@ struct NewTabPage: View {
 
 struct RecentSiteCard: View {
     let entry: HistoryEntry
-    @State private var isHovering = false
 
     var body: some View {
         VStack(spacing: 6) {
-            // Domain initial as placeholder
-            Text(domainInitial)
-                .font(.system(size: 18, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
-                .frame(width: 36, height: 36)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.primary.opacity(0.06))
-                )
+            if let favicon {
+                FaviconView(image: favicon, size: 28)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(ChromePalette.tertiaryFill)
+                    )
+            } else {
+                Text(domainInitial)
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(ChromePalette.tertiaryFill)
+                    )
+            }
 
             Text(domainName)
                 .font(.system(size: 11))
@@ -119,12 +132,7 @@ struct RecentSiteCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(isHovering ? Color.primary.opacity(0.04) : Color.clear)
-        )
-        .animation(.easeInOut(duration: 0.12), value: isHovering)
-        .onHover { isHovering = $0 }
+        .chromeInteractiveSurface(cornerRadius: 14, showsBorder: true)
     }
 
     private var domainName: String {
@@ -134,5 +142,9 @@ struct RecentSiteCard: View {
 
     private var domainInitial: String {
         String(domainName.prefix(1)).uppercased()
+    }
+
+    private var favicon: NSImage? {
+        FaviconStore.shared.get(domain: domainName)
     }
 }

@@ -13,7 +13,7 @@ struct FaviconView: View {
                     .frame(width: size, height: size)
                     .clipShape(RoundedRectangle(cornerRadius: size * 0.12))
             } else {
-                Image(systemName: "globe")
+                Image(systemName: ChromeSymbols.Navigation.globe)
                     .font(.system(size: size * 0.75, weight: .light))
                     .foregroundStyle(.tertiary)
                     .frame(width: size, height: size)

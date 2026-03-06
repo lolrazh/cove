@@ -88,15 +88,16 @@ final class WebViewModel: NSObject, ObservableObject {
         applyBrowserUserAgent()
 
         let url: URL?
-        if looksLikeURL(trimmed) {
+        if let directURL = directURL(for: trimmed) {
+            url = directURL
+        } else if looksLikeURL(trimmed) {
             if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
                 url = URL(string: trimmed)
             } else {
                 url = URL(string: "https://\(trimmed)")
             }
         } else {
-            let query = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed
-            url = URL(string: "https://www.google.com/search?q=\(query)")
+            url = BrowserSettingsStore.shared.searchEngine.searchURL(for: trimmed)
         }
 
         if let url {
@@ -189,6 +190,18 @@ final class WebViewModel: NSObject, ObservableObject {
         components.port = pageURL.port
         components.path = "/favicon.ico"
         return components.url
+    }
+
+    private func directURL(for input: String) -> URL? {
+        guard !input.contains(" ") else { return nil }
+
+        let hasDirectScheme = input.contains("://")
+            || input.hasPrefix("about:")
+            || input.hasPrefix("file:")
+            || input.hasPrefix("data:")
+
+        guard hasDirectScheme else { return nil }
+        return URL(string: input)
     }
 
     func goBack() { webView.goBack() }

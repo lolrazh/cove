@@ -134,7 +134,10 @@ extension DownloadManager: WKDownloadDelegate {
         decideDestinationUsing response: URLResponse,
         suggestedFilename: String
     ) async -> URL? {
-        let destination = Self.uniqueDestination(for: suggestedFilename)
+        let mode = await MainActor.run { BrowserSettingsStore.shared.downloadDestinationMode }
+        guard let destination = await Self.destinationURL(for: suggestedFilename, mode: mode) else {
+            return nil
+        }
 
         await MainActor.run {
             let sourceURL = download.originalRequest?.url
@@ -180,9 +183,35 @@ extension DownloadManager: WKDownloadDelegate {
         .allow
     }
 
-    private nonisolated static func uniqueDestination(for suggestedFilename: String) -> URL {
-        let dir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
-        var dest = dir.appendingPathComponent(suggestedFilename)
+    private nonisolated static func destinationURL(
+        for suggestedFilename: String,
+        mode: DownloadDestinationMode
+    ) async -> URL? {
+        switch mode {
+        case .downloadsFolder:
+            let dir = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first!
+            return uniqueDestination(for: suggestedFilename, in: dir)
+        case .askEveryTime:
+            return await chooseDestination(for: suggestedFilename)
+        }
+    }
+
+    @MainActor
+    private static func chooseDestination(for suggestedFilename: String) async -> URL? {
+        await withCheckedContinuation { continuation in
+            let panel = NSSavePanel()
+            panel.canCreateDirectories = true
+            panel.nameFieldStringValue = suggestedFilename
+            panel.directoryURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+
+            panel.begin { response in
+                continuation.resume(returning: response == .OK ? panel.url : nil)
+            }
+        }
+    }
+
+    private nonisolated static func uniqueDestination(for suggestedFilename: String, in directory: URL) -> URL {
+        var dest = directory.appendingPathComponent(suggestedFilename)
 
         guard FileManager.default.fileExists(atPath: dest.path) else { return dest }
 
@@ -191,7 +220,7 @@ extension DownloadManager: WKDownloadDelegate {
         var n = 1
         repeat {
             let name = ext.isEmpty ? "\(stem) (\(n))" : "\(stem) (\(n)).\(ext)"
-            dest = dir.appendingPathComponent(name)
+            dest = directory.appendingPathComponent(name)
             n += 1
         } while FileManager.default.fileExists(atPath: dest.path)
 

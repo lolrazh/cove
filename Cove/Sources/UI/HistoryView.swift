@@ -4,36 +4,32 @@ struct HistoryView: View {
     let onNavigate: (String) -> Void
     let onDismiss: () -> Void
 
+    @ObservedObject private var settings = BrowserSettingsStore.shared
     @State private var searchText: String = ""
     @State private var entries: [HistoryEntry] = []
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Text("History")
                     .font(.system(size: 13, weight: .semibold))
                 Spacer()
                 Button(action: onDismiss) {
-                    Image(systemName: "xmark")
+                    Image(systemName: ChromeSymbols.Tabs.close)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ChromeButtonStyle(kind: .toolbar))
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
-            // Search
             TextField("Search history", text: $searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.primary.opacity(0.06))
-                )
+                .focused($isSearchFocused)
+                .chromeFieldStyle(focused: isSearchFocused, prominence: .compact)
                 .padding(.horizontal, 14)
                 .onChange(of: searchText) { _, query in
                     loadHistory(query: query)
@@ -42,8 +38,13 @@ struct HistoryView: View {
             Divider()
                 .padding(.top, 8)
 
-            // Results
-            if entries.isEmpty {
+            if !settings.saveBrowsingHistory {
+                Spacer()
+                Text("Browsing history is turned off")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            } else if entries.isEmpty {
                 Spacer()
                 Text(searchText.isEmpty ? "No history yet" : "No results")
                     .font(.system(size: 12))
@@ -51,34 +52,39 @@ struct HistoryView: View {
                 Spacer()
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    LazyVStack(spacing: 4) {
                         ForEach(entries) { entry in
-                            HistoryRow(entry: entry)
-                                .onTapGesture {
-                                    onNavigate(entry.url)
-                                    onDismiss()
-                                }
+                            Button {
+                                onNavigate(entry.url)
+                                onDismiss()
+                            } label: {
+                                HistoryRow(entry: entry)
+                            }
+                            .buttonStyle(ChromeButtonStyle(kind: .row))
                         }
                     }
                     .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
                 }
             }
         }
         .frame(width: 340, height: 420)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+        .chromePanelSurface(.panel, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
         .onAppear { loadHistory(query: "") }
     }
 
     private func loadHistory(query: String) {
+        guard settings.saveBrowsingHistory else {
+            entries = []
+            return
+        }
+
         entries = HistoryStore.shared.search(query: query)
     }
 }
 
 struct HistoryRow: View {
     let entry: HistoryEntry
-    @State private var isHovering = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -102,9 +108,7 @@ struct HistoryRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(isHovering ? Color.primary.opacity(0.05) : Color.clear)
-        .onHover { isHovering = $0 }
+        .padding(.vertical, 8)
     }
 
     private func domainFrom(_ urlString: String) -> String {

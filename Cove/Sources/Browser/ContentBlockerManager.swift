@@ -1,60 +1,107 @@
 import Foundation
 import WebKit
+import Combine
 
 @MainActor
 final class ContentBlockerManager {
     static let shared = ContentBlockerManager()
 
     private static let identifier = "com.cove.easylist"
+
+    private let settings = BrowserSettingsStore.shared
     private var ruleList: WKContentRuleList?
-    private var pending: [WKUserContentController] = []
+    private var trackedControllers = NSHashTable<WKUserContentController>.weakObjects()
+    private var pendingControllers = NSHashTable<WKUserContentController>.weakObjects()
+    private var cancellables: Set<AnyCancellable> = []
 
     var isLoaded: Bool { ruleList != nil }
 
-    func load() async {
-        let store = WKContentRuleListStore.default()!
+    private init() {
+        settings.$contentBlockingEnabled
+            .removeDuplicates()
+            .sink { [weak self] isEnabled in
+                guard let self else { return }
+                if isEnabled {
+                    Task { await self.load() }
+                } else {
+                    self.detachFromTrackedControllers()
+                }
+            }
+            .store(in: &cancellables)
+    }
 
-        // Try cached first
-        if let cached = try? await store.contentRuleList(forIdentifier: Self.identifier) {
-            ruleList = cached
-            flushPending()
+    func load() async {
+        guard settings.contentBlockingEnabled else { return }
+
+        if let ruleList {
+            attachRuleListToTrackedControllers(ruleList)
             return
         }
 
-        // Compile from bundled JSON
+        let store = WKContentRuleListStore.default()!
+
+        if let cached = try? await store.contentRuleList(forIdentifier: Self.identifier) {
+            ruleList = cached
+            attachRuleListToTrackedControllers(cached)
+            return
+        }
+
         guard let url = Bundle.main.url(forResource: "easylist", withExtension: "json"),
               let json = try? String(contentsOf: url, encoding: .utf8) else {
             return
         }
 
-        do {
-            let compiled = try await store.compileContentRuleList(
-                forIdentifier: Self.identifier,
-                encodedContentRuleList: json
-            )
+        if let compiled = try? await store.compileContentRuleList(
+            forIdentifier: Self.identifier,
+            encodedContentRuleList: json
+        ) {
             ruleList = compiled
-            flushPending()
-        } catch {}
+            attachRuleListToTrackedControllers(compiled)
+        }
     }
 
     func attach(to controller: WKUserContentController) {
-        if let ruleList {
-            controller.add(ruleList)
-        } else {
-            pending.append(controller)
-        }
-    }
+        trackedControllers.add(controller)
 
-    private func flushPending() {
-        guard let ruleList else { return }
-        for controller in pending {
-            controller.add(ruleList)
+        guard settings.contentBlockingEnabled else { return }
+
+        if let ruleList {
+            attach(ruleList, to: controller)
+        } else {
+            pendingControllers.add(controller)
         }
-        pending.removeAll()
     }
 
     func detach(from controller: WKUserContentController) {
+        trackedControllers.add(controller)
         guard let ruleList else { return }
         controller.remove(ruleList)
+    }
+
+    private func attachRuleListToTrackedControllers(_ ruleList: WKContentRuleList) {
+        guard settings.contentBlockingEnabled else { return }
+
+        for controller in trackedControllers.allObjects {
+            attach(ruleList, to: controller)
+        }
+
+        for controller in pendingControllers.allObjects {
+            attach(ruleList, to: controller)
+        }
+        pendingControllers.removeAllObjects()
+    }
+
+    private func attach(_ ruleList: WKContentRuleList, to controller: WKUserContentController) {
+        controller.remove(ruleList)
+        controller.add(ruleList)
+    }
+
+    private func detachFromTrackedControllers() {
+        pendingControllers.removeAllObjects()
+        guard let ruleList else { return }
+
+        for controller in trackedControllers.allObjects {
+            controller.remove(ruleList)
+        }
     }
 }

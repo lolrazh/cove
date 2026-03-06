@@ -2,86 +2,125 @@ import SwiftUI
 
 struct NavigationBar: View {
     @ObservedObject var viewModel: WebViewModel
+    @ObservedObject var tabManager: TabManager
     var onNavigate: ((String) -> Void)?
+
     @State private var addressText: String
     @State private var showHistory: Bool = false
     @State private var showDownloads: Bool = false
     @ObservedObject private var downloadManager = DownloadManager.shared
     @FocusState private var isAddressFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(viewModel: WebViewModel, onNavigate: ((String) -> Void)? = nil) {
+    init(viewModel: WebViewModel, tabManager: TabManager, onNavigate: ((String) -> Void)? = nil) {
         self._viewModel = ObservedObject(wrappedValue: viewModel)
+        self._tabManager = ObservedObject(wrappedValue: tabManager)
         self.onNavigate = onNavigate
         _addressText = State(initialValue: viewModel.currentURL)
     }
 
     var body: some View {
-        HStack(spacing: 6) {
-            // Back
-            navButton(
-                icon: "chevron.left",
-                enabled: viewModel.canGoBack,
-                action: viewModel.goBack
-            )
+        HStack(spacing: 8) {
+            if tabManager.tabLayout == .sidebar {
+                toolbarButton(
+                    isSelected: tabManager.isSidebarVisible,
+                    action: tabManager.revealSidebar
+                ) {
+                    Image(systemName: ChromeSymbols.Navigation.sidebar)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(tabManager.isSidebarVisible ? .primary : .secondary)
+                }
+                .help("Reveal sidebar")
+            }
 
-            // Forward
-            navButton(
-                icon: "chevron.right",
-                enabled: viewModel.canGoForward,
-                action: viewModel.goForward
-            )
-
-            // Reload / Stop
-            navButton(
-                icon: viewModel.isLoading ? "xmark" : "arrow.clockwise",
-                enabled: true,
-                action: { viewModel.isLoading ? viewModel.stopLoading() : viewModel.reload() }
-            )
-
-            // Address bar
+            navCluster
             addressBar
+            utilityCluster
+        }
+        .onChange(of: viewModel.currentURL) { _, newURL in
+            if !isAddressFocused {
+                addressText = newURL
+            }
+        }
+    }
 
-            // Downloads (only visible when there are items)
+    private var navCluster: some View {
+        HStack(spacing: 4) {
+            toolbarButton(enabled: viewModel.canGoBack, action: viewModel.goBack) {
+                Image(systemName: ChromeSymbols.Navigation.back)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(viewModel.canGoBack ? .primary : .tertiary)
+            }
+
+            toolbarButton(enabled: viewModel.canGoForward, action: viewModel.goForward) {
+                Image(systemName: ChromeSymbols.Navigation.forward)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(viewModel.canGoForward ? .primary : .tertiary)
+            }
+
+            toolbarButton(action: {
+                viewModel.isLoading ? viewModel.stopLoading() : viewModel.reload()
+            }) {
+                reloadIcon
+                    .foregroundStyle(.primary)
+            }
+        }
+    }
+
+    private var addressBar: some View {
+        HStack(spacing: 8) {
+            FaviconView(image: viewModel.favicon, size: 14)
+
+            TextField("Search or enter URL", text: $addressText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13, weight: .regular, design: .default))
+                .focused($isAddressFocused)
+                .onSubmit {
+                    onNavigate?(addressText)
+                    viewModel.loadURL(addressText)
+                    isAddressFocused = false
+                }
+        }
+        .frame(maxWidth: .infinity)
+        .chromeFieldStyle(focused: isAddressFocused, prominence: .regular)
+    }
+
+    private var utilityCluster: some View {
+        HStack(spacing: 4) {
             if !downloadManager.items.isEmpty {
-                Button(action: { showDownloads.toggle() }) {
-                    VStack(spacing: 2) {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 13, weight: .medium))
-                            .frame(width: 28, height: 22)
+                toolbarButton(action: { showDownloads.toggle() }) {
+                    VStack(spacing: 3) {
+                        downloadsIcon
+                            .foregroundStyle(.primary)
 
-                        // Progress bar underneath the icon
                         if downloadManager.hasActiveDownloads {
-                            GeometryReader { geo in
+                            GeometryReader { geometry in
                                 ZStack(alignment: .leading) {
                                     Capsule()
-                                        .fill(Color.primary.opacity(0.08))
+                                        .fill(ChromePalette.fieldStroke)
                                     Capsule()
                                         .fill(Color.accentColor)
-                                        .frame(width: geo.size.width * downloadManager.overallProgress)
-                                        .animation(.linear(duration: 0.3), value: downloadManager.overallProgress)
+                                        .frame(width: geometry.size.width * downloadManager.overallProgress)
+                                        .animation(ChromeMotion.loading, value: downloadManager.overallProgress)
                                 }
                             }
-                            .frame(width: 20, height: 4)
+                            .frame(width: 18, height: 4)
                         } else {
-                            Spacer().frame(height: 4)
+                            Spacer()
+                                .frame(height: 4)
                         }
                     }
-                    .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary)
-                .contentShape(Rectangle())
                 .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
                     DownloadPopover(manager: downloadManager)
                 }
             }
 
-            // History
-            navButton(
-                icon: "clock",
-                enabled: true,
-                action: { showHistory.toggle() }
-            )
+            toolbarButton(action: { showHistory.toggle() }) {
+                Image(systemName: ChromeSymbols.Navigation.history)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary)
+            }
             .popover(isPresented: $showHistory, arrowEdge: .bottom) {
                 HistoryView(
                     onNavigate: { url in
@@ -91,54 +130,49 @@ struct NavigationBar: View {
                     onDismiss: { showHistory = false }
                 )
             }
-
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.bar)
-        .onChange(of: viewModel.currentURL) { _, newURL in
-            if !isAddressFocused {
-                addressText = newURL
+    }
+
+    private var reloadIcon: some View {
+        let icon = Image(systemName: viewModel.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
+            .font(.system(size: 13, weight: .medium))
+
+        return Group {
+            if reduceMotion {
+                icon
+            } else {
+                icon.symbolEffect(.bounce, value: viewModel.isLoading)
             }
         }
     }
 
-    private var addressBar: some View {
-        TextField("Search or enter URL", text: $addressText)
-            .textFieldStyle(.plain)
-            .font(.system(size: 13, weight: .regular, design: .default))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.primary.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(
-                        isAddressFocused
-                            ? Color.accentColor.opacity(0.5)
-                            : Color.primary.opacity(0.08),
-                        lineWidth: 1
-                    )
-            )
-            .focused($isAddressFocused)
-            .onSubmit {
-                onNavigate?(addressText)
-                viewModel.loadURL(addressText)
-                isAddressFocused = false
+    private var downloadsIcon: some View {
+        let icon = Image(
+            systemName: downloadManager.hasActiveDownloads
+                ? ChromeSymbols.Navigation.downloadsActive
+                : ChromeSymbols.Navigation.downloads
+        )
+        .font(.system(size: 13, weight: .medium))
+
+        return Group {
+            if reduceMotion {
+                icon
+            } else {
+                icon.symbolEffect(.bounce, value: downloadManager.items.count)
             }
+        }
     }
 
-    private func navButton(icon: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func toolbarButton<Label: View>(
+        enabled: Bool = true,
+        isSelected: Bool = false,
+        action: @escaping () -> Void,
+        @ViewBuilder label: () -> Label
+    ) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .medium))
-                .frame(width: 28, height: 28)
+            label()
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(enabled ? .primary : .tertiary)
         .disabled(!enabled)
-        .contentShape(Rectangle())
+        .buttonStyle(ChromeButtonStyle(kind: .toolbar, isSelected: isSelected))
     }
 }

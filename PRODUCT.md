@@ -23,9 +23,9 @@ Cove is the browser that should exist: **Dia's skin, Safari's soul, zero bullshi
 ## Core Philosophy
 
 1. **A browser browses.** No AI copilots, no summaries, no suggestions, no "smart" anything. The browser renders web pages. That's it.
-2. **No Liquid Glass.** Custom-drawn UI with full design control. We explicitly opt out of Apple's Liquid Glass via `UIDesignRequiresCompatibility`.
+2. **No full-window Liquid Glass.** The primary chrome stays custom-drawn so Cove keeps full design control. We still use native macOS materials selectively when they improve transient surfaces like sidebars, panels, and settings.
 3. **Safari's engine.** WKWebView gives us WebKit — same renderer, same JS engine, same battery efficiency. 2-4x less memory than Chromium.
-4. **Dia's aesthetic.** Super clean and minimal. The chrome disappears. Sites feel like apps. Address bar and nav buttons on top keep the essentials. Professional, not tacky.
+4. **Dia's aesthetic.** Super clean and minimal. The chrome disappears, but still feels unmistakably Mac-native. Sites feel like apps. Address bar and nav buttons on top keep the essentials. Professional, not tacky.
 5. **Zero bloat.** No dependencies. Pure Swift + Apple frameworks. No npm, no Electron, no web tech in the shell.
 
 ---
@@ -67,6 +67,7 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 - **Auto-hide on scroll** — slides away when scrolling down, reappears on scroll up. More immersive.
 - **Smart input** — typing a URL (e.g. `github.com`) navigates directly. Typing text (e.g. `swift wkwebview docs`) does a Google search.
 - Minimal style — not chunky, not Chrome-like.
+- Subtle native cues are welcome — favicon/site identity in the field, restrained focus rings, and strong hover/pressed states that still recede behind content.
 
 ### Navigation Controls
 - Back / Forward / Reload buttons, left of URL bar.
@@ -77,7 +78,7 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 - Thin linear progress bar below the nav bar during page loads.
 
 ### Anti-Goals
-- No Liquid Glass. Anywhere. Ever.
+- No full-window Liquid Glass takeover. The browser should not look like a sheet of glass floating over every page.
 - No AI features. No copilot. No summaries. No suggestions.
 - No tacky design (no Zen, no Brave shields, no crypto).
 - No bloated sidebar with "spaces" or "profiles" in MVP.
@@ -96,6 +97,7 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 - **SwiftUI** for all chrome (tabs, URL bar, sidebar, settings).
 - **AppKit** (`NSWindow`, `NSApplicationDelegateAdaptor`) for window-level control — custom titlebar, no system chrome.
 - `windowStyle(.hiddenTitleBar)` + `titlebarAppearsTransparent` for full control.
+- **Selective AppKit materials** — `NSVisualEffectView` is acceptable for transient surfaces like sidebar overlays or panels when it improves macOS fit and finish.
 
 ### Platform
 - **macOS 26 (Tahoe)** — minimum deployment target is macOS 15.0 for broader compat, but developed/tested on Tahoe.

@@ -5,31 +5,67 @@ struct BrowserView: View {
 
     var body: some View {
         Group {
-            switch tabManager.tabLayout {
-            case .horizontal:
-                horizontalLayout
-            case .sidebar:
-                sidebarLayout
+            if let activeTab = tabManager.activeTab {
+                VStack(spacing: ChromeMetrics.topChromeSpacing) {
+                    topChrome(for: activeTab)
+                    contentArea
+                }
+                .padding(ChromeMetrics.windowInset)
+                .background(ChromePalette.window)
+                .overlay {
+                    RoundedRectangle(cornerRadius: ChromeMetrics.windowCornerRadius, style: .continuous)
+                        .stroke(ChromePalette.chromeStrokeStrong, lineWidth: 1)
+                        .padding(1)
+                        .allowsHitTesting(false)
+                }
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: tabManager.tabLayout)
-        .frame(minWidth: 800, minHeight: 600)
+        .animation(ChromeMotion.shell, value: tabManager.tabLayout)
+        .background(ChromePalette.window)
+        .frame(minWidth: 900, minHeight: 640)
     }
 
-    private var horizontalLayout: some View {
-        VStack(spacing: 0) {
-            TabStripView(tabManager: tabManager)
+    private func topChrome(for activeTab: Tab) -> some View {
+        VStack(spacing: ChromeMetrics.topChromeSpacing) {
+            if tabManager.tabLayout == .horizontal {
+                TabStripView(tabManager: tabManager)
+            }
+
+            NavigationBar(
+                viewModel: activeTab.viewModel,
+                tabManager: tabManager,
+                onNavigate: { _ in
+                    activeTab.isNewTabPage = false
+                }
+            )
+            .id(activeTab.id)
+        }
+        .padding(ChromeMetrics.topChromePadding)
+        .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
+        .overlay(alignment: .bottom) {
+            if activeTab.viewModel.isLoading {
+                ProgressView(value: activeTab.viewModel.estimatedProgress)
+                    .progressViewStyle(.linear)
+                    .tint(.accentColor)
+                    .labelsHidden()
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    private var contentArea: some View {
+        ZStack(alignment: .leading) {
             activeTabContent
-        }
-    }
 
-    private var sidebarLayout: some View {
-        HStack(spacing: 0) {
-            SidebarTabView(tabManager: tabManager)
-            VStack(spacing: 0) {
-                activeTabContent
+            if tabManager.tabLayout == .sidebar {
+                SidebarTabView(tabManager: tabManager)
+                    .zIndex(1)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.windowCornerRadius)
     }
 
     @ViewBuilder
@@ -56,21 +92,7 @@ struct ActiveTabView: View {
     @ObservedObject var tab: Tab
 
     var body: some View {
-        VStack(spacing: 0) {
-            NavigationBar(viewModel: tab.viewModel, onNavigate: { _ in
-                tab.isNewTabPage = false
-            })
-            .overlay(alignment: .bottom) {
-                if tab.viewModel.isLoading {
-                    ProgressView(value: tab.viewModel.estimatedProgress)
-                        .progressViewStyle(.linear)
-                        .tint(.accentColor)
-                        .labelsHidden()
-                        .frame(maxWidth: .infinity)
-                        .allowsHitTesting(false)
-                }
-            }
-
+        Group {
             if tab.isNewTabPage {
                 NewTabPage { input in
                     tab.isNewTabPage = false

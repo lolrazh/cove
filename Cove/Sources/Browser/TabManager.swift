@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 enum TabLayout: String {
     case horizontal
@@ -9,11 +10,15 @@ enum TabLayout: String {
 final class TabManager: ObservableObject {
     @Published var tabs: [Tab] = []
     @Published var activeTabID: UUID?
-    @Published var tabLayout: TabLayout = .horizontal
-    @Published var isSidebarVisible: Bool = true
+    @Published var tabLayout: TabLayout
+    @Published var isSidebarVisible: Bool
+
+    private let settings = BrowserSettingsStore.shared
+    private var cancellables: Set<AnyCancellable> = []
 
     func toggleLayout() {
-        tabLayout = tabLayout == .horizontal ? .sidebar : .horizontal
+        let nextLayout: TabLayout = tabLayout == .horizontal ? .sidebar : .horizontal
+        apply(layout: nextLayout, persistsPreference: true)
     }
 
     var activeTab: Tab? {
@@ -21,11 +26,43 @@ final class TabManager: ObservableObject {
     }
 
     init() {
+        tabLayout = settings.preferredTabLayout.tabLayout
+        isSidebarVisible = settings.preferredTabLayout == .sidebar
+
+        settings.$preferredTabLayout
+            .removeDuplicates()
+            .sink { [weak self] preferredLayout in
+                self?.apply(layout: preferredLayout.tabLayout, persistsPreference: false)
+            }
+            .store(in: &cancellables)
+
+        settings.$autoHideSidebar
+            .removeDuplicates()
+            .sink { [weak self] autoHide in
+                guard let self else { return }
+                if !autoHide && self.tabLayout == .sidebar {
+                    self.isSidebarVisible = true
+                }
+            }
+            .store(in: &cancellables)
+
         addTab()
     }
 
     func addTab(url: String? = nil) {
-        let tab = Tab(url: url)
+        let tab: Tab
+
+        if let url {
+            tab = Tab(url: url, showsStartPage: false)
+        } else {
+            switch settings.destinationForNewTab() {
+            case .startPage:
+                tab = Tab(showsStartPage: true)
+            case .url(let destination):
+                tab = Tab(url: destination, showsStartPage: false)
+            }
+        }
+
         tabs.append(tab)
         activeTabID = tab.id
     }
@@ -51,5 +88,27 @@ final class TabManager: ObservableObject {
 
     func selectTab(_ id: UUID) {
         activeTabID = id
+    }
+
+    func revealSidebar() {
+        guard tabLayout == .sidebar else { return }
+        withAnimation(ChromeMotion.shell) {
+            isSidebarVisible = true
+        }
+    }
+
+    private func apply(layout: TabLayout, persistsPreference: Bool) {
+        tabLayout = layout
+
+        if layout == .sidebar {
+            isSidebarVisible = true
+        } else {
+            isSidebarVisible = false
+        }
+
+        if persistsPreference {
+            let preferredLayout: PreferredTabLayout = layout == .horizontal ? .horizontal : .sidebar
+            settings.setPreferredTabLayout(preferredLayout)
+        }
     }
 }
