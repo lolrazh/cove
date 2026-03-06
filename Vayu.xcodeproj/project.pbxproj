@@ -10,6 +10,7 @@
 		2424788002B1FB2EEAB80312 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31FE42F1A95D5C81D01CE91E /* Tab.swift */; };
 		27157FF977CA45E072A73ED1 /* NewTabPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D7034A503C0CEA48933E5F9 /* NewTabPage.swift */; };
 		290C95EF032BAED876630D4F /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEC6F27EFB83B8D47C75C908 /* TabManager.swift */; };
+		2ADD3787752BE61CD8AC2D97 /* easylist.json in Resources */ = {isa = PBXBuildFile; fileRef = 1BA83BA73642D1BCAC8DB6A1 /* easylist.json */; };
 		2CA2621570C2A1A84E0497CC /* DownloadPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F02BDE9D86E6637DDFCAA52 /* DownloadPopover.swift */; };
 		321D60B5A687136C15BA31C6 /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7FFE04A9D4DF8D273A595D /* HistoryStore.swift */; };
 		32835CB05DCEDA3EC28CDE61 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */; };
@@ -29,6 +30,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1BA83BA73642D1BCAC8DB6A1 /* easylist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = easylist.json; sourceTree = "<group>"; };
 		1E130E3BC38EC3F4C87B4FD7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		1F02BDE9D86E6637DDFCAA52 /* DownloadPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadPopover.swift; sourceTree = "<group>"; };
 		26D5B233886ECEE462216AF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -65,6 +67,15 @@
 				C38124B0BAFC31DA29121D83 /* TabStripView.swift */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		35E72BC56AD31DFBB9505CDE /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1BA83BA73642D1BCAC8DB6A1 /* easylist.json */,
+			);
+			name = Resources;
+			path = Vayu/Resources;
 			sourceTree = "<group>";
 		};
 		5FECCBA669DD830974B1527B /* Browser */ = {
@@ -114,6 +125,7 @@
 		A2C27EDD7E7892BCA5C5932F = {
 			isa = PBXGroup;
 			children = (
+				35E72BC56AD31DFBB9505CDE /* Resources */,
 				9C80983BB840A7E13DE5E9BF /* Sources */,
 				A196A6A849F99C02FA77E9A1 /* Products */,
 			);
@@ -127,6 +139,7 @@
 			buildConfigurationList = 9A078874D8B58AE604515873 /* Build configuration list for PBXNativeTarget "Vayu" */;
 			buildPhases = (
 				8B64975289148E52635EEC4B /* Sources */,
+				775D06D684C193D01FD3AA4E /* Resources */,
 			);
 			buildRules = (
 			);
@@ -168,6 +181,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		775D06D684C193D01FD3AA4E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2ADD3787752BE61CD8AC2D97 /* easylist.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8B64975289148E52635EEC4B /* Sources */ = {

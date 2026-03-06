@@ -12,8 +12,8 @@ targets:
     platform: macOS
     sources:
       - path: Vayu/Sources
-    resources:
-      - path: Vayu/Resources
+      - path: Vayu/Resources/easylist.json
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.vayu.browser
