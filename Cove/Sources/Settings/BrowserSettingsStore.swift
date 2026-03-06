@@ -13,8 +13,8 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var searchEngine: SearchEngine
     @Published private(set) var newTabPreference: NewTabPreference
     @Published private(set) var homePageURL: String
-    @Published private(set) var preferredTabLayout: PreferredTabLayout
-    @Published private(set) var autoHideSidebar: Bool
+    @Published private(set) var showsTabsInSidebar: Bool
+    @Published private(set) var hideTabs: Bool
     @Published private(set) var contentBlockingEnabled: Bool
     @Published private(set) var saveBrowsingHistory: Bool
     @Published private(set) var showRecentSites: Bool
@@ -30,8 +30,8 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.searchEngine: SearchEngine.google.rawValue,
             BrowserSettingKeys.newTabPreference: NewTabPreference.startPage.rawValue,
             BrowserSettingKeys.homePageURL: "https://www.google.com",
-            BrowserSettingKeys.preferredTabLayout: PreferredTabLayout.horizontal.rawValue,
-            BrowserSettingKeys.autoHideSidebar: true,
+            BrowserSettingKeys.showTabsInSidebar: false,
+            BrowserSettingKeys.hideTabs: false,
             BrowserSettingKeys.contentBlockingEnabled: true,
             BrowserSettingKeys.saveBrowsingHistory: true,
             BrowserSettingKeys.showRecentSites: true,
@@ -41,8 +41,8 @@ final class BrowserSettingsStore: ObservableObject {
         self.searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
         self.newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .startPage
         self.homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
-        self.preferredTabLayout = PreferredTabLayout(rawValue: defaults.string(forKey: BrowserSettingKeys.preferredTabLayout) ?? "") ?? .horizontal
-        self.autoHideSidebar = defaults.bool(forKey: BrowserSettingKeys.autoHideSidebar)
+        self.showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
+        self.hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
@@ -85,8 +85,8 @@ final class BrowserSettingsStore: ObservableObject {
         }
     }
 
-    func setPreferredTabLayout(_ layout: PreferredTabLayout) {
-        defaults.set(layout.rawValue, forKey: BrowserSettingKeys.preferredTabLayout)
+    func setShowsTabsInSidebar(_ showsTabsInSidebar: Bool) {
+        defaults.set(showsTabsInSidebar, forKey: BrowserSettingKeys.showTabsInSidebar)
     }
 
     func clearHistory() {
@@ -97,22 +97,20 @@ final class BrowserSettingsStore: ObservableObject {
         searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
         newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .startPage
         homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
-        preferredTabLayout = PreferredTabLayout(rawValue: defaults.string(forKey: BrowserSettingKeys.preferredTabLayout) ?? "") ?? .horizontal
-        autoHideSidebar = defaults.bool(forKey: BrowserSettingKeys.autoHideSidebar)
+        showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
+        hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
         contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
         downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
     }
-}
 
-extension PreferredTabLayout {
-    var tabLayout: TabLayout {
-        switch self {
-        case .horizontal:
-            return .horizontal
-        case .sidebar:
-            return .sidebar
+    private static func resolveShowsTabsInSidebar(_ defaults: UserDefaults) -> Bool {
+        if defaults.object(forKey: BrowserSettingKeys.showTabsInSidebar) != nil {
+            return defaults.bool(forKey: BrowserSettingKeys.showTabsInSidebar)
         }
+
+        let legacyLayout = defaults.string(forKey: BrowserSettingKeys.legacyPreferredTabLayout)
+        return legacyLayout == "sidebar"
     }
 }

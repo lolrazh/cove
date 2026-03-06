@@ -83,15 +83,10 @@ struct BrowserView: View {
 
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
-            currentTabLayout: tabManager.tabLayout,
-            showHorizontalTabs: {
+            showsTabsInSidebar: tabManager.tabLayout == .sidebar,
+            setShowsTabsInSidebar: { showsTabsInSidebar in
                 withAnimation(ChromeMotion.shell) {
-                    tabManager.setLayout(.horizontal)
-                }
-            },
-            showSidebarTabs: {
-                withAnimation(ChromeMotion.shell) {
-                    tabManager.setLayout(.sidebar)
+                    tabManager.setLayout(showsTabsInSidebar ? .sidebar : .horizontal)
                 }
             }
         )

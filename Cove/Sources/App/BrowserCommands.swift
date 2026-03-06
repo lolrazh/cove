@@ -1,9 +1,8 @@
 import SwiftUI
 
 struct BrowserCommandContext {
-    let currentTabLayout: TabLayout
-    let showHorizontalTabs: () -> Void
-    let showSidebarTabs: () -> Void
+    let showsTabsInSidebar: Bool
+    let setShowsTabsInSidebar: (Bool) -> Void
 }
 
 private struct BrowserCommandContextKey: FocusedValueKey {
@@ -24,21 +23,14 @@ struct BrowserViewCommands: Commands {
         CommandGroup(after: .toolbar) {
             Divider()
 
-            Button("Use Top Tabs") {
-                browserCommandContext?.showHorizontalTabs()
-            }
-            .disabled(
-                browserCommandContext == nil
-                || browserCommandContext?.currentTabLayout == .horizontal
+            Toggle(
+                "Show Tabs in Sidebar",
+                isOn: Binding(
+                    get: { browserCommandContext?.showsTabsInSidebar ?? false },
+                    set: { browserCommandContext?.setShowsTabsInSidebar($0) }
+                )
             )
-
-            Button("Use Sidebar Tabs") {
-                browserCommandContext?.showSidebarTabs()
-            }
-            .disabled(
-                browserCommandContext == nil
-                || browserCommandContext?.currentTabLayout == .sidebar
-            )
+            .disabled(browserCommandContext == nil)
         }
     }
 }

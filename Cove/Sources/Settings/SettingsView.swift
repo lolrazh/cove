@@ -27,8 +27,8 @@ private struct GeneralSettingsPane: View {
     @AppStorage(BrowserSettingKeys.searchEngine) private var searchEngine = SearchEngine.google.rawValue
     @AppStorage(BrowserSettingKeys.newTabPreference) private var newTabPreference = NewTabPreference.startPage.rawValue
     @AppStorage(BrowserSettingKeys.homePageURL) private var homePageURL = "https://www.google.com"
-    @AppStorage(BrowserSettingKeys.preferredTabLayout) private var preferredTabLayout = PreferredTabLayout.horizontal.rawValue
-    @AppStorage(BrowserSettingKeys.autoHideSidebar) private var autoHideSidebar = true
+    @AppStorage(BrowserSettingKeys.showTabsInSidebar) private var showTabsInSidebar = false
+    @AppStorage(BrowserSettingKeys.hideTabs) private var hideTabs = false
 
     private var isHomePageMode: Bool {
         newTabPreference == NewTabPreference.homePage.rawValue
@@ -52,13 +52,8 @@ private struct GeneralSettingsPane: View {
                 TextField("Home page URL", text: $homePageURL)
                     .disabled(!isHomePageMode)
 
-                Picker("Default tab layout", selection: $preferredTabLayout) {
-                    ForEach(PreferredTabLayout.allCases) { layout in
-                        Text(layout.displayName).tag(layout.rawValue)
-                    }
-                }
-
-                Toggle("Auto-hide sidebar in sidebar mode", isOn: $autoHideSidebar)
+                Toggle("Show Tabs in Sidebar", isOn: $showTabsInSidebar)
+                Toggle("Hide Tabs", isOn: $hideTabs)
             }
 
             Section {

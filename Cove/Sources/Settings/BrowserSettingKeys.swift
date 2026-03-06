@@ -4,12 +4,13 @@ enum BrowserSettingKeys {
     static let searchEngine = "browser.searchEngine"
     static let newTabPreference = "browser.newTabPreference"
     static let homePageURL = "browser.homePageURL"
-    static let preferredTabLayout = "browser.preferredTabLayout"
-    static let autoHideSidebar = "browser.autoHideSidebar"
+    static let showTabsInSidebar = "browser.showTabsInSidebar"
+    static let hideTabs = "browser.hideTabs"
     static let contentBlockingEnabled = "browser.contentBlockingEnabled"
     static let saveBrowsingHistory = "browser.saveBrowsingHistory"
     static let showRecentSites = "browser.showRecentSites"
     static let downloadDestinationMode = "browser.downloadDestinationMode"
+    static let legacyPreferredTabLayout = "browser.preferredTabLayout"
 }
 
 enum SearchEngine: String, CaseIterable, Identifiable {
@@ -59,22 +60,6 @@ enum NewTabPreference: String, CaseIterable, Identifiable {
             return "Blank Page"
         case .homePage:
             return "Home Page"
-        }
-    }
-}
-
-enum PreferredTabLayout: String, CaseIterable, Identifiable {
-    case horizontal
-    case sidebar
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .horizontal:
-            return "Top Tabs"
-        case .sidebar:
-            return "Sidebar Tabs"
         }
     }
 }

@@ -30,22 +30,21 @@ final class TabManager: ObservableObject {
     }
 
     init() {
-        tabLayout = settings.preferredTabLayout.tabLayout
-        isSidebarVisible = settings.preferredTabLayout == .sidebar
+        tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
+        isSidebarVisible = settings.showsTabsInSidebar ? !settings.hideTabs : false
 
-        settings.$preferredTabLayout
-            .removeDuplicates()
-            .sink { [weak self] preferredLayout in
-                self?.apply(layout: preferredLayout.tabLayout, persistsPreference: false)
+        settings.$showsTabsInSidebar
+            .sink { [weak self] showsTabsInSidebar in
+                self?.apply(layout: showsTabsInSidebar ? .sidebar : .horizontal, persistsPreference: false)
             }
             .store(in: &cancellables)
 
-        settings.$autoHideSidebar
+        settings.$hideTabs
             .removeDuplicates()
-            .sink { [weak self] autoHide in
+            .sink { [weak self] hideTabs in
                 guard let self else { return }
-                if !autoHide && self.tabLayout == .sidebar {
-                    self.isSidebarVisible = true
+                if self.tabLayout == .sidebar {
+                    self.isSidebarVisible = !hideTabs
                 }
             }
             .store(in: &cancellables)
@@ -109,14 +108,13 @@ final class TabManager: ObservableObject {
         tabLayout = layout
 
         if layout == .sidebar {
-            isSidebarVisible = true
+            isSidebarVisible = !settings.hideTabs
         } else {
             isSidebarVisible = false
         }
 
         if persistsPreference {
-            let preferredLayout: PreferredTabLayout = layout == .horizontal ? .horizontal : .sidebar
-            settings.setPreferredTabLayout(preferredLayout)
+            settings.setShowsTabsInSidebar(layout == .sidebar)
         }
     }
 }
