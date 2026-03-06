@@ -9,7 +9,7 @@ final class FaviconStore {
 
     private init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dbPath = appSupport.appendingPathComponent("Vayu/favicons.db").path
+        let dbPath = appSupport.appendingPathComponent("Cove/favicons.db").path
 
         do {
             db = try Database(path: dbPath)

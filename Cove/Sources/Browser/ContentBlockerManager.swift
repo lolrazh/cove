@@ -5,7 +5,7 @@ import WebKit
 final class ContentBlockerManager {
     static let shared = ContentBlockerManager()
 
-    private static let identifier = "com.vayu.easylist"
+    private static let identifier = "com.cove.easylist"
     private var ruleList: WKContentRuleList?
     private var pending: [WKUserContentController] = []
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct VayuApp: App {
+struct CoveApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {

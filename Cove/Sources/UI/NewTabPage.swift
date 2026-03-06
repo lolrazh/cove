@@ -12,7 +12,7 @@ struct NewTabPage: View {
                 .frame(minHeight: 80, maxHeight: 160)
 
             // Title
-            Text("Vayu")
+            Text("Cove")
                 .font(.system(size: 28, weight: .thin, design: .default))
                 .foregroundStyle(.primary.opacity(0.6))
                 .padding(.bottom, 24)

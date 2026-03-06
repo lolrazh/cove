@@ -1,0 +1,413 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */; };
+		082942FAB006646A2CDB8DA5 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE2F65859C71D28B5A91955 /* Database.swift */; };
+		13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */; };
+		288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAD4F48AAADD750585F40AB /* NavigationBar.swift */; };
+		2BCB31FC3951B522E8BAD297 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6949A5A721596A8C82526E29 /* AppDelegate.swift */; };
+		4C2FEE8AE947A015057A4659 /* WebViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2241AFE931B02B48465503 /* WebViewModel.swift */; };
+		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
+		5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C182C3B5A43907E9CB570F4 /* FaviconView.swift */; };
+		55232522E25283C1783EA545 /* CoveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD4F5F1B365705A427FDEC1A /* CoveApp.swift */; };
+		7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */; };
+		7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4E68B430D945E3968A4B9 /* TabStripView.swift */; };
+		8A6EAA0FF636EE4434A7298C /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */; };
+		90007D43BCC7E8C6B486D5AA /* ContentBlockerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */; };
+		95E065A602CE1221E1BE4659 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B0EAF91613F28C5F78E5FE /* HistoryView.swift */; };
+		AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24428BD2191574360191520 /* BrowserView.swift */; };
+		B488357C746F33394AD611CF /* easylist.json in Resources */ = {isa = PBXBuildFile; fileRef = AB6526AAC426FA4B5DB1CA72 /* easylist.json */; };
+		B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */; };
+		D992157DF99D6BA4DD04FBB0 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAC9B2AA42F20914791E7C2 /* Tab.swift */; };
+		E15406F2815B902D35964435 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */; };
+		F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
+		06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentBlockerManager.swift; sourceTree = "<group>"; };
+		2AAC9B2AA42F20914791E7C2 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
+		2CE2F65859C71D28B5A91955 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
+		3B2241AFE931B02B48465503 /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
+		3C182C3B5A43907E9CB570F4 /* FaviconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconView.swift; sourceTree = "<group>"; };
+		408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconStore.swift; sourceTree = "<group>"; };
+		47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
+		6949A5A721596A8C82526E29 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		77B0EAF91613F28C5F78E5FE /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
+		A24428BD2191574360191520 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
+		AAAD4F48AAADD750585F40AB /* NavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBar.swift; sourceTree = "<group>"; };
+		AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
+		AB6526AAC426FA4B5DB1CA72 /* easylist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = easylist.json; sourceTree = "<group>"; };
+		AD4F5F1B365705A427FDEC1A /* CoveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoveApp.swift; sourceTree = "<group>"; };
+		B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadPopover.swift; sourceTree = "<group>"; };
+		B521F2DECB254B5E3D0FEE1E /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
+		C8A4E68B430D945E3968A4B9 /* TabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabStripView.swift; sourceTree = "<group>"; };
+		E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
+		E97C600BF67A95C4A3686BC7 /* Cove.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cove.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		04DD6D22324128FDC25AD87A /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				A24428BD2191574360191520 /* BrowserView.swift */,
+				B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */,
+				3C182C3B5A43907E9CB570F4 /* FaviconView.swift */,
+				77B0EAF91613F28C5F78E5FE /* HistoryView.swift */,
+				AAAD4F48AAADD750585F40AB /* NavigationBar.swift */,
+				7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */,
+				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
+				C8A4E68B430D945E3968A4B9 /* TabStripView.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		7F534F52A28E4F5931C3D3D9 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				6949A5A721596A8C82526E29 /* AppDelegate.swift */,
+				AD4F5F1B365705A427FDEC1A /* CoveApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		85C383E8BC291274C71DCC2B /* Browser */ = {
+			isa = PBXGroup;
+			children = (
+				06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */,
+				2CE2F65859C71D28B5A91955 /* Database.swift */,
+				47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */,
+				408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */,
+				AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */,
+				2AAC9B2AA42F20914791E7C2 /* Tab.swift */,
+				B521F2DECB254B5E3D0FEE1E /* TabManager.swift */,
+				3B2241AFE931B02B48465503 /* WebViewModel.swift */,
+				E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */,
+			);
+			path = Browser;
+			sourceTree = "<group>";
+		};
+		A5625A0453FA8B7A898B85EA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E97C600BF67A95C4A3686BC7 /* Cove.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B0E30CB9248F3BAD525FE7B1 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				7F534F52A28E4F5931C3D3D9 /* App */,
+				85C383E8BC291274C71DCC2B /* Browser */,
+				04DD6D22324128FDC25AD87A /* UI */,
+			);
+			name = Sources;
+			path = Cove/Sources;
+			sourceTree = "<group>";
+		};
+		C9FEA9CC9BB1A551032527B2 = {
+			isa = PBXGroup;
+			children = (
+				DF17EA82E1BC6CE4589429F9 /* Resources */,
+				B0E30CB9248F3BAD525FE7B1 /* Sources */,
+				A5625A0453FA8B7A898B85EA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		DF17EA82E1BC6CE4589429F9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AB6526AAC426FA4B5DB1CA72 /* easylist.json */,
+			);
+			name = Resources;
+			path = Cove/Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9B7EC35195B56723DAC648C4 /* Cove */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A0FB068C382564F68C29FE6E /* Build configuration list for PBXNativeTarget "Cove" */;
+			buildPhases = (
+				811E29757053D8867EA4BDF3 /* Sources */,
+				0A8875695E53106B23FADB90 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Cove;
+			packageProductDependencies = (
+			);
+			productName = Cove;
+			productReference = E97C600BF67A95C4A3686BC7 /* Cove.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		374220EC1ED0A1AF9A44F953 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 3A3953347899D64B5D34D2A8 /* Build configuration list for PBXProject "Cove" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C9FEA9CC9BB1A551032527B2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A5625A0453FA8B7A898B85EA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9B7EC35195B56723DAC648C4 /* Cove */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A8875695E53106B23FADB90 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B488357C746F33394AD611CF /* easylist.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		811E29757053D8867EA4BDF3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2BCB31FC3951B522E8BAD297 /* AppDelegate.swift in Sources */,
+				AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */,
+				90007D43BCC7E8C6B486D5AA /* ContentBlockerManager.swift in Sources */,
+				55232522E25283C1783EA545 /* CoveApp.swift in Sources */,
+				082942FAB006646A2CDB8DA5 /* Database.swift in Sources */,
+				E15406F2815B902D35964435 /* DownloadManager.swift in Sources */,
+				B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */,
+				F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */,
+				5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */,
+				13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */,
+				95E065A602CE1221E1BE4659 /* HistoryView.swift in Sources */,
+				288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */,
+				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,
+				7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */,
+				D992157DF99D6BA4DD04FBB0 /* Tab.swift in Sources */,
+				4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */,
+				7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */,
+				4C2FEE8AE947A015057A4659 /* WebViewModel.swift in Sources */,
+				8A6EAA0FF636EE4434A7298C /* WebViewRepresentable.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3EAE4D1625DA9ED775D4D077 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cove/Resources/Cove.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Cove/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cove.browser;
+				PRODUCT_NAME = Cove;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		84DBDB43CDE90DA83DDC90D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Cove/Resources/Cove.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Cove/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cove.browser;
+				PRODUCT_NAME = Cove;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		8DE9E6C2D8DDD40F07DB8900 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8E84806BFFFDD59CC848B7AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3A3953347899D64B5D34D2A8 /* Build configuration list for PBXProject "Cove" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8DE9E6C2D8DDD40F07DB8900 /* Debug */,
+				8E84806BFFFDD59CC848B7AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A0FB068C382564F68C29FE6E /* Build configuration list for PBXNativeTarget "Cove" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3EAE4D1625DA9ED775D4D077 /* Debug */,
+				84DBDB43CDE90DA83DDC90D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 374220EC1ED0A1AF9A44F953 /* Project object */;
+}

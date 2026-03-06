@@ -15,7 +15,7 @@ final class HistoryStore {
 
     private init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dbPath = appSupport.appendingPathComponent("Vayu/history.db").path
+        let dbPath = appSupport.appendingPathComponent("Cove/history.db").path
 
         do {
             db = try Database(path: dbPath)
