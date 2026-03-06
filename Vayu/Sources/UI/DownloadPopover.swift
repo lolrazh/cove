@@ -48,7 +48,7 @@ struct DownloadPopover: View {
     }
 }
 
-struct DownloadItemRow: View {
+private struct DownloadItemRow: View {
     @ObservedObject var item: DownloadItem
     let manager: DownloadManager
 
@@ -71,15 +71,7 @@ struct DownloadItemRow: View {
                             .foregroundStyle(.secondary)
                     }
 
-                    Text(sizeText)
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-
-                    if item.state == .failed {
-                        Text("— Failed")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.red)
-                    }
+                    statusText
                 }
             }
 
@@ -89,15 +81,18 @@ struct DownloadItemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
         .background(isHovering ? Color.primary.opacity(0.03) : .clear)
         .onHover { isHovering = $0 }
+        .onTapGesture { openFile() }
     }
 
-    // Circle with file icon inside; during download the ring fills
+    // File icon inside a progress ring. Icon always visible;
+    // ring fills during download, greyed out when cancelled/failed.
     private var iconWithProgress: some View {
         ZStack {
-            // Progress ring (background track always visible during download)
-            if item.state == .downloading {
+            switch item.state {
+            case .downloading:
                 Circle()
                     .stroke(Color.primary.opacity(0.08), lineWidth: 2)
                 Circle()
@@ -105,31 +100,54 @@ struct DownloadItemRow: View {
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.3), value: item.progress)
+            case .failed:
+                Circle()
+                    .stroke(Color.red.opacity(0.3), lineWidth: 2)
+            case .cancelled:
+                Circle()
+                    .stroke(Color.primary.opacity(0.06), lineWidth: 2)
+            case .completed:
+                EmptyView()
             }
 
-            // File icon — always shown
             Image(nsImage: item.fileIcon)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: 18, height: 18)
+                .opacity(item.state == .cancelled ? 0.4 : 1)
         }
         .frame(width: 28, height: 28)
     }
 
-    private var sizeText: String {
+    @ViewBuilder
+    private var statusText: some View {
         switch item.state {
         case .downloading:
-            if item.totalBytes > 0 {
-                return "\(formatBytes(item.bytesDownloaded)) / \(formatBytes(item.totalBytes))"
-            } else if item.bytesDownloaded > 0 {
-                return formatBytes(item.bytesDownloaded)
-            }
-            return ""
+            Text(downloadSizeText)
+                .font(.system(size: 10).monospacedDigit())
+                .foregroundStyle(.tertiary)
         case .completed:
-            return item.totalBytes > 0 ? formatBytes(item.totalBytes) : ""
-        case .failed, .cancelled:
-            return item.bytesDownloaded > 0 ? formatBytes(item.bytesDownloaded) : ""
+            Text(item.totalBytes > 0 ? formatBytes(item.totalBytes) : "")
+                .font(.system(size: 10).monospacedDigit())
+                .foregroundStyle(.tertiary)
+        case .failed:
+            Text("Failed")
+                .font(.system(size: 10))
+                .foregroundStyle(.red)
+        case .cancelled:
+            Text("Cancelled")
+                .font(.system(size: 10))
+                .foregroundStyle(.quaternary)
         }
+    }
+
+    private var downloadSizeText: String {
+        if item.totalBytes > 0 {
+            return "\(formatBytes(item.bytesDownloaded)) / \(formatBytes(item.totalBytes))"
+        } else if item.bytesDownloaded > 0 {
+            return formatBytes(item.bytesDownloaded)
+        }
+        return ""
     }
 
     @ViewBuilder
@@ -160,9 +178,16 @@ struct DownloadItemRow: View {
         }
     }
 
+    private func openFile() {
+        guard item.state == .completed, let url = item.fileURL else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     private func formatBytes(_ bytes: Int64) -> String {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.zeroPadsFractionDigits = true
         return formatter.string(fromByteCount: bytes)
     }
 }
