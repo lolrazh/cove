@@ -44,25 +44,32 @@ struct NavigationBar: View {
             // Downloads (only visible when there are items)
             if !downloadManager.items.isEmpty {
                 Button(action: { showDownloads.toggle() }) {
-                    ZStack {
-                        // Progress ring behind the icon
-                        if downloadManager.hasActiveDownloads {
-                            Circle()
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 2)
-                            Circle()
-                                .trim(from: 0, to: downloadManager.overallProgress)
-                                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                                .rotationEffect(.degrees(-90))
-                                .animation(.linear(duration: 0.3), value: downloadManager.overallProgress)
-                        }
-
+                    VStack(spacing: 2) {
                         Image(systemName: "arrow.down.circle")
                             .font(.system(size: 13, weight: .medium))
+                            .frame(width: 28, height: 22)
+
+                        // Progress bar underneath the icon
+                        if downloadManager.hasActiveDownloads {
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.primary.opacity(0.08))
+                                    Capsule()
+                                        .fill(Color.accentColor)
+                                        .frame(width: geo.size.width * downloadManager.overallProgress)
+                                        .animation(.linear(duration: 0.3), value: downloadManager.overallProgress)
+                                }
+                            }
+                            .frame(width: 20, height: 2.5)
+                        } else {
+                            Spacer().frame(height: 2.5)
+                        }
                     }
                     .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(downloadManager.hasActiveDownloads ? .primary : .primary)
+                .foregroundStyle(.primary)
                 .contentShape(Rectangle())
                 .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
                     DownloadPopover(manager: downloadManager)
