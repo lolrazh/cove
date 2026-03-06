@@ -13,31 +13,30 @@ struct TabStripView: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    ForEach(tabManager.tabs) { tab in
-                        ChromeTabItem(
-                            tab: tab,
-                            presentation: .horizontal,
-                            isActive: tab.id == tabManager.activeTabID,
-                            onSelect: { tabManager.selectTab(tab.id) },
-                            onClose: { tabManager.closeTab(tab.id) },
-                            canClose: tabManager.tabs.count > 1
-                        )
-                    }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(tabManager.tabs) { tab in
+                    ChromeTabItem(
+                        tab: tab,
+                        presentation: .horizontal,
+                        isActive: tab.id == tabManager.activeTabID,
+                        onSelect: { tabManager.selectTab(tab.id) },
+                        onClose: { tabManager.closeTab(tab.id) },
+                        canClose: tabManager.tabs.count > 1
+                    )
                 }
-                .padding(.horizontal, 2)
-                .animation(tabReorderAnimation, value: tabOrder)
-            }
 
-            Button(action: { tabManager.addTab() }) {
-                Image(systemName: ChromeSymbols.Tabs.add)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
+                Button(action: { tabManager.addTab() }) {
+                    Image(systemName: ChromeSymbols.Tabs.add)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(ChromeButtonStyle(kind: .toolbar))
+                .help("New tab")
             }
-            .buttonStyle(ChromeButtonStyle(kind: .toolbar))
-            .help("New tab")
+            .padding(.horizontal, 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(tabReorderAnimation, value: tabOrder)
         }
         .frame(height: ChromeMetrics.tabStripHeight)
     }
