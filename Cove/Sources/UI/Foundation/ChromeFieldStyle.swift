@@ -21,7 +21,10 @@ struct ChromeFieldStyle: ViewModifier {
                 shape.fill(ChromePalette.fieldFill)
             }
             .overlay {
-                shape.stroke(isFocused ? ChromePalette.fieldFocusStroke : ChromePalette.fieldStroke, lineWidth: 1)
+                shape.strokeBorder(
+                    isFocused ? ChromePalette.fieldFocusStroke : ChromePalette.fieldStroke,
+                    lineWidth: ChromeMetrics.surfaceBorderWidth
+                )
             }
             .contentShape(shape)
             .animation(ChromeMotion.hover, value: isFocused)

@@ -13,6 +13,7 @@ struct ChromePanelSurface: ViewModifier {
     let tone: ChromeSurfaceTone
     var cornerRadius: CGFloat = ChromeMetrics.panelCornerRadius
     var showsShadow: Bool = false
+    var borderWidth: CGFloat? = nil
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -23,7 +24,7 @@ struct ChromePanelSurface: ViewModifier {
             }
             .clipShape(shape)
             .overlay {
-                shape.stroke(borderColor, lineWidth: 1)
+                shape.strokeBorder(borderColor, lineWidth: resolvedBorderWidth)
             }
             .shadow(
                 color: showsShadow ? ChromePalette.shadow : .clear,
@@ -59,6 +60,19 @@ struct ChromePanelSurface: ViewModifier {
             return ChromePalette.fieldStroke
         }
     }
+
+    private var resolvedBorderWidth: CGFloat {
+        if let borderWidth {
+            return borderWidth
+        }
+
+        switch tone {
+        case .window:
+            return ChromeMetrics.windowBorderWidth
+        case .topChrome, .panel, .sidebar, .card:
+            return ChromeMetrics.surfaceBorderWidth
+        }
+    }
 }
 
 struct ChromeInteractiveSurface: ViewModifier {
@@ -77,7 +91,7 @@ struct ChromeInteractiveSurface: ViewModifier {
             }
             .overlay {
                 if showsBorder {
-                    shape.stroke(borderColor, lineWidth: 1)
+                    shape.strokeBorder(borderColor, lineWidth: ChromeMetrics.surfaceBorderWidth)
                 }
             }
             .contentShape(shape)
@@ -127,9 +141,17 @@ extension View {
     func chromePanelSurface(
         _ tone: ChromeSurfaceTone,
         cornerRadius: CGFloat = ChromeMetrics.panelCornerRadius,
-        showsShadow: Bool = false
+        showsShadow: Bool = false,
+        borderWidth: CGFloat? = nil
     ) -> some View {
-        modifier(ChromePanelSurface(tone: tone, cornerRadius: cornerRadius, showsShadow: showsShadow))
+        modifier(
+            ChromePanelSurface(
+                tone: tone,
+                cornerRadius: cornerRadius,
+                showsShadow: showsShadow,
+                borderWidth: borderWidth
+            )
+        )
     }
 
     func chromeInteractiveSurface(
@@ -141,6 +163,10 @@ extension View {
     }
 
     func chromeWindowSurface() -> some View {
-        chromePanelSurface(.window, cornerRadius: ChromeMetrics.windowCornerRadius)
+        chromePanelSurface(
+            .window,
+            cornerRadius: ChromeMetrics.windowCornerRadius,
+            borderWidth: ChromeMetrics.windowBorderWidth
+        )
     }
 }

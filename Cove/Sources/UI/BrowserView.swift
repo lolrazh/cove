@@ -11,13 +11,7 @@ struct BrowserView: View {
                     contentArea
                 }
                 .padding(ChromeMetrics.windowInset)
-                .background(ChromePalette.window)
-                .overlay {
-                    RoundedRectangle(cornerRadius: ChromeMetrics.windowCornerRadius, style: .continuous)
-                        .stroke(ChromePalette.chromeStrokeStrong, lineWidth: 1)
-                        .padding(1)
-                        .allowsHitTesting(false)
-                }
+                .chromeWindowSurface()
             }
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
