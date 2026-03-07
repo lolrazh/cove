@@ -2,8 +2,6 @@ import AppKit
 
 @MainActor
 final class FaviconStore {
-    static let shared = FaviconStore()
-
     private let db: Database?
     private var memoryCache: [String: NSImage] = [:]
 

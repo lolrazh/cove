@@ -86,7 +86,6 @@ struct WindowChromeAccessor: NSViewRepresentable {
         func updateWindowChrome() {
             guard let window else { return }
 
-            configureWindow(window)
             measureTitlebar()
             applyButtonVisibilityIfNeeded()
             updateAccessory(in: window)

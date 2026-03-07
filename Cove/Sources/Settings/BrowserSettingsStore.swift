@@ -8,8 +8,6 @@ enum NewTabDestination {
 
 @MainActor
 final class BrowserSettingsStore: ObservableObject {
-    static let shared = BrowserSettingsStore()
-
     @Published private(set) var searchEngine: SearchEngine
     @Published private(set) var newTabPreference: NewTabPreference
     @Published private(set) var homePageURL: String

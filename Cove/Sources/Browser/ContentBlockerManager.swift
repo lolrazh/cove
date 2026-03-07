@@ -4,8 +4,6 @@ import Combine
 
 @MainActor
 final class ContentBlockerManager {
-    static let shared = ContentBlockerManager(settings: .shared)
-
     private static let identifier = "com.cove.easylist"
 
     private let settings: BrowserSettingsStore
@@ -74,7 +72,7 @@ final class ContentBlockerManager {
     }
 
     func detach(from controller: WKUserContentController) {
-        trackedControllers.add(controller)
+        trackedControllers.remove(controller)
         guard let ruleList else { return }
         controller.remove(ruleList)
     }

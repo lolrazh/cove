@@ -9,8 +9,6 @@ struct HistoryEntry: Identifiable {
 
 @MainActor
 final class HistoryStore {
-    static let shared = HistoryStore(settings: .shared)
-
     private let settings: BrowserSettingsStore
     private let db: Database?
 

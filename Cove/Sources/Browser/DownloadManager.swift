@@ -79,8 +79,6 @@ final class DownloadItem: ObservableObject, Identifiable {
 
 @MainActor
 final class DownloadManager: NSObject, ObservableObject {
-    static let shared = DownloadManager(settings: .shared)
-
     @Published var items: [DownloadItem] = []
     private let settings: BrowserSettingsStore
     private var itemCancellables: [UUID: AnyCancellable] = [:]

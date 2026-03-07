@@ -79,7 +79,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func loadRequest(_ request: URLRequest) {
-        services.webKitEnvironment.applyBrowserUserAgent(to: webView)
         webView.load(request)
     }
 
@@ -93,7 +92,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func reload() {
         guard webView.url != nil else { return }
-        services.webKitEnvironment.applyBrowserUserAgent(to: webView)
         updateFavicon(for: webView.url, force: true)
         webView.reload()
     }

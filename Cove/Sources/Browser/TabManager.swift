@@ -35,6 +35,8 @@ final class TabManager: ObservableObject {
     }
 
     func setLayout(_ layout: TabLayout) {
+        guard tabLayout != layout else { return }
+        tabLayout = layout
         settings.setShowsTabsInSidebar(layout == .sidebar)
     }
 
@@ -43,6 +45,8 @@ final class TabManager: ObservableObject {
     }
 
     func setHideTabs(_ hide: Bool) {
+        guard hideTabs != hide else { return }
+        hideTabs = hide
         settings.setHideTabs(hide)
     }
 

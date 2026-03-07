@@ -3,8 +3,6 @@ import WebKit
 
 @MainActor
 final class WebKitEnvironment {
-    static let shared = WebKitEnvironment(contentBlockerManager: .shared)
-
     private let browserUserAgent: String
     private let contentBlockerManager: ContentBlockerManager
 
@@ -24,7 +22,7 @@ final class WebKitEnvironment {
         return webView
     }
 
-    func applyBrowserUserAgent(to webView: WKWebView) {
+    private func applyBrowserUserAgent(to webView: WKWebView) {
         if webView.customUserAgent != browserUserAgent {
             webView.customUserAgent = browserUserAgent
         }
