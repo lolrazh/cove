@@ -13,27 +13,31 @@ final class WebViewModel: NSObject, ObservableObject {
     @Published var favicon: NSImage?
 
     let webView: WKWebView
+    private let webKitEnvironment: WebKitEnvironment
+    private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private var observers: [NSKeyValueObservation] = []
     private var faviconTask: Task<Void, Never>?
     private var faviconSiteKey: String?
     private var faviconRequestID: UUID?
-    private static let browserUserAgent = makeBrowserUserAgent()
 
-    init(initialURL: String? = nil) {
-        let config = WKWebViewConfiguration()
-        config.defaultWebpagePreferences.allowsContentJavaScript = true
-        config.preferences.isElementFullscreenEnabled = true
-        ContentBlockerManager.shared.attach(to: config.userContentController)
-
-        webView = WKWebView(frame: .zero, configuration: config)
+    init(
+        initialURL: String? = nil,
+        initialRequest: URLRequest? = nil,
+        webKitEnvironment: WebKitEnvironment = .shared,
+        onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
+    ) {
+        self.webKitEnvironment = webKitEnvironment
+        self.onOpenInNewTab = onOpenInNewTab
+        self.webView = webKitEnvironment.makeWebView()
         super.init()
 
-        applyBrowserUserAgent()
-        webView.allowsBackForwardNavigationGestures = true
         webView.navigationDelegate = self
+        webView.uiDelegate = self
 
         setupObservers()
-        if let initialURL {
+        if let initialRequest {
+            loadRequest(initialRequest)
+        } else if let initialURL {
             loadURL(initialURL)
         }
     }
@@ -85,7 +89,6 @@ final class WebViewModel: NSObject, ObservableObject {
     func loadURL(_ input: String) {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        applyBrowserUserAgent()
 
         let url: URL?
         if let directURL = directURL(for: trimmed) {
@@ -101,8 +104,13 @@ final class WebViewModel: NSObject, ObservableObject {
         }
 
         if let url {
-            webView.load(URLRequest(url: url))
+            loadRequest(URLRequest(url: url))
         }
+    }
+
+    func loadRequest(_ request: URLRequest) {
+        webKitEnvironment.applyBrowserUserAgent(to: webView)
+        webView.load(request)
     }
 
     private func updateFavicon(for pageURL: URL?, force: Bool = false) {
@@ -209,7 +217,7 @@ final class WebViewModel: NSObject, ObservableObject {
 
     func reload() {
         if webView.url != nil {
-            applyBrowserUserAgent()
+            webKitEnvironment.applyBrowserUserAgent(to: webView)
             updateFavicon(for: webView.url, force: true)
             webView.reload()
         }
@@ -240,28 +248,6 @@ final class WebViewModel: NSObject, ObservableObject {
         }
         rendered.isTemplate = false
         return rendered
-    }
-
-    nonisolated private static func makeBrowserUserAgent() -> String {
-        let safariVersion = installedSafariVersion() ?? "18.0"
-        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/\(safariVersion) Safari/605.1.15"
-    }
-
-    nonisolated private static func installedSafariVersion() -> String? {
-        guard let safariURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari"),
-              let safariBundle = Bundle(url: safariURL),
-              let safariVersion = safariBundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
-              !safariVersion.isEmpty else {
-            return nil
-        }
-
-        return safariVersion
-    }
-
-    private func applyBrowserUserAgent() {
-        if webView.customUserAgent != Self.browserUserAgent {
-            webView.customUserAgent = Self.browserUserAgent
-        }
     }
 
     private func looksLikeURL(_ input: String) -> Bool {
@@ -308,7 +294,7 @@ extension WebViewModel: WKNavigationDelegate {
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
-        if navigationAction.targetFrame?.isMainFrame != false {
+        if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
         }
 
@@ -333,5 +319,24 @@ extension WebViewModel: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
         DownloadManager.shared.handleDownload(download)
+    }
+}
+
+extension WebViewModel: WKUIDelegate {
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        guard navigationAction.targetFrame == nil,
+              let url = navigationAction.request.url else {
+            return nil
+        }
+
+        var request = navigationAction.request
+        request.url = url
+        onOpenInNewTab?(request)
+        return nil
     }
 }

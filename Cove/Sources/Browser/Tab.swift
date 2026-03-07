@@ -9,16 +9,30 @@ final class Tab: Identifiable, ObservableObject {
 
     private var cancellables: Set<AnyCancellable> = []
 
-    init(url: String? = nil, showsStartPage: Bool = true) {
+    init(
+        initialURL: String? = nil,
+        initialRequest: URLRequest? = nil,
+        showsStartPage: Bool = true,
+        onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
+    ) {
         self.id = UUID()
         if showsStartPage {
-            self.viewModel = WebViewModel(initialURL: nil)
+            self.viewModel = WebViewModel(onOpenInNewTab: onOpenInNewTab)
             self.isNewTabPage = true
-        } else if let url {
-            self.viewModel = WebViewModel(initialURL: url)
+        } else if let initialRequest {
+            self.viewModel = WebViewModel(
+                initialRequest: initialRequest,
+                onOpenInNewTab: onOpenInNewTab
+            )
+            self.isNewTabPage = false
+        } else if let initialURL {
+            self.viewModel = WebViewModel(
+                initialURL: initialURL,
+                onOpenInNewTab: onOpenInNewTab
+            )
             self.isNewTabPage = false
         } else {
-            self.viewModel = WebViewModel(initialURL: nil)
+            self.viewModel = WebViewModel(onOpenInNewTab: onOpenInNewTab)
             self.isNewTabPage = false
         }
 

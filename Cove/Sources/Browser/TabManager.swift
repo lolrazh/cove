@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 enum TabLayout: String {
     case horizontal
@@ -44,16 +45,39 @@ final class TabManager: ObservableObject {
         let tab: Tab
 
         if let url {
-            tab = Tab(url: url, showsStartPage: false)
+            tab = makeTab(initialURL: url, showsStartPage: false)
         } else {
             switch settings.destinationForNewTab() {
             case .startPage:
-                tab = Tab(showsStartPage: true)
+                tab = makeTab(showsStartPage: true)
             case .url(let destination):
-                tab = Tab(url: destination, showsStartPage: false)
+                tab = makeTab(initialURL: destination, showsStartPage: false)
             }
         }
 
+        open(tab)
+    }
+
+    func addTab(request: URLRequest) {
+        let tab = makeTab(initialRequest: request, showsStartPage: false)
+        open(tab)
+    }
+
+    private func makeTab(
+        initialURL: String? = nil,
+        initialRequest: URLRequest? = nil,
+        showsStartPage: Bool = false
+    ) -> Tab {
+        Tab(
+            initialURL: initialURL,
+            initialRequest: initialRequest,
+            showsStartPage: showsStartPage
+        ) { [weak self] request in
+            self?.addTab(request: request)
+        }
+    }
+
+    private func open(_ tab: Tab) {
         tabs.append(tab)
         activeTabID = tab.id
     }
