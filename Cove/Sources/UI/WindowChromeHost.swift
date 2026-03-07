@@ -16,6 +16,7 @@ struct WindowChromeHost<Content: View>: View {
 
     var body: some View {
         content
+            .environment(\.titlebarHeight, titlebarHeight)
             .padding(.top, -chromeCompensationOffset)
             .background {
                 WindowChromeAccessor(

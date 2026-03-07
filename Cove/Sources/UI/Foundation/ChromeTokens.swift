@@ -81,3 +81,16 @@ enum ChromeMotion {
 enum ChromeOpacity {
     static let disabled: Double = 0.42
 }
+
+// MARK: - Titlebar Height Environment
+
+private struct TitlebarHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 28
+}
+
+extension EnvironmentValues {
+    var titlebarHeight: CGFloat {
+        get { self[TitlebarHeightKey.self] }
+        set { self[TitlebarHeightKey.self] = newValue }
+    }
+}
