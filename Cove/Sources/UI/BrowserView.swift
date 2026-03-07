@@ -23,15 +23,13 @@ struct BrowserView: View {
     // MARK: - Chrome Controls
 
     private var chromeControlsStyle: WindowChromeControlsStyle {
-        let isHorizontal = tabManager.tabLayout == .horizontal
         let stripVisible = !settings.hideTabs || tabManager.areTabsVisible
 
         return WindowChromeControlsStyle(
             leadingInset: ChromeMetrics.shellControlsLeadingInset,
             interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: stripVisible,
-            centerlineFromTop: isHorizontal && stripVisible ? ChromeMetrics.topStripLaneCenterFromTop : nil
+            isVisible: stripVisible
         )
     }
 

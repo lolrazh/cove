@@ -6,7 +6,6 @@ struct WindowChromeControlsStyle: Equatable {
     var interButtonSpacing: CGFloat
     var verticalOffset: CGFloat
     var isVisible: Bool
-    var centerlineFromTop: CGFloat?
 }
 
 struct WindowChromeAccessor: NSViewRepresentable {
@@ -31,8 +30,7 @@ final class WindowChromeTrackingView: NSView {
         leadingInset: ChromeMetrics.shellControlsLeadingInset,
         interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
         verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-        isVisible: true,
-        centerlineFromTop: nil
+        isVisible: true
     ) {
         didSet {
             let shouldAnimate = oldValue != controlsStyle
@@ -187,14 +185,7 @@ enum WindowChromeController {
         titlebarHeight: CGFloat,
         buttonHeight: CGFloat
     ) -> CGFloat {
-        // The browser strip is anchored to the top edge of the window, not
-        // centered inside the native titlebar. When a shared strip centerline
-        // is provided, solve the button origin from that top-anchored target.
-        if let centerlineFromTop = style.centerlineFromTop {
-            return (titlebarHeight - centerlineFromTop - (buttonHeight / 2)) + style.verticalOffset
-        }
-
-        return max(0, (titlebarHeight - buttonHeight) / 2) + style.verticalOffset
+        max(0, (titlebarHeight - buttonHeight) / 2) + style.verticalOffset
     }
 
     private static func show(button: NSButton, at origin: CGPoint, animated: Bool) {
