@@ -15,7 +15,7 @@ struct BrowserView: View {
         .background {
             if tabManager.tabLayout == .sidebar {
                 WindowChromeAccessor(
-                    controlsStyle: sidebarWindowChromeControlsStyle
+                    controlsStyle: sidebarChromeControlsStyle
                 )
                 .allowsHitTesting(false)
             }
@@ -24,87 +24,47 @@ struct BrowserView: View {
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
 
+    // MARK: - Shell Routing
+
     @ViewBuilder
     private func chromeShell(for activeTab: Tab) -> some View {
         if tabManager.tabLayout == .horizontal {
-            WindowChromeHost(
-                controlsStyle: topWindowChromeControlsStyle
-            ) {
-                TopBrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+            WindowChromeHost(controlsStyle: horizontalChromeControlsStyle) {
+                BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
                     activeTabContent
-                }
-                .background {
-                    TitlebarTabStripAccessory(
-                        tabManager: tabManager,
-                        isVisible: showsTopWindowStrip
-                    )
                 }
             }
         } else {
-            sidebarShell(for: activeTab)
-        }
-    }
-
-    private func sidebarShell(for activeTab: Tab) -> some View {
-        HStack(spacing: ChromeMetrics.shellStripBottomSpacing) {
-            if showsIntegratedSidebarRail {
-                SidebarTabView(
-                    tabManager: tabManager,
-                    presentation: .integrated
-                )
-            }
-
-            sidebarMainPanel(for: activeTab)
-        }
-        .padding(ChromeMetrics.windowInset)
-        .chromeWindowSurface()
-    }
-
-    private func sidebarMainPanel(for activeTab: Tab) -> some View {
-        ZStack(alignment: .leading) {
-            VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
-                NavigationBar(
-                    viewModel: activeTab.viewModel,
-                    onNavigate: { _ in
-                        activeTab.isNewTabPage = false
-                    }
-                )
-                .id(activeTab.id)
-                .padding(ChromeMetrics.mainPanelInnerPadding)
-
-                Rectangle()
-                    .fill(ChromePalette.chromeStroke)
-                    .frame(height: ChromeMetrics.mainPanelSeparatorHeight)
-
-                ZStack(alignment: .top) {
-                    activeTabContent
-                    contentLoadingIndicator(for: activeTab)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            if showsOverlaySidebarRail {
-                SidebarTabView(tabManager: tabManager)
-                    .zIndex(1)
+            BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                activeTabContent
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
-    @ViewBuilder
-    private func contentLoadingIndicator(for activeTab: Tab) -> some View {
-        if activeTab.viewModel.isLoading {
-            ProgressView(value: activeTab.viewModel.estimatedProgress)
-                .progressViewStyle(.linear)
-                .tint(.accentColor)
-                .labelsHidden()
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .allowsHitTesting(false)
-        }
+    // MARK: - Chrome Controls
+
+    private var horizontalChromeControlsStyle: WindowChromeControlsStyle {
+        let stripVisible = !settings.hideTabs || tabManager.areTabsVisible
+        return WindowChromeControlsStyle(
+            leadingInset: ChromeMetrics.shellControlsLeadingInset,
+            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
+            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
+            isVisible: stripVisible,
+            centerlineFromTop: stripVisible ? ChromeMetrics.topStripLaneCenterFromTop : nil
+        )
     }
+
+    private var sidebarChromeControlsStyle: WindowChromeControlsStyle {
+        WindowChromeControlsStyle(
+            leadingInset: ChromeMetrics.shellControlsLeadingInset,
+            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
+            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
+            isVisible: true,
+            centerlineFromTop: nil
+        )
+    }
+
+    // MARK: - Tab Content
 
     @ViewBuilder
     private var activeTabContent: some View {
@@ -125,13 +85,7 @@ struct BrowserView: View {
         }
     }
 
-    private var showsIntegratedSidebarRail: Bool {
-        tabManager.tabLayout == .sidebar && !settings.hideTabs
-    }
-
-    private var showsOverlaySidebarRail: Bool {
-        tabManager.tabLayout == .sidebar && settings.hideTabs
-    }
+    // MARK: - Commands
 
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
@@ -148,30 +102,6 @@ struct BrowserView: View {
                 }
             }
         )
-    }
-
-    private var sidebarWindowChromeControlsStyle: WindowChromeControlsStyle {
-        WindowChromeControlsStyle(
-            leadingInset: ChromeMetrics.shellControlsLeadingInset,
-            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
-            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: true,
-            centerlineFromTop: nil
-        )
-    }
-
-    private var topWindowChromeControlsStyle: WindowChromeControlsStyle {
-        WindowChromeControlsStyle(
-            leadingInset: ChromeMetrics.shellControlsLeadingInset,
-            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
-            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: showsTopWindowStrip,
-            centerlineFromTop: showsTopWindowStrip ? ChromeMetrics.topStripLaneCenterFromTop : nil
-        )
-    }
-
-    private var showsTopWindowStrip: Bool {
-        tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
     }
 }
 
