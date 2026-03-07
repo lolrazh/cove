@@ -6,6 +6,7 @@ struct BrowserShellView<Content: View>: View {
     let content: Content
 
     @ObservedObject private var settings = BrowserSettingsStore.shared
+    @Environment(\.titlebarHeight) private var titlebarHeight
     @State private var isHoveringChrome = false
     @State private var chromeHideTask: Task<Void, Never>?
 
@@ -19,36 +20,44 @@ struct BrowserShellView<Content: View>: View {
         self.content = content()
     }
 
+    // MARK: - Body
+
     var body: some View {
-        shellLayout
+        shell
+            .overlay(alignment: .top) {
+                if isHorizontalImmersive {
+                    topRevealArea
+                }
+            }
+            .overlay(alignment: .leading) {
+                if showsOverlaySidebar {
+                    SidebarTabView(tabManager: tabManager)
+                        .zIndex(1)
+                }
+            }
             .background {
                 if tabManager.tabLayout == .horizontal {
                     TitlebarTabStripAccessory(
                         tabManager: tabManager,
-                        isVisible: showsChromeStrip
+                        isVisible: showsTopStrip
                     )
                 }
             }
     }
 
-    // MARK: - Shell Layout
+    // MARK: - Shell (Two Layers: Dark Frame + Light Panel)
 
-    @ViewBuilder
-    private var shellLayout: some View {
-        switch tabManager.tabLayout {
-        case .horizontal:
-            horizontalShell
-        case .sidebar:
-            verticalShell
-        }
-    }
+    private var shell: some View {
+        HStack(spacing: 0) {
+            if showsIntegratedSidebar {
+                SidebarTabView(tabManager: tabManager, presentation: .integrated)
+                    .colorScheme(.dark)
+            }
 
-    // MARK: - Horizontal Shell (Top Tabs)
-
-    private var horizontalShell: some View {
-        VStack(spacing: 0) {
-            topChromeSlot
-            contentPanel
+            VStack(spacing: 0) {
+                topChromeZone
+                contentPanel
+            }
         }
         .padding(.horizontal, ChromeMetrics.shellGutter)
         .padding(.bottom, ChromeMetrics.shellGutter)
@@ -58,16 +67,13 @@ struct BrowserShellView<Content: View>: View {
             cornerRadius: ChromeMetrics.windowCornerRadius,
             borderWidth: ChromeMetrics.windowBorderWidth
         )
-        .overlay(alignment: .top) {
-            if isHorizontalImmersive {
-                topRevealArea
-            }
-        }
     }
 
-    private var topChromeSlot: some View {
+    // MARK: - Top Chrome Zone
+
+    private var topChromeZone: some View {
         ZStack(alignment: .leading) {
-            if showsChromeStrip {
+            if showsTopStrip {
                 Color.clear
                     .frame(
                         maxWidth: .infinity,
@@ -89,58 +95,19 @@ struct BrowserShellView<Content: View>: View {
     }
 
     private var topSlotHeight: CGFloat {
-        showsChromeStrip ? ChromeMetrics.topBandHeight : ChromeMetrics.shellGutter
-    }
-
-    private var isHorizontalImmersive: Bool {
-        settings.hideTabs && !tabManager.areTabsVisible
-    }
-
-    private var topRevealArea: some View {
-        Color.clear
-            .frame(height: 12)
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                if hovering {
-                    chromeHideTask?.cancel()
-                    tabManager.revealTabs()
-                }
-            }
-    }
-
-    // MARK: - Vertical Shell (Sidebar Tabs)
-
-    private var verticalShell: some View {
-        HStack(spacing: ChromeMetrics.shellGutter) {
-            if showsIntegratedSidebar {
-                SidebarTabView(tabManager: tabManager, presentation: .integrated)
-            }
-            contentPanel
+        switch tabManager.tabLayout {
+        case .horizontal:
+            return isHorizontalImmersive ? ChromeMetrics.shellGutter : ChromeMetrics.topBandHeight
+        case .sidebar:
+            return ChromeMetrics.shellGutter
         }
-        .padding(ChromeMetrics.shellGutter)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .chromePanelSurface(
-            .browserShell,
-            cornerRadius: ChromeMetrics.windowCornerRadius,
-            borderWidth: ChromeMetrics.windowBorderWidth
-        )
-        .overlay(alignment: .leading) {
-            if showsOverlaySidebar {
-                SidebarTabView(tabManager: tabManager)
-                    .zIndex(1)
-            }
-        }
-    }
-
-    private var showsIntegratedSidebar: Bool {
-        tabManager.tabLayout == .sidebar && !settings.hideTabs
-    }
-
-    private var showsOverlaySidebar: Bool {
-        tabManager.tabLayout == .sidebar && settings.hideTabs
     }
 
     // MARK: - Shared Content Panel
+
+    private var sidebarTitlebarClearance: CGFloat {
+        max(0, titlebarHeight - ChromeMetrics.shellGutter - ChromeMetrics.topNavigationVerticalPadding)
+    }
 
     private var contentPanel: some View {
         VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
@@ -151,6 +118,7 @@ struct BrowserShellView<Content: View>: View {
             .id(activeTab.id)
             .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
             .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)
+            .padding(.top, tabManager.tabLayout == .sidebar ? sidebarTitlebarClearance : 0)
             .contentShape(Rectangle())
             .onHover(perform: handleChromeHover)
 
@@ -181,10 +149,36 @@ struct BrowserShellView<Content: View>: View {
         }
     }
 
+    // MARK: - Immersive Reveal
+
+    private var topRevealArea: some View {
+        Color.clear
+            .frame(height: 12)
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                if hovering {
+                    chromeHideTask?.cancel()
+                    tabManager.revealTabs()
+                }
+            }
+    }
+
     // MARK: - Chrome Visibility
 
-    var showsChromeStrip: Bool {
-        !settings.hideTabs || tabManager.areTabsVisible
+    var showsTopStrip: Bool {
+        tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
+    }
+
+    private var showsIntegratedSidebar: Bool {
+        tabManager.tabLayout == .sidebar && !settings.hideTabs
+    }
+
+    private var showsOverlaySidebar: Bool {
+        tabManager.tabLayout == .sidebar && settings.hideTabs
+    }
+
+    private var isHorizontalImmersive: Bool {
+        tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
     }
 
     // MARK: - Unified Hide/Reveal
