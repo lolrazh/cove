@@ -5,10 +5,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowToolbarIdentifier = NSToolbar.Identifier("CoveWindowToolbar")
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Cove has its own in-app tab model, so AppKit's window tabbing
+        // only creates confusing parallel behavior in the Window menu.
         NSWindow.allowsAutomaticWindowTabbing = false
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Ensure no transparent titlebar material (anti-Liquid Glass)
         for window in NSApplication.shared.windows {
             configureWindow(window)
         }
