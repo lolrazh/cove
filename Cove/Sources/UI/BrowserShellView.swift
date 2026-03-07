@@ -155,7 +155,9 @@ struct BrowserShellView<Content: View>: View {
             .onHover { hovering in
                 if hovering {
                     chromeHideTask?.cancel()
-                    tabManager.revealTabs()
+                    withAnimation(ChromeMotion.shell) {
+                        tabManager.revealTabs()
+                    }
                 }
             }
     }
@@ -168,7 +170,9 @@ struct BrowserShellView<Content: View>: View {
             .onHover { hovering in
                 if hovering {
                     chromeHideTask?.cancel()
-                    tabManager.revealTabs()
+                    withAnimation(ChromeMotion.shell) {
+                        tabManager.revealTabs()
+                    }
                 }
             }
     }
@@ -197,10 +201,7 @@ struct BrowserShellView<Content: View>: View {
         isHoveringChrome = hovering
         chromeHideTask?.cancel()
 
-        guard tabManager.hideTabs else {
-            tabManager.areTabsVisible = true
-            return
-        }
+        guard tabManager.hideTabs else { return }
 
         if !hovering {
             chromeHideTask = Task { @MainActor in
@@ -208,7 +209,9 @@ struct BrowserShellView<Content: View>: View {
                 guard !Task.isCancelled,
                       !isHoveringChrome,
                       tabManager.hideTabs else { return }
-                tabManager.hideTabsIfNeeded()
+                withAnimation(ChromeMotion.shell) {
+                    tabManager.hideTabsIfNeeded()
+                }
             }
         }
     }

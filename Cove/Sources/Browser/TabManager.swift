@@ -30,7 +30,10 @@ final class TabManager: ObservableObject {
     func setLayout(_ layout: TabLayout) {
         guard tabLayout != layout else { return }
         tabLayout = layout
-        areTabsVisible = !hideTabs
+        let targetVisibility = !hideTabs
+        if areTabsVisible != targetVisibility {
+            areTabsVisible = targetVisibility
+        }
         settings.setShowsTabsInSidebar(layout == .sidebar)
     }
 
@@ -90,16 +93,12 @@ final class TabManager: ObservableObject {
     }
 
     func revealTabs() {
-        withAnimation(ChromeMotion.shell) {
-            areTabsVisible = true
-        }
+        areTabsVisible = true
     }
 
     func hideTabsIfNeeded() {
         guard hideTabs else { return }
-        withAnimation(ChromeMotion.shell) {
-            areTabsVisible = false
-        }
+        areTabsVisible = false
     }
 
 }

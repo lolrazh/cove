@@ -13,7 +13,6 @@ struct BrowserView: View {
                 }
             }
         }
-        .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
         .focusedObject(tabManager)
