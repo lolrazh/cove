@@ -45,8 +45,9 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
             super.init()
             accessoryController.layoutAttribute = .left
             accessoryController.fullScreenMinHeight = ChromeMetrics.topBandHeight
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
             accessoryController.view = hostingView
-            accessoryController.isHidden = true
         }
 
         func attach(to window: NSWindow?) {
@@ -130,6 +131,12 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
                 name: NSWindow.didEndLiveResizeNotification,
                 object: window
             )
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(windowDidResize(_:)),
+                name: NSWindow.didChangeScreenNotification,
+                object: window
+            )
         }
 
         private func removeObservers() {
@@ -142,6 +149,11 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
             NotificationCenter.default.removeObserver(
                 self,
                 name: NSWindow.didEndLiveResizeNotification,
+                object: observedWindow
+            )
+            NotificationCenter.default.removeObserver(
+                self,
+                name: NSWindow.didChangeScreenNotification,
                 object: observedWindow
             )
             self.observedWindow = nil

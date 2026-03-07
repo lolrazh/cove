@@ -33,14 +33,16 @@ final class WindowChromeTrackingView: NSView {
         isVisible: true
     ) {
         didSet {
-            let shouldAnimate = oldValue != controlsStyle
-            applyControlsIfPossible(animated: shouldAnimate)
+            guard oldValue != controlsStyle else { return }
+            applyControlsIfPossible(animated: true, force: true)
         }
     }
 
     var titlebarHeight: Binding<CGFloat>?
 
     private weak var observedWindow: NSWindow?
+    private var lastAppliedStyle: WindowChromeControlsStyle?
+    private var lastAppliedTitlebarHeight: CGFloat?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -54,7 +56,7 @@ final class WindowChromeTrackingView: NSView {
 
     override func layout() {
         super.layout()
-        applyControlsIfPossible(animated: false)
+        applyControlsIfPossible(animated: false, force: false)
     }
 
     deinit {
@@ -63,12 +65,12 @@ final class WindowChromeTrackingView: NSView {
 
     @objc
     private func windowFrameDidChange(_ notification: Notification) {
-        applyControlsIfPossible(animated: false)
+        applyControlsIfPossible(animated: false, force: true)
     }
 
     private func bindWindowObservation() {
         guard observedWindow !== window else {
-            applyControlsIfPossible(animated: false)
+            applyControlsIfPossible(animated: false, force: true)
             return
         }
 
@@ -98,7 +100,14 @@ final class WindowChromeTrackingView: NSView {
             object: window
         )
 
-        applyControlsIfPossible(animated: false)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowFrameDidChange(_:)),
+            name: NSWindow.didChangeScreenNotification,
+            object: window
+        )
+
+        applyControlsIfPossible(animated: false, force: true)
     }
 
     private func stopObservingWindow() {
@@ -106,16 +115,26 @@ final class WindowChromeTrackingView: NSView {
         NotificationCenter.default.removeObserver(self, name: NSWindow.didResizeNotification, object: observedWindow)
         NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: observedWindow)
         NotificationCenter.default.removeObserver(self, name: NSWindow.didEndLiveResizeNotification, object: observedWindow)
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didChangeScreenNotification, object: observedWindow)
         self.observedWindow = nil
     }
 
-    private func applyControlsIfPossible(animated: Bool) {
+    private func applyControlsIfPossible(animated: Bool, force: Bool) {
         guard let window else { return }
         let buttonTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
         let buttons = buttonTypes.compactMap { window.standardWindowButton($0) }
 
         let resolvedTitlebarHeight = resolvedTitlebarHeight(for: window, buttons: buttons)
         reportTitlebarHeight(resolvedTitlebarHeight)
+
+        if !force,
+           lastAppliedStyle == controlsStyle,
+           lastAppliedTitlebarHeight == resolvedTitlebarHeight {
+            return
+        }
+
+        lastAppliedStyle = controlsStyle
+        lastAppliedTitlebarHeight = resolvedTitlebarHeight
 
         WindowChromeController.applyControls(
             buttons: buttons,
