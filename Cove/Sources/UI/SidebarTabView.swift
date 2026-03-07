@@ -2,11 +2,7 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
-    @ObservedObject private var settings = BrowserSettingsStore.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    @State private var isHoveringSidebar = false
-    @State private var hideTask: Task<Void, Never>?
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
@@ -16,114 +12,49 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
-    private var showsOverlay: Bool {
-        !settings.hideTabs || tabManager.areTabsVisible
-    }
-
     var body: some View {
-        ZStack(alignment: .leading) {
-            if showsOverlay {
-                sidebarContent
-                    .padding(.leading, 10)
-                    .padding(.vertical, 10)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-            } else if settings.hideTabs {
-                revealHandle
-                    .padding(.leading, 4)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-    }
-
-    private var sidebarContent: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-
-                DownloadsStatusButton()
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 4) {
-                    ForEach(tabManager.tabs) { tab in
-                        ChromeTabItem(
-                            tab: tab,
-                            presentation: .sidebar,
-                            isActive: tab.id == tabManager.activeTabID,
-                            onSelect: { tabManager.selectTab(tab.id) },
-                            onClose: { tabManager.closeTab(tab.id) },
-                            canClose: tabManager.tabs.count > 1
-                        )
-                    }
-
-                    SidebarNewTabItem {
-                        tabManager.addTab()
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 10)
-                .animation(tabReorderAnimation, value: tabOrder)
-            }
-
-            Spacer()
+            sidebarHeader
+            sidebarTabList
+            Spacer(minLength: 0)
         }
         .frame(width: ChromeMetrics.sidebarWidth)
-        .chromePanelSurface(.sidebar, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
-        .onHover { hovering in
-            handleSidebarHover(hovering)
-        }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    private var revealHandle: some View {
-        VStack {
+    private var sidebarHeader: some View {
+        HStack {
             Spacer()
 
-            Capsule()
-                .fill(ChromePalette.handleFill)
-                .frame(width: 4, height: 48)
-                .padding(.horizontal, 4)
-
-            Spacer()
+            DownloadsStatusButton()
         }
-        .frame(width: ChromeMetrics.sidebarRevealHandleWidth)
-        .contentShape(Rectangle())
-        .onHover { hovering in
-            if hovering {
-                revealSidebar()
-            }
-        }
+        .padding(.horizontal, 12)
+        .frame(height: ChromeMetrics.shellStripHeight + 18, alignment: .bottom)
+        .padding(.bottom, 8)
     }
 
-    private func handleSidebarHover(_ hovering: Bool) {
-        isHoveringSidebar = hovering
-        hideTask?.cancel()
+    private var sidebarTabList: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 4) {
+                ForEach(tabManager.tabs) { tab in
+                    ChromeTabItem(
+                        tab: tab,
+                        presentation: .sidebar,
+                        isActive: tab.id == tabManager.activeTabID,
+                        onSelect: { tabManager.selectTab(tab.id) },
+                        onClose: { tabManager.closeTab(tab.id) },
+                        canClose: tabManager.tabs.count > 1
+                    )
+                }
 
-        guard settings.hideTabs else {
-            tabManager.areTabsVisible = true
-            return
-        }
-
-        if hovering {
-            tabManager.areTabsVisible = true
-        } else {
-            hideTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(750))
-                guard !Task.isCancelled,
-                      !isHoveringSidebar,
-                      tabManager.tabLayout == .sidebar,
-                      settings.hideTabs else { return }
-
-                tabManager.hideTabsIfNeeded()
+                SidebarNewTabItem {
+                    tabManager.addTab()
+                }
             }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+            .animation(tabReorderAnimation, value: tabOrder)
         }
-    }
-
-    private func revealSidebar() {
-        hideTask?.cancel()
-        tabManager.revealTabs()
     }
 }
 

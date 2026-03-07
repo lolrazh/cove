@@ -3,21 +3,13 @@ import SwiftUI
 struct BrowserView: View {
     @StateObject private var tabManager = TabManager()
     @ObservedObject private var settings = BrowserSettingsStore.shared
-    @State private var isHoveringTopChrome = false
-    @State private var topTabsHideTask: Task<Void, Never>?
 
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                VStack(spacing: ChromeMetrics.topChromeSpacing) {
-                    topChrome(for: activeTab)
-                    contentArea
-                }
-                .padding(ChromeMetrics.windowInset)
-                .chromeWindowSurface()
-                .overlay(alignment: .top) {
-                    if showsTopRevealArea {
-                        topTabsRevealArea
+                WindowChromeHost(isVisible: stripVisible) {
+                    BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                        activeTabContent
                     }
                 }
             }
@@ -28,50 +20,11 @@ struct BrowserView: View {
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
 
-    private func topChrome(for activeTab: Tab) -> some View {
-        VStack(spacing: ChromeMetrics.topChromeSpacing) {
-            if tabManager.tabLayout == .horizontal && tabManager.areTabsVisible {
-                TabStripView(tabManager: tabManager)
-            }
-
-            NavigationBar(
-                viewModel: activeTab.viewModel,
-                onNavigate: { _ in
-                    activeTab.isNewTabPage = false
-                }
-            )
-            .id(activeTab.id)
-        }
-        .padding(ChromeMetrics.topChromePadding)
-        .chromePanelSurface(.topChrome, cornerRadius: ChromeMetrics.panelCornerRadius)
-        .onHover { hovering in
-            handleTopChromeHover(hovering)
-        }
-        .overlay(alignment: .bottom) {
-            if activeTab.viewModel.isLoading {
-                ProgressView(value: activeTab.viewModel.estimatedProgress)
-                    .progressViewStyle(.linear)
-                    .tint(.accentColor)
-                    .labelsHidden()
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
-                    .allowsHitTesting(false)
-            }
-        }
+    private var stripVisible: Bool {
+        !settings.hideTabs || tabManager.areTabsVisible
     }
 
-    private var contentArea: some View {
-        ZStack(alignment: .leading) {
-            activeTabContent
-
-            if tabManager.tabLayout == .sidebar {
-                SidebarTabView(tabManager: tabManager)
-                    .zIndex(1)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .chromePanelSurface(.window, cornerRadius: ChromeMetrics.windowCornerRadius)
-    }
+    // MARK: - Tab Content
 
     @ViewBuilder
     private var activeTabContent: some View {
@@ -92,21 +45,7 @@ struct BrowserView: View {
         }
     }
 
-    private var showsTopRevealArea: Bool {
-        tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
-    }
-
-    private var topTabsRevealArea: some View {
-        Color.clear
-            .frame(height: 12)
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                if hovering {
-                    topTabsHideTask?.cancel()
-                    tabManager.revealTabs()
-                }
-            }
-    }
+    // MARK: - Commands
 
     private var browserCommandContext: BrowserCommandContext {
         BrowserCommandContext(
@@ -123,32 +62,6 @@ struct BrowserView: View {
                 }
             }
         )
-    }
-
-    private func handleTopChromeHover(_ hovering: Bool) {
-        guard tabManager.tabLayout == .horizontal else { return }
-
-        isHoveringTopChrome = hovering
-        topTabsHideTask?.cancel()
-
-        guard settings.hideTabs else {
-            tabManager.areTabsVisible = true
-            return
-        }
-
-        if hovering {
-            guard tabManager.areTabsVisible else { return }
-        } else {
-            topTabsHideTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(700))
-                guard !Task.isCancelled,
-                      !isHoveringTopChrome,
-                      tabManager.tabLayout == .horizontal,
-                      settings.hideTabs else { return }
-
-                tabManager.hideTabsIfNeeded()
-            }
-        }
     }
 }
 

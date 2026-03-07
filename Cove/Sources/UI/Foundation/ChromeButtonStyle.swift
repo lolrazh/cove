@@ -26,7 +26,7 @@ private struct ChromeButtonBody: View {
 
     var body: some View {
         let metrics = self.metrics
-        let shape = RoundedRectangle(cornerRadius: metrics.cornerRadius, style: .continuous)
+        let shape = ChromeMetrics.roundedShape(radius: metrics.cornerRadius)
 
         return configuration.label
             .frame(

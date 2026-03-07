@@ -12,7 +12,7 @@ struct ChromeFieldStyle: ViewModifier {
 
     func body(content: Content) -> some View {
         let metrics = self.metrics
-        let shape = RoundedRectangle(cornerRadius: metrics.cornerRadius, style: .continuous)
+        let shape = ChromeMetrics.roundedShape(radius: metrics.cornerRadius)
 
         return content
             .padding(.horizontal, metrics.horizontalPadding)

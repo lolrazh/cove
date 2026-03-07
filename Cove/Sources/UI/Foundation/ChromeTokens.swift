@@ -2,33 +2,63 @@ import SwiftUI
 import AppKit
 
 enum ChromeMetrics {
+    static let cornerStyle: RoundedCornerStyle = .continuous
     static let windowCornerRadius: CGFloat = 14
-    static let windowInset: CGFloat = 6
+    static let shellGutter: CGFloat = 6
+    static let windowInset: CGFloat = shellGutter
     static let windowBorderWidth: CGFloat = 0.75
     static let surfaceBorderWidth: CGFloat = 1
     static let topChromeSpacing: CGFloat = 6
     static let topChromePadding: CGFloat = 8
-    static var panelCornerRadius: CGFloat { nestedCornerRadius(inside: windowCornerRadius, inset: windowInset) }
-    static var controlCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
-    static var fieldCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 1.5) }
-    static var tabCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
+    static let panelCornerRadius: CGFloat = 14
+    static let controlCornerRadius: CGFloat = 10.5
+    static let fieldCornerRadius: CGFloat = 10.5
+    static let tabCornerRadius: CGFloat = 10.5
+    static let shellStripHeight: CGFloat = 36
+    static let shellStripBottomSpacing: CGFloat = shellGutter
+    static let shellControlsInterButtonSpacing: CGFloat = 8
+    static let shellControlsInsetWithinShell: CGFloat = 6
+    static let shellControlsEdgeBalanceInset: CGFloat = 8
+    static let shellControlsButtonSize: CGFloat = 16
+    static let shellControlsGapToTabs: CGFloat = 2
+    static let shellControlsLeadingInset: CGFloat = shellGutter + shellControlsInsetWithinShell + shellControlsEdgeBalanceInset
+    static var shellControlsClusterWidth: CGFloat {
+        (shellControlsButtonSize * 3) + (shellControlsInterButtonSpacing * 2)
+    }
+    static var shellControlsReservedWidth: CGFloat {
+        shellControlsClusterWidth + shellControlsInsetWithinShell + shellControlsGapToTabs + shellControlsEdgeBalanceInset
+    }
+    static let shellControlsVerticalOffset: CGFloat = 0
+    static let mainPanelInnerPadding: CGFloat = 8
+    static let topNavigationHorizontalPadding: CGFloat = 10
+    static let topNavigationVerticalPadding: CGFloat = 6
+    static let mainPanelSectionSpacing: CGFloat = 0
+    static let mainPanelSeparatorHeight: CGFloat = 1
     static let topBarMinHeight: CGFloat = 44
-    static let tabStripHeight: CGFloat = 38
+    static let topStripLaneHeight: CGFloat = 32
+    static let tabStripHeight: CGFloat = topStripLaneHeight
+    static let topBandHeight: CGFloat = topStripLaneHeight + (shellGutter * 2)
     static let iconButtonSize = CGSize(width: 30, height: 30)
     static let sidebarWidth: CGFloat = 240
     static let sidebarRevealHandleWidth: CGFloat = 12
 
+    static func roundedShape(radius: CGFloat) -> RoundedRectangle {
+        RoundedRectangle(cornerRadius: radius, style: cornerStyle)
+    }
+
     private static func nestedCornerRadius(
         inside outerRadius: CGFloat,
         inset: CGFloat,
-        minimum: CGFloat = 8
+        minimum: CGFloat = 4
     ) -> CGFloat {
-        max(outerRadius - (inset * 0.65), minimum)
+        max(outerRadius - inset, minimum)
     }
 }
 
 enum ChromePalette {
     static let window = Color(nsColor: .windowBackgroundColor)
+    static let shellFill = Color(nsColor: NSColor(calibratedWhite: 0.12, alpha: 1))
+    static let topStripDivider = Color.white.opacity(0.08)
     static let chromeFill = Color.primary.opacity(0.035)
     static let chromeStroke = Color.primary.opacity(0.08)
     static let chromeStrokeStrong = Color.primary.opacity(0.12)
@@ -54,4 +84,17 @@ enum ChromeMotion {
 
 enum ChromeOpacity {
     static let disabled: Double = 0.42
+}
+
+// MARK: - Titlebar Height Environment
+
+private struct TitlebarHeightKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 28
+}
+
+extension EnvironmentValues {
+    var titlebarHeight: CGFloat {
+        get { self[TitlebarHeightKey.self] }
+        set { self[TitlebarHeightKey.self] = newValue }
+    }
 }

@@ -1,7 +1,5 @@
 # Cove — The Browser That Breathes
 
-*Sanskrit: वायु — God of Wind. Swift, invisible, essential.*
-
 ---
 
 ## Why Cove Exists
