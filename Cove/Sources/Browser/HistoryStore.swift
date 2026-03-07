@@ -9,11 +9,13 @@ struct HistoryEntry: Identifiable {
 
 @MainActor
 final class HistoryStore {
-    static let shared = HistoryStore()
+    static let shared = HistoryStore(settings: .shared)
 
+    private let settings: BrowserSettingsStore
     private let db: Database?
 
-    private init() {
+    init(settings: BrowserSettingsStore) {
+        self.settings = settings
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let dbPath = appSupport.appendingPathComponent("Cove/history.db").path
 
@@ -69,7 +71,7 @@ final class HistoryStore {
 
     func recordVisit(url: String, title: String) {
         guard let db else { return }
-        guard BrowserSettingsStore.shared.saveBrowsingHistory else { return }
+        guard settings.saveBrowsingHistory else { return }
         // Skip blank/internal pages
         guard !url.isEmpty, url.hasPrefix("http") else { return }
 
@@ -82,7 +84,7 @@ final class HistoryStore {
 
     func search(query: String, limit: Int = 50) -> [HistoryEntry] {
         guard let db else { return [] }
-        guard BrowserSettingsStore.shared.saveBrowsingHistory else { return [] }
+        guard settings.saveBrowsingHistory else { return [] }
 
         let results: [[String: Any]]
         if query.isEmpty {

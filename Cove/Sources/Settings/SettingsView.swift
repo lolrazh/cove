@@ -2,19 +2,27 @@ import SwiftUI
 
 @MainActor
 struct SettingsView: View {
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
+
+    init(settingsStore: BrowserSettingsStore, historyStore: HistoryStore) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+    }
+
     var body: some View {
         TabView {
-            GeneralSettingsPane()
+            GeneralSettingsPane(settingsStore: settingsStore)
                 .tabItem {
                     Label("General", systemImage: ChromeSymbols.Settings.general)
                 }
 
-            PrivacySettingsPane()
+            PrivacySettingsPane(settingsStore: settingsStore, historyStore: historyStore)
                 .tabItem {
                     Label("Privacy", systemImage: ChromeSymbols.Settings.privacy)
                 }
 
-            DownloadsSettingsPane()
+            DownloadsSettingsPane(settingsStore: settingsStore)
                 .tabItem {
                     Label("Downloads", systemImage: ChromeSymbols.Settings.downloads)
                 }
@@ -26,7 +34,11 @@ struct SettingsView: View {
 
 @MainActor
 private struct GeneralSettingsPane: View {
-    @ObservedObject private var settingsStore = BrowserSettingsStore.shared
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+
+    init(settingsStore: BrowserSettingsStore) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+    }
 
     private var isHomePageMode: Bool {
         settingsStore.newTabPreference == .homePage
@@ -113,7 +125,13 @@ private struct GeneralSettingsPane: View {
 
 @MainActor
 private struct PrivacySettingsPane: View {
-    @ObservedObject private var settingsStore = BrowserSettingsStore.shared
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
+
+    init(settingsStore: BrowserSettingsStore, historyStore: HistoryStore) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+    }
 
     private var contentBlockingBinding: Binding<Bool> {
         Binding(
@@ -153,7 +171,7 @@ private struct PrivacySettingsPane: View {
 
             Section("History") {
                 Button("Clear History") {
-                    settingsStore.clearHistory()
+                    historyStore.clearAll()
                 }
 
                 Text("Turning off history also removes recent sites from the start page.")
@@ -167,7 +185,11 @@ private struct PrivacySettingsPane: View {
 
 @MainActor
 private struct DownloadsSettingsPane: View {
-    @ObservedObject private var settingsStore = BrowserSettingsStore.shared
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+
+    init(settingsStore: BrowserSettingsStore) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+    }
 
     private var downloadDestinationModeBinding: Binding<String> {
         Binding(

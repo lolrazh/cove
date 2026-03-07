@@ -79,7 +79,7 @@ final class DownloadItem: ObservableObject, Identifiable {
 
 @MainActor
 final class DownloadManager: NSObject, ObservableObject {
-    static let shared = DownloadManager()
+    static let shared = DownloadManager(settings: .shared)
 
     @Published var items: [DownloadItem] = []
     private let settings: BrowserSettingsStore
@@ -100,7 +100,7 @@ final class DownloadManager: NSObject, ObservableObject {
 
     private var downloadToItem: [WKDownload: DownloadItem] = [:]
 
-    init(settings: BrowserSettingsStore = .shared) {
+    init(settings: BrowserSettingsStore) {
         self.settings = settings
         super.init()
     }

@@ -7,15 +7,7 @@ struct TabSessionServices {
     let historyStore: HistoryStore
     let faviconStore: FaviconStore
     let downloadManager: DownloadManager
-
-    @MainActor
-    static func live() -> TabSessionServices {
-        TabSessionServices(
-            historyStore: .shared,
-            faviconStore: .shared,
-            downloadManager: .shared
-        )
-    }
+    let webKitEnvironment: WebKitEnvironment
 }
 
 @MainActor
@@ -36,7 +28,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
-    private let webKitEnvironment: WebKitEnvironment
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private var observers: [NSKeyValueObservation] = []
     private var faviconTask: Task<Void, Never>?
@@ -50,7 +41,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         settings: BrowserSettingsStore,
         services: TabSessionServices,
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
-        webKitEnvironment: WebKitEnvironment = .shared,
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
     ) {
         self.id = UUID()
@@ -58,9 +48,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.settings = settings
         self.services = services
         self.requestBuilder = requestBuilder
-        self.webKitEnvironment = webKitEnvironment
         self.onOpenInNewTab = onOpenInNewTab
-        self.webView = webKitEnvironment.makeWebView()
+        self.webView = services.webKitEnvironment.makeWebView()
         super.init()
 
         webView.navigationDelegate = self
@@ -90,7 +79,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func loadRequest(_ request: URLRequest) {
-        webKitEnvironment.applyBrowserUserAgent(to: webView)
+        services.webKitEnvironment.applyBrowserUserAgent(to: webView)
         webView.load(request)
     }
 
@@ -104,7 +93,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func reload() {
         guard webView.url != nil else { return }
-        webKitEnvironment.applyBrowserUserAgent(to: webView)
+        services.webKitEnvironment.applyBrowserUserAgent(to: webView)
         updateFavicon(for: webView.url, force: true)
         webView.reload()
     }

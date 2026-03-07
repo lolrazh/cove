@@ -2,12 +2,26 @@ import SwiftUI
 import AppKit
 
 struct NewTabPage: View {
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
+    private let faviconStore: FaviconStore
     let onNavigate: (String) -> Void
 
-    @ObservedObject private var settings = BrowserSettingsStore.shared
     @State private var searchText: String = ""
     @State private var recentSites: [HistoryEntry] = []
     @FocusState private var isSearchFocused: Bool
+
+    init(
+        settingsStore: BrowserSettingsStore,
+        historyStore: HistoryStore,
+        faviconStore: FaviconStore,
+        onNavigate: @escaping (String) -> Void
+    ) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+        self.faviconStore = faviconStore
+        self.onNavigate = onNavigate
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +54,7 @@ struct NewTabPage: View {
             .padding(.horizontal, 40)
 
             // Recent sites
-            if settings.shouldShowRecentSites && !recentSites.isEmpty {
+            if settingsStore.shouldShowRecentSites && !recentSites.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recent")
                         .font(.system(size: 11, weight: .medium))
@@ -54,7 +68,7 @@ struct NewTabPage: View {
                             Button {
                                 onNavigate(entry.url)
                             } label: {
-                                RecentSiteCard(entry: entry)
+                                RecentSiteCard(entry: entry, faviconStore: faviconStore)
                             }
                             .buttonStyle(.plain)
                         }
@@ -72,21 +86,21 @@ struct NewTabPage: View {
             isSearchFocused = true
             loadRecent()
         }
-        .onChange(of: settings.showRecentSites) { _, _ in
+        .onChange(of: settingsStore.showRecentSites) { _, _ in
             loadRecent()
         }
-        .onChange(of: settings.saveBrowsingHistory) { _, _ in
+        .onChange(of: settingsStore.saveBrowsingHistory) { _, _ in
             loadRecent()
         }
     }
 
     private func loadRecent() {
-        guard settings.shouldShowRecentSites else {
+        guard settingsStore.shouldShowRecentSites else {
             recentSites = []
             return
         }
 
-        let history = HistoryStore.shared.search(query: "", limit: 100)
+        let history = historyStore.search(query: "", limit: 100)
         // Deduplicate by domain, keep most recent
         var seen = Set<String>()
         var unique: [HistoryEntry] = []
@@ -104,6 +118,12 @@ struct NewTabPage: View {
 
 struct RecentSiteCard: View {
     let entry: HistoryEntry
+    private let faviconStore: FaviconStore
+
+    init(entry: HistoryEntry, faviconStore: FaviconStore) {
+        self.entry = entry
+        self.faviconStore = faviconStore
+    }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -145,6 +165,6 @@ struct RecentSiteCard: View {
     }
 
     private var favicon: NSImage? {
-        FaviconStore.shared.get(domain: domainName)
+        faviconStore.get(domain: domainName)
     }
 }

@@ -7,11 +7,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // only creates confusing parallel behavior in the Window menu.
         NSWindow.allowsAutomaticWindowTabbing = false
     }
-
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        // Pre-compile content blocking rules
-        if BrowserSettingsStore.shared.contentBlockingEnabled {
-            Task { await ContentBlockerManager.shared.load() }
-        }
-    }
 }

@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct DownloadsStatusButton: View {
-    @ObservedObject private var downloadManager = DownloadManager.shared
+    @ObservedObject private var downloadManager: DownloadManager
     @State private var showDownloads = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(downloadManager: DownloadManager) {
+        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
+    }
 
     var body: some View {
         Button(action: { showDownloads.toggle() }) {

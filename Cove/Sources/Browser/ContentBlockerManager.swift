@@ -4,11 +4,11 @@ import Combine
 
 @MainActor
 final class ContentBlockerManager {
-    static let shared = ContentBlockerManager()
+    static let shared = ContentBlockerManager(settings: .shared)
 
     private static let identifier = "com.cove.easylist"
 
-    private let settings = BrowserSettingsStore.shared
+    private let settings: BrowserSettingsStore
     private var ruleList: WKContentRuleList?
     private var trackedControllers = NSHashTable<WKUserContentController>.weakObjects()
     private var pendingControllers = NSHashTable<WKUserContentController>.weakObjects()
@@ -16,7 +16,8 @@ final class ContentBlockerManager {
 
     var isLoaded: Bool { ruleList != nil }
 
-    private init() {
+    init(settings: BrowserSettingsStore) {
+        self.settings = settings
         settings.$contentBlockingEnabled
             .removeDuplicates()
             .sink { [weak self] isEnabled in

@@ -1,14 +1,26 @@
 import SwiftUI
 
 struct BrowserView: View {
-    @StateObject private var tabManager = TabManager()
+    private let appServices: AppServices
+    @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
+
+    init(appServices: AppServices) {
+        self.appServices = appServices
+        self._tabManager = StateObject(
+            wrappedValue: TabManager(
+                settings: appServices.settingsStore,
+                services: appServices.tabSessionServices
+            )
+        )
+    }
 
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
                 WindowChromeHost(tabManager: tabManager, isVisible: stripVisible) {
                     BrowserShellView(
+                        appServices: appServices,
                         tabManager: tabManager,
                         activeTab: activeTab,
                         areTabsVisible: $areTabsVisible
@@ -45,7 +57,7 @@ struct BrowserView: View {
     @ViewBuilder
     private var activeTabContent: some View {
         if let activeTab = tabManager.activeTab {
-            ActiveTabView(tab: activeTab)
+            ActiveTabView(tab: activeTab, appServices: appServices)
                 .id(activeTab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { transaction in
@@ -58,11 +70,21 @@ struct BrowserView: View {
 
 struct ActiveTabView: View {
     @ObservedObject var tab: TabSession
+    private let appServices: AppServices
+
+    init(tab: TabSession, appServices: AppServices) {
+        self._tab = ObservedObject(wrappedValue: tab)
+        self.appServices = appServices
+    }
 
     var body: some View {
         Group {
             if tab.isNewTabPage {
-                NewTabPage { input in
+                NewTabPage(
+                    settingsStore: appServices.settingsStore,
+                    historyStore: appServices.historyStore,
+                    faviconStore: appServices.faviconStore
+                ) { input in
                     tab.navigate(input)
                 }
             } else {

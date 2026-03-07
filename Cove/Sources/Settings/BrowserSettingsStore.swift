@@ -22,7 +22,7 @@ final class BrowserSettingsStore: ObservableObject {
 
     private let defaults: UserDefaults
 
-    private init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
         defaults.register(defaults: [
@@ -129,10 +129,6 @@ final class BrowserSettingsStore: ObservableObject {
         guard self.downloadDestinationMode != downloadDestinationMode else { return }
         self.downloadDestinationMode = downloadDestinationMode
         defaults.set(downloadDestinationMode.rawValue, forKey: BrowserSettingKeys.downloadDestinationMode)
-    }
-
-    func clearHistory() {
-        HistoryStore.shared.clearAll()
     }
 
     private static func resolveShowsTabsInSidebar(_ defaults: UserDefaults) -> Bool {

@@ -23,12 +23,11 @@ final class TabManager: ObservableObject {
     }
 
     init(
-        settings: BrowserSettingsStore = .shared,
-        services: TabSessionServices? = nil
+        settings: BrowserSettingsStore,
+        services: TabSessionServices
     ) {
-        let resolvedServices = services ?? TabSessionServices.live()
         self.settings = settings
-        self.services = resolvedServices
+        self.services = services
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()

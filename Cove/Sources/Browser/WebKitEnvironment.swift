@@ -3,11 +3,13 @@ import WebKit
 
 @MainActor
 final class WebKitEnvironment {
-    static let shared = WebKitEnvironment()
+    static let shared = WebKitEnvironment(contentBlockerManager: .shared)
 
     private let browserUserAgent: String
+    private let contentBlockerManager: ContentBlockerManager
 
-    private init() {
+    init(contentBlockerManager: ContentBlockerManager) {
+        self.contentBlockerManager = contentBlockerManager
         self.browserUserAgent = Self.makeBrowserUserAgent()
     }
 
@@ -15,7 +17,7 @@ final class WebKitEnvironment {
         let configuration = WKWebViewConfiguration()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
-        ContentBlockerManager.shared.attach(to: configuration.userContentController)
+        contentBlockerManager.attach(to: configuration.userContentController)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         configure(webView)

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct BrowserShellView<Content: View>: View {
+    private let appServices: AppServices
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: TabSession
     @Binding var areTabsVisible: Bool
@@ -11,11 +12,13 @@ struct BrowserShellView<Content: View>: View {
     @State private var chromeHideTask: Task<Void, Never>?
 
     init(
+        appServices: AppServices,
         tabManager: TabManager,
         activeTab: TabSession,
         areTabsVisible: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) {
+        self.appServices = appServices
         self._tabManager = ObservedObject(wrappedValue: tabManager)
         self._activeTab = ObservedObject(wrappedValue: activeTab)
         self._areTabsVisible = areTabsVisible
@@ -42,7 +45,10 @@ struct BrowserShellView<Content: View>: View {
 
     private var shell: some View {
         HStack(spacing: 0) {
-            SidebarTabView(tabManager: tabManager)
+            SidebarTabView(
+                tabManager: tabManager,
+                downloadManager: appServices.downloadManager
+            )
                 .frame(width: showsSidebar ? ChromeMetrics.sidebarWidth : 0)
                 .clipped()
                 .colorScheme(.dark)
@@ -105,7 +111,12 @@ struct BrowserShellView<Content: View>: View {
 
     private var contentPanel: some View {
         VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
-            NavigationBar(session: activeTab)
+            NavigationBar(
+                session: activeTab,
+                settingsStore: appServices.settingsStore,
+                historyStore: appServices.historyStore,
+                downloadManager: appServices.downloadManager
+            )
             .id(activeTab.id)
             .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
             .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)

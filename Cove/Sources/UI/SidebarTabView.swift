@@ -2,7 +2,13 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    @ObservedObject private var downloadManager: DownloadManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(tabManager: TabManager, downloadManager: DownloadManager) {
+        self._tabManager = ObservedObject(wrappedValue: tabManager)
+        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
+    }
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
@@ -26,7 +32,7 @@ struct SidebarTabView: View {
         HStack {
             Spacer()
 
-            DownloadsStatusButton()
+            DownloadsStatusButton(downloadManager: downloadManager)
         }
         .padding(.horizontal, 12)
         .frame(height: ChromeMetrics.shellStripHeight + 18, alignment: .bottom)

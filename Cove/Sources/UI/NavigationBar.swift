@@ -2,14 +2,25 @@ import SwiftUI
 
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
+    @ObservedObject private var downloadManager: DownloadManager
 
     @State private var addressText: String
     @State private var showHistory: Bool = false
     @FocusState private var isAddressFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(session: TabSession) {
+    init(
+        session: TabSession,
+        settingsStore: BrowserSettingsStore,
+        historyStore: HistoryStore,
+        downloadManager: DownloadManager
+    ) {
         self._session = ObservedObject(wrappedValue: session)
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
         _addressText = State(initialValue: session.currentURL)
     }
 
@@ -68,7 +79,7 @@ struct NavigationBar: View {
 
     private var utilityCluster: some View {
         HStack(spacing: 4) {
-            DownloadsStatusButton()
+            DownloadsStatusButton(downloadManager: downloadManager)
 
             toolbarButton(action: { showHistory.toggle() }) {
                 Image(systemName: ChromeSymbols.Navigation.history)
@@ -77,6 +88,8 @@ struct NavigationBar: View {
             }
             .popover(isPresented: $showHistory, arrowEdge: .bottom) {
                 HistoryView(
+                    settingsStore: settingsStore,
+                    historyStore: historyStore,
                     onNavigate: { url in
                         session.navigate(url)
                     },
