@@ -2,7 +2,6 @@ import SwiftUI
 
 struct BrowserView: View {
     @StateObject private var tabManager = TabManager()
-    @ObservedObject private var settings = BrowserSettingsStore.shared
 
     var body: some View {
         Group {
@@ -17,11 +16,11 @@ struct BrowserView: View {
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
-        .focusedSceneValue(\.browserCommandContext, browserCommandContext)
+        .focusedObject(tabManager)
     }
 
     private var stripVisible: Bool {
-        !settings.hideTabs || tabManager.areTabsVisible
+        !tabManager.hideTabs || tabManager.areTabsVisible
     }
 
     // MARK: - Tab Content
@@ -45,24 +44,6 @@ struct BrowserView: View {
         }
     }
 
-    // MARK: - Commands
-
-    private var browserCommandContext: BrowserCommandContext {
-        BrowserCommandContext(
-            showsTabsInSidebar: tabManager.tabLayout == .sidebar,
-            hidesTabs: settings.hideTabs,
-            setShowsTabsInSidebar: { showsTabsInSidebar in
-                withAnimation(ChromeMotion.shell) {
-                    tabManager.setLayout(showsTabsInSidebar ? .sidebar : .horizontal)
-                }
-            },
-            setHidesTabs: { hidesTabs in
-                withAnimation(ChromeMotion.shell) {
-                    settings.setHideTabs(hidesTabs)
-                }
-            }
-        )
-    }
 }
 
 struct ActiveTabView: View {

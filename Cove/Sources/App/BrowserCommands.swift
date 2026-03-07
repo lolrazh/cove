@@ -1,25 +1,7 @@
 import SwiftUI
 
-struct BrowserCommandContext {
-    let showsTabsInSidebar: Bool
-    let hidesTabs: Bool
-    let setShowsTabsInSidebar: (Bool) -> Void
-    let setHidesTabs: (Bool) -> Void
-}
-
-private struct BrowserCommandContextKey: FocusedValueKey {
-    typealias Value = BrowserCommandContext
-}
-
-extension FocusedValues {
-    var browserCommandContext: BrowserCommandContext? {
-        get { self[BrowserCommandContextKey.self] }
-        set { self[BrowserCommandContextKey.self] = newValue }
-    }
-}
-
 struct BrowserViewCommands: Commands {
-    @FocusedValue(\.browserCommandContext) private var browserCommandContext
+    @FocusedObject private var tabManager: TabManager?
 
     var body: some Commands {
         CommandGroup(after: .toolbar) {
@@ -28,20 +10,28 @@ struct BrowserViewCommands: Commands {
             Toggle(
                 "Show Tabs in Sidebar",
                 isOn: Binding(
-                    get: { browserCommandContext?.showsTabsInSidebar ?? false },
-                    set: { browserCommandContext?.setShowsTabsInSidebar($0) }
+                    get: { tabManager?.tabLayout == .sidebar },
+                    set: { show in
+                        withAnimation(ChromeMotion.shell) {
+                            tabManager?.setLayout(show ? .sidebar : .horizontal)
+                        }
+                    }
                 )
             )
-            .disabled(browserCommandContext == nil)
+            .disabled(tabManager == nil)
 
             Toggle(
                 "Hide Tabs",
                 isOn: Binding(
-                    get: { browserCommandContext?.hidesTabs ?? false },
-                    set: { browserCommandContext?.setHidesTabs($0) }
+                    get: { tabManager?.hideTabs ?? false },
+                    set: { hide in
+                        withAnimation(ChromeMotion.shell) {
+                            tabManager?.setHideTabs(hide)
+                        }
+                    }
                 )
             )
-            .disabled(browserCommandContext == nil)
+            .disabled(tabManager == nil)
         }
     }
 }

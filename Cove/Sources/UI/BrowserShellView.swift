@@ -5,7 +5,6 @@ struct BrowserShellView<Content: View>: View {
     @ObservedObject var activeTab: Tab
     let content: Content
 
-    @ObservedObject private var settings = BrowserSettingsStore.shared
     @Environment(\.titlebarHeight) private var titlebarHeight
     @State private var isHoveringChrome = false
     @State private var chromeHideTask: Task<Void, Never>?
@@ -177,19 +176,19 @@ struct BrowserShellView<Content: View>: View {
     // MARK: - Chrome Visibility
 
     var showsTopStrip: Bool {
-        tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
+        tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || tabManager.areTabsVisible)
     }
 
     private var showsSidebar: Bool {
-        tabManager.tabLayout == .sidebar && (!settings.hideTabs || tabManager.areTabsVisible)
+        tabManager.tabLayout == .sidebar && (!tabManager.hideTabs || tabManager.areTabsVisible)
     }
 
     private var isHorizontalImmersive: Bool {
-        tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
+        tabManager.tabLayout == .horizontal && tabManager.hideTabs && !tabManager.areTabsVisible
     }
 
     private var isSidebarImmersive: Bool {
-        tabManager.tabLayout == .sidebar && settings.hideTabs && !tabManager.areTabsVisible
+        tabManager.tabLayout == .sidebar && tabManager.hideTabs && !tabManager.areTabsVisible
     }
 
     // MARK: - Unified Hide/Reveal
@@ -198,7 +197,7 @@ struct BrowserShellView<Content: View>: View {
         isHoveringChrome = hovering
         chromeHideTask?.cancel()
 
-        guard settings.hideTabs else {
+        guard tabManager.hideTabs else {
             tabManager.areTabsVisible = true
             return
         }
@@ -208,7 +207,7 @@ struct BrowserShellView<Content: View>: View {
                 try? await Task.sleep(for: .milliseconds(700))
                 guard !Task.isCancelled,
                       !isHoveringChrome,
-                      settings.hideTabs else { return }
+                      tabManager.hideTabs else { return }
                 tabManager.hideTabsIfNeeded()
             }
         }

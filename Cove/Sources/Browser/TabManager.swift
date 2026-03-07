@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 enum TabLayout: String {
     case horizontal
@@ -12,45 +11,37 @@ final class TabManager: ObservableObject {
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
     @Published var areTabsVisible: Bool
+    @Published private(set) var hideTabs: Bool
 
     private let settings = BrowserSettingsStore.shared
-    private var cancellables: Set<AnyCancellable> = []
-
-    func toggleLayout() {
-        let nextLayout: TabLayout = tabLayout == .horizontal ? .sidebar : .horizontal
-        apply(layout: nextLayout, persistsPreference: true)
-    }
-
-    func setLayout(_ layout: TabLayout) {
-        apply(layout: layout, persistsPreference: true)
-    }
 
     var activeTab: Tab? {
         tabs.first { $0.id == activeTabID }
     }
 
     init() {
-        tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
-        areTabsVisible = !settings.hideTabs
-
-        settings.$showsTabsInSidebar
-            .sink { [weak self] showsTabsInSidebar in
-                guard let self else { return }
-                let newLayout: TabLayout = showsTabsInSidebar ? .sidebar : .horizontal
-                guard self.tabLayout != newLayout else { return }
-                self.apply(layout: newLayout, persistsPreference: false)
-            }
-            .store(in: &cancellables)
-
-        settings.$hideTabs
-            .removeDuplicates()
-            .sink { [weak self] hideTabs in
-                guard let self else { return }
-                self.areTabsVisible = !hideTabs
-            }
-            .store(in: &cancellables)
-
+        let hide = settings.hideTabs
+        self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
+        self.hideTabs = hide
+        self.areTabsVisible = !hide
         addTab()
+    }
+
+    func setLayout(_ layout: TabLayout) {
+        guard tabLayout != layout else { return }
+        tabLayout = layout
+        areTabsVisible = !hideTabs
+        settings.setShowsTabsInSidebar(layout == .sidebar)
+    }
+
+    func toggleLayout() {
+        setLayout(tabLayout == .horizontal ? .sidebar : .horizontal)
+    }
+
+    func setHideTabs(_ hide: Bool) {
+        hideTabs = hide
+        areTabsVisible = !hide
+        settings.setHideTabs(hide)
     }
 
     func addTab(url: String? = nil) {
@@ -105,18 +96,10 @@ final class TabManager: ObservableObject {
     }
 
     func hideTabsIfNeeded() {
-        guard settings.hideTabs else { return }
+        guard hideTabs else { return }
         withAnimation(ChromeMotion.shell) {
             areTabsVisible = false
         }
     }
 
-    private func apply(layout: TabLayout, persistsPreference: Bool) {
-        tabLayout = layout
-        areTabsVisible = !settings.hideTabs
-
-        if persistsPreference {
-            settings.setShowsTabsInSidebar(layout == .sidebar)
-        }
-    }
 }
