@@ -30,9 +30,8 @@ struct BrowserShellView<Content: View>: View {
                 }
             }
             .overlay(alignment: .leading) {
-                if showsOverlaySidebar {
-                    SidebarTabView(tabManager: tabManager)
-                        .zIndex(1)
+                if isSidebarImmersive {
+                    sidebarRevealArea
                 }
             }
             .background {
@@ -47,10 +46,11 @@ struct BrowserShellView<Content: View>: View {
 
     private var shell: some View {
         HStack(spacing: 0) {
-            if showsIntegratedSidebar {
-                SidebarTabView(tabManager: tabManager, presentation: .integrated)
-                    .colorScheme(.dark)
-            }
+            SidebarTabView(tabManager: tabManager)
+                .frame(width: showsSidebar ? ChromeMetrics.sidebarWidth : 0)
+                .clipped()
+                .colorScheme(.dark)
+                .onHover(perform: handleChromeHover)
 
             VStack(spacing: 0) {
                 topChromeZone
@@ -161,29 +161,40 @@ struct BrowserShellView<Content: View>: View {
             }
     }
 
+    private var sidebarRevealArea: some View {
+        Color.clear
+            .frame(width: 12)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                if hovering {
+                    chromeHideTask?.cancel()
+                    tabManager.revealTabs()
+                }
+            }
+    }
+
     // MARK: - Chrome Visibility
 
     var showsTopStrip: Bool {
         tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
     }
 
-    private var showsIntegratedSidebar: Bool {
-        tabManager.tabLayout == .sidebar && !settings.hideTabs
-    }
-
-    private var showsOverlaySidebar: Bool {
-        tabManager.tabLayout == .sidebar && settings.hideTabs
+    private var showsSidebar: Bool {
+        tabManager.tabLayout == .sidebar && (!settings.hideTabs || tabManager.areTabsVisible)
     }
 
     private var isHorizontalImmersive: Bool {
         tabManager.tabLayout == .horizontal && settings.hideTabs && !tabManager.areTabsVisible
     }
 
+    private var isSidebarImmersive: Bool {
+        tabManager.tabLayout == .sidebar && settings.hideTabs && !tabManager.areTabsVisible
+    }
+
     // MARK: - Unified Hide/Reveal
 
     private func handleChromeHover(_ hovering: Bool) {
-        guard tabManager.tabLayout == .horizontal else { return }
-
         isHoveringChrome = hovering
         chromeHideTask?.cancel()
 
