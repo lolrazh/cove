@@ -5,7 +5,6 @@ import WebKit
 final class WebKitEnvironment {
     static let shared = WebKitEnvironment()
 
-    private let processPool = WKProcessPool()
     private let browserUserAgent: String
 
     private init() {
@@ -14,7 +13,6 @@ final class WebKitEnvironment {
 
     func makeWebView() -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        configuration.processPool = processPool
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
         ContentBlockerManager.shared.attach(to: configuration.userContentController)
