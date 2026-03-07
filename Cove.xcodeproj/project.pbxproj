@@ -34,7 +34,6 @@
 		AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24428BD2191574360191520 /* BrowserView.swift */; };
 		B488357C746F33394AD611CF /* easylist.json in Resources */ = {isa = PBXBuildFile; fileRef = AB6526AAC426FA4B5DB1CA72 /* easylist.json */; };
 		B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */; };
-		BD22675B410E37F3A9A194D4 /* TitlebarTabStripAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 478DF8BF02BA9220A24B9E9C /* TitlebarTabStripAccessory.swift */; };
 		CD0A025EF47EBB1B1BC6648A /* BrowserSettingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */; };
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
 		D992157DF99D6BA4DD04FBB0 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AAC9B2AA42F20914791E7C2 /* Tab.swift */; };
@@ -55,7 +54,6 @@
 		3B2241AFE931B02B48465503 /* WebViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewModel.swift; sourceTree = "<group>"; };
 		3C182C3B5A43907E9CB570F4 /* FaviconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconView.swift; sourceTree = "<group>"; };
 		408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconStore.swift; sourceTree = "<group>"; };
-		478DF8BF02BA9220A24B9E9C /* TitlebarTabStripAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarTabStripAccessory.swift; sourceTree = "<group>"; };
 		47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSettingKeys.swift; sourceTree = "<group>"; };
 		4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeFieldStyle.swift; sourceTree = "<group>"; };
@@ -99,7 +97,6 @@
 				7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */,
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
 				C8A4E68B430D945E3968A4B9 /* TabStripView.swift */,
-				478DF8BF02BA9220A24B9E9C /* TitlebarTabStripAccessory.swift */,
 				2C4EDC71019502B637450CF1 /* WindowChromeHost.swift */,
 				3DCDB299366F2892C2866707 /* Foundation */,
 			);
@@ -291,7 +288,6 @@
 				D992157DF99D6BA4DD04FBB0 /* Tab.swift in Sources */,
 				4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */,
 				7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */,
-				BD22675B410E37F3A9A194D4 /* TitlebarTabStripAccessory.swift in Sources */,
 				F6DF645F2D8E660A51FED9A8 /* WebKitEnvironment.swift in Sources */,
 				4C2FEE8AE947A015057A4659 /* WebViewModel.swift in Sources */,
 				8A6EAA0FF636EE4434A7298C /* WebViewRepresentable.swift in Sources */,

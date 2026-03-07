@@ -36,12 +36,6 @@ struct BrowserShellView<Content: View>: View {
                     sidebarRevealArea
                 }
             }
-            .background {
-                TitlebarTabStripAccessory(
-                    tabManager: tabManager,
-                    isVisible: showsTopStrip
-                )
-            }
     }
 
     // MARK: - Shell (Two Layers: Dark Frame + Light Panel)

@@ -7,7 +7,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(isVisible: stripVisible) {
+                WindowChromeHost(tabManager: tabManager, isVisible: stripVisible) {
                     BrowserShellView(
                         tabManager: tabManager,
                         activeTab: activeTab,
