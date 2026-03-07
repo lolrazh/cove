@@ -18,6 +18,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     let webView: WKWebView
 
+    private let settings: BrowserSettingsStore
+    private let requestBuilder: NavigationRequestBuilder
     private let webKitEnvironment: WebKitEnvironment
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private var observers: [NSKeyValueObservation] = []
@@ -29,11 +31,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = true,
+        settings: BrowserSettingsStore = .shared,
+        requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
         webKitEnvironment: WebKitEnvironment = .shared,
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
     ) {
         self.id = UUID()
         self.isNewTabPage = showsStartPage
+        self.settings = settings
+        self.requestBuilder = requestBuilder
         self.webKitEnvironment = webKitEnvironment
         self.onOpenInNewTab = onOpenInNewTab
         self.webView = webKitEnvironment.makeWebView()
@@ -130,24 +136,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     private func request(for input: String) -> URLRequest? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        let url: URL?
-        if let directURL = directURL(for: trimmed) {
-            url = directURL
-        } else if looksLikeURL(trimmed) {
-            if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
-                url = URL(string: trimmed)
-            } else {
-                url = URL(string: "https://\(trimmed)")
-            }
-        } else {
-            url = BrowserSettingsStore.shared.searchEngine.searchURL(for: trimmed)
-        }
-
-        guard let url else { return nil }
-        return URLRequest(url: url)
+        requestBuilder.request(for: input, searchEngine: settings.searchEngine)
     }
 
     private func updateFavicon(for pageURL: URL?, force: Bool = false) {
@@ -235,38 +224,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         components.port = pageURL.port
         components.path = "/favicon.ico"
         return components.url
-    }
-
-    private func directURL(for input: String) -> URL? {
-        guard !input.contains(" ") else { return nil }
-
-        let hasDirectScheme = input.contains("://")
-            || input.hasPrefix("about:")
-            || input.hasPrefix("file:")
-            || input.hasPrefix("data:")
-
-        guard hasDirectScheme else { return nil }
-        return URL(string: input)
-    }
-
-    private func looksLikeURL(_ input: String) -> Bool {
-        if input.hasPrefix("http://") || input.hasPrefix("https://") { return true }
-        if input.contains(" ") { return false }
-
-        let host = input.split(separator: "/").first.map(String.init) ?? input
-        let hostWithoutPort = host.split(separator: ":").first.map(String.init) ?? host
-
-        if hostWithoutPort == "localhost" { return true }
-
-        let parts = hostWithoutPort.split(separator: ".")
-        if parts.count == 4 && parts.allSatisfy({ $0.allSatisfy(\.isNumber) }) { return true }
-        if input.hasPrefix("[") { return true }
-
-        if parts.count >= 2, let tld = parts.last, tld.count >= 2, tld.allSatisfy(\.isLetter) {
-            return true
-        }
-
-        return false
     }
 
     nonisolated private static func fetchFaviconData(from url: URL) async -> Data? {

@@ -91,7 +91,8 @@ final class TabManager: ObservableObject {
         TabSession(
             initialURL: initialURL,
             initialRequest: initialRequest,
-            showsStartPage: showsStartPage
+            showsStartPage: showsStartPage,
+            settings: settings
         ) { [weak self] request in
             self?.addTab(request: request)
         }
