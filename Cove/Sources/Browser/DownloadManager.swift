@@ -82,6 +82,7 @@ final class DownloadManager: NSObject, ObservableObject {
     static let shared = DownloadManager()
 
     @Published var items: [DownloadItem] = []
+    private let settings: BrowserSettingsStore
     private var itemCancellables: [UUID: AnyCancellable] = [:]
 
     var hasActiveDownloads: Bool {
@@ -98,6 +99,11 @@ final class DownloadManager: NSObject, ObservableObject {
     }
 
     private var downloadToItem: [WKDownload: DownloadItem] = [:]
+
+    init(settings: BrowserSettingsStore = .shared) {
+        self.settings = settings
+        super.init()
+    }
 
     func handleDownload(_ download: WKDownload) {
         download.delegate = self
@@ -134,7 +140,7 @@ extension DownloadManager: WKDownloadDelegate {
         decideDestinationUsing response: URLResponse,
         suggestedFilename: String
     ) async -> URL? {
-        let mode = await MainActor.run { BrowserSettingsStore.shared.downloadDestinationMode }
+        let mode = await MainActor.run { settings.downloadDestinationMode }
         guard let destination = await Self.destinationURL(for: suggestedFilename, mode: mode) else {
             return nil
         }
