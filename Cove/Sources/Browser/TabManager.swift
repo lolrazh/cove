@@ -10,7 +10,6 @@ final class TabManager: ObservableObject {
     @Published var tabs: [Tab] = []
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
-    @Published var areTabsVisible: Bool
     @Published private(set) var hideTabs: Bool
 
     private let settings = BrowserSettingsStore.shared
@@ -20,20 +19,14 @@ final class TabManager: ObservableObject {
     }
 
     init() {
-        let hide = settings.hideTabs
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
-        self.hideTabs = hide
-        self.areTabsVisible = !hide
+        self.hideTabs = settings.hideTabs
         addTab()
     }
 
     func setLayout(_ layout: TabLayout) {
         guard tabLayout != layout else { return }
         tabLayout = layout
-        let targetVisibility = !hideTabs
-        if areTabsVisible != targetVisibility {
-            areTabsVisible = targetVisibility
-        }
         settings.setShowsTabsInSidebar(layout == .sidebar)
     }
 
@@ -42,8 +35,8 @@ final class TabManager: ObservableObject {
     }
 
     func setHideTabs(_ hide: Bool) {
+        guard hideTabs != hide else { return }
         hideTabs = hide
-        areTabsVisible = !hide
         settings.setHideTabs(hide)
     }
 
@@ -90,15 +83,6 @@ final class TabManager: ObservableObject {
 
     func selectTab(_ id: UUID) {
         activeTabID = id
-    }
-
-    func revealTabs() {
-        areTabsVisible = true
-    }
-
-    func hideTabsIfNeeded() {
-        guard hideTabs else { return }
-        areTabsVisible = false
     }
 
 }

@@ -2,12 +2,17 @@ import SwiftUI
 
 struct BrowserView: View {
     @StateObject private var tabManager = TabManager()
+    @State private var areTabsVisible = true
 
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
                 WindowChromeHost(isVisible: stripVisible) {
-                    BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                    BrowserShellView(
+                        tabManager: tabManager,
+                        activeTab: activeTab,
+                        areTabsVisible: $areTabsVisible
+                    ) {
                         activeTabContent
                     }
                 }
@@ -16,10 +21,23 @@ struct BrowserView: View {
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
         .focusedObject(tabManager)
+        .onAppear {
+            areTabsVisible = !tabManager.hideTabs
+        }
+        .onChange(of: tabManager.hideTabs) { _, hide in
+            withAnimation(ChromeMotion.shell) {
+                areTabsVisible = !hide
+            }
+        }
+        .onChange(of: tabManager.tabLayout) { _, _ in
+            withAnimation(ChromeMotion.shell) {
+                areTabsVisible = !tabManager.hideTabs
+            }
+        }
     }
 
     private var stripVisible: Bool {
-        !tabManager.hideTabs || tabManager.areTabsVisible
+        !tabManager.hideTabs || areTabsVisible
     }
 
     // MARK: - Tab Content

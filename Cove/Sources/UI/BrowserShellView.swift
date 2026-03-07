@@ -3,6 +3,7 @@ import SwiftUI
 struct BrowserShellView<Content: View>: View {
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: Tab
+    @Binding var areTabsVisible: Bool
     let content: Content
 
     @Environment(\.titlebarHeight) private var titlebarHeight
@@ -12,10 +13,12 @@ struct BrowserShellView<Content: View>: View {
     init(
         tabManager: TabManager,
         activeTab: Tab,
+        areTabsVisible: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) {
         self._tabManager = ObservedObject(wrappedValue: tabManager)
         self._activeTab = ObservedObject(wrappedValue: activeTab)
+        self._areTabsVisible = areTabsVisible
         self.content = content()
     }
 
@@ -156,7 +159,7 @@ struct BrowserShellView<Content: View>: View {
                 if hovering {
                     chromeHideTask?.cancel()
                     withAnimation(ChromeMotion.shell) {
-                        tabManager.revealTabs()
+                        areTabsVisible = true
                     }
                 }
             }
@@ -171,7 +174,7 @@ struct BrowserShellView<Content: View>: View {
                 if hovering {
                     chromeHideTask?.cancel()
                     withAnimation(ChromeMotion.shell) {
-                        tabManager.revealTabs()
+                        areTabsVisible = true
                     }
                 }
             }
@@ -180,19 +183,19 @@ struct BrowserShellView<Content: View>: View {
     // MARK: - Chrome Visibility
 
     var showsTopStrip: Bool {
-        tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || tabManager.areTabsVisible)
+        tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || areTabsVisible)
     }
 
     private var showsSidebar: Bool {
-        tabManager.tabLayout == .sidebar && (!tabManager.hideTabs || tabManager.areTabsVisible)
+        tabManager.tabLayout == .sidebar && (!tabManager.hideTabs || areTabsVisible)
     }
 
     private var isHorizontalImmersive: Bool {
-        tabManager.tabLayout == .horizontal && tabManager.hideTabs && !tabManager.areTabsVisible
+        tabManager.tabLayout == .horizontal && tabManager.hideTabs && !areTabsVisible
     }
 
     private var isSidebarImmersive: Bool {
-        tabManager.tabLayout == .sidebar && tabManager.hideTabs && !tabManager.areTabsVisible
+        tabManager.tabLayout == .sidebar && tabManager.hideTabs && !areTabsVisible
     }
 
     // MARK: - Unified Hide/Reveal
@@ -210,7 +213,7 @@ struct BrowserShellView<Content: View>: View {
                       !isHoveringChrome,
                       tabManager.hideTabs else { return }
                 withAnimation(ChromeMotion.shell) {
-                    tabManager.hideTabsIfNeeded()
+                    areTabsVisible = false
                 }
             }
         }
