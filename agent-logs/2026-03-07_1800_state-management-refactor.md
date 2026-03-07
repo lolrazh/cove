@@ -9,11 +9,12 @@
 User wanted the View menu commands (Show Tabs in Sidebar, Hide Tabs) to work reliably on first click. Switching between top and sidebar mode required multiple clicks — sometimes 2-3 before anything happened. They wanted a structurally sound solution, not a bandaid ("make me a better bone").
 
 ## What We Accomplished
-- **Single source of truth for tab state** — TabManager owns `tabLayout`, `hideTabs`, and `areTabsVisible`. No Combine subscribers, no circular data flow.
+- **Single source of truth for tab state** — TabManager owns `tabLayout` and `hideTabs`. No Combine subscribers, no circular data flow.
 - **Pure state machine** — TabManager has zero `withAnimation` calls. Model manages state, view layer manages presentation.
 - **Reliable menu commands** — `@FocusedObject` is the only SwiftUI mechanism that triggers Commands re-evaluation. Confirmed via failed `@FocusedValue` experiment.
 - **Explicit animation only** — Removed implicit `.animation(value:)` from BrowserView. All animation is via `withAnimation` at call sites.
 - **Clean hover handler** — No redundant `areTabsVisible` writes when `hideTabs` is off.
+- **View-layer visibility state** — Moved `areTabsVisible` from TabManager to `@State` in BrowserView, preventing hover-driven `objectWillChange` from triggering Commands re-evaluation and causing the system fullscreen menu item to flicker.
 
 ## Technical Implementation
 
@@ -59,10 +60,10 @@ No circular flow. No async hops. No competing animations.
 ```
 
 **Files Modified:**
-- `Cove/Sources/Browser/TabManager.swift` — Removed Combine import/subscribers/cancellables, added `hideTabs` property, added `setHideTabs()`, removed `withAnimation` from internal methods, removed dead `apply()` method
+- `Cove/Sources/Browser/TabManager.swift` — Removed Combine import/subscribers/cancellables, added `hideTabs` property, added `setHideTabs()`, removed `withAnimation` from internal methods, removed dead `apply()` method. Later: removed `areTabsVisible`, `revealTabs()`, `hideTabsIfNeeded()`, and visibility resets from `setLayout`/`setHideTabs`. Added guard on `setHideTabs` to skip redundant writes.
 - `Cove/Sources/App/BrowserCommands.swift` — Replaced `BrowserCommandContext` struct with `@FocusedObject TabManager`. Removed FocusedValueKey infrastructure.
-- `Cove/Sources/UI/BrowserView.swift` — Removed `@ObservedObject settings`, removed `.animation(value:)`, replaced `.focusedSceneValue` with `.focusedObject`, removed command context computed property
-- `Cove/Sources/UI/BrowserShellView.swift` — Replaced `settings.hideTabs` with `tabManager.hideTabs`, removed settings observation, added `withAnimation` at reveal/hide call sites, fixed `handleChromeHover` to not write when `hideTabs` is off
+- `Cove/Sources/UI/BrowserView.swift` — Removed `@ObservedObject settings`, removed `.animation(value:)`, replaced `.focusedSceneValue` with `.focusedObject`, removed command context computed property. Later: added `@State areTabsVisible` with `.onAppear` init and `.onChange` handlers for `hideTabs`/`tabLayout`, passes `$areTabsVisible` binding to BrowserShellView.
+- `Cove/Sources/UI/BrowserShellView.swift` — Replaced `settings.hideTabs` with `tabManager.hideTabs`, removed settings observation, added `withAnimation` at reveal/hide call sites, fixed `handleChromeHover` to not write when `hideTabs` is off. Later: accepts `@Binding var areTabsVisible`, reveal areas and hover handler write directly to binding instead of calling TabManager methods.
 
 ## Bugs & Issues Encountered
 
@@ -82,6 +83,10 @@ No circular flow. No async hops. No competing animations.
    - **Root cause:** Mixing presentation (animation) with state management
    - **Fix:** Moved to call sites in BrowserShellView
 
+5. **System fullscreen menu item flickering when Hide Tabs enabled**
+   - **Root cause:** `areTabsVisible` was `@Published` on TabManager. Every hover reveal/hide fired `objectWillChange`, which triggered `@FocusedObject` → Commands body re-evaluation → SwiftUI rebuilt the View menu → system "Enter Full Screen" item flickered.
+   - **Fix:** Moved `areTabsVisible` out of TabManager into `@State` on BrowserView, passed as `@Binding` to BrowserShellView. Hover-driven changes now only trigger local view re-renders, never Commands re-evaluation. Added `.onChange(of: tabManager.hideTabs)` and `.onChange(of: tabManager.tabLayout)` to reset visibility when menu commands change those settings.
+
 ## Key Learnings
 
 - **`@FocusedObject` is the only viable mechanism for Commands + per-window ObservableObject on macOS.** `@FocusedValue` doesn't trigger re-evaluation. The SwiftUI Commands system is genuinely weak — this is a known pain point.
@@ -94,11 +99,13 @@ No circular flow. No async hops. No competing animations.
 
 - **Circular data flow is the root of state management hell.** A → B → notification → A creates timing-dependent behavior that's nearly impossible to debug. One source of truth, one direction of flow.
 
+- **View-animation state doesn't belong on the model that Commands observes.** `areTabsVisible` is a presentation concern (hover reveal/hide). Putting it on TabManager meant every hover fired `objectWillChange` → `@FocusedObject` re-evaluation → menu rebuild. Moving it to `@State` in BrowserView isolates it from Commands entirely. General rule: if Commands doesn't read a property, that property shouldn't be `@Published` on the `@FocusedObject`.
+
 ## Architecture Decisions
 
 - **@FocusedObject over @FocusedValue** — Despite focus system quirks, it's the only mechanism that subscribes to object changes and triggers Commands re-evaluation. The alternative (@FocusedValue) was a dead end.
 
-- **TabManager as single state owner** — Settings is persistence-only. No subscribers, no sync. TabManager reads on init, writes on change. Unidirectional.
+- **TabManager as single state owner** — Settings is persistence-only. No subscribers, no sync. TabManager reads on init, writes on change. Unidirectional. Only command-relevant state (`tabLayout`, `hideTabs`) lives on TabManager; view-animation state (`areTabsVisible`) lives in the view layer as `@State`.
 
 - **Explicit animation over implicit** — `.animation(value:)` on BrowserView created a hidden animation scope over the entire tree. Explicit `withAnimation` at call sites makes animation intent clear and prevents competing contexts.
 
@@ -111,4 +118,4 @@ No circular flow. No async hops. No competing animations.
 ## Context for Future
 The SwiftUI Commands system on macOS has known limitations. `@FocusedObject` is the least-bad option for bridging per-window state to menu commands. If menu reliability becomes an issue again, the nuclear option is AppKit's responder chain (NSMenuItem + target/action), which is battle-tested but requires bridging out of SwiftUI.
 
-The state architecture is now clean: TabManager owns all runtime state, Settings is persistence, views observe TabManager, Commands access TabManager via @FocusedObject. Any future state should follow this pattern — one owner, unidirectional flow.
+The state architecture is now clean: TabManager owns command-relevant state (`tabLayout`, `hideTabs`), BrowserView owns view-animation state (`areTabsVisible` as `@State`), Settings is persistence, views observe TabManager, Commands access TabManager via `@FocusedObject`. Any future state should follow this pattern — if Commands doesn't read it, don't put it on the `@FocusedObject`.
