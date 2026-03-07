@@ -15,14 +15,20 @@ final class TabManager: ObservableObject {
     @Published private(set) var hideTabs: Bool
 
     private let settings: BrowserSettingsStore
+    private let services: TabSessionServices
     private var cancellables: Set<AnyCancellable> = []
 
     var activeTab: TabSession? {
         tabs.first { $0.id == activeTabID }
     }
 
-    init(settings: BrowserSettingsStore = .shared) {
+    init(
+        settings: BrowserSettingsStore = .shared,
+        services: TabSessionServices? = nil
+    ) {
+        let resolvedServices = services ?? TabSessionServices.live()
         self.settings = settings
+        self.services = resolvedServices
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
@@ -92,7 +98,8 @@ final class TabManager: ObservableObject {
             initialURL: initialURL,
             initialRequest: initialRequest,
             showsStartPage: showsStartPage,
-            settings: settings
+            settings: settings,
+            services: services
         ) { [weak self] request in
             self?.addTab(request: request)
         }

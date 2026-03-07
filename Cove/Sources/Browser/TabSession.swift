@@ -3,6 +3,21 @@ import Combine
 import AppKit
 import WebKit
 
+struct TabSessionServices {
+    let historyStore: HistoryStore
+    let faviconStore: FaviconStore
+    let downloadManager: DownloadManager
+
+    @MainActor
+    static func live() -> TabSessionServices {
+        TabSessionServices(
+            historyStore: .shared,
+            faviconStore: .shared,
+            downloadManager: .shared
+        )
+    }
+}
+
 @MainActor
 final class TabSession: NSObject, Identifiable, ObservableObject {
     let id: UUID
@@ -19,6 +34,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     let webView: WKWebView
 
     private let settings: BrowserSettingsStore
+    private let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let webKitEnvironment: WebKitEnvironment
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
@@ -31,7 +47,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = true,
-        settings: BrowserSettingsStore = .shared,
+        settings: BrowserSettingsStore,
+        services: TabSessionServices,
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
         webKitEnvironment: WebKitEnvironment = .shared,
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
@@ -39,6 +56,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.id = UUID()
         self.isNewTabPage = showsStartPage
         self.settings = settings
+        self.services = services
         self.requestBuilder = requestBuilder
         self.webKitEnvironment = webKitEnvironment
         self.onOpenInNewTab = onOpenInNewTab
@@ -160,7 +178,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             favicon = nil
         }
 
-        if let cached = FaviconStore.shared.get(domain: siteKey) {
+        if let cached = services.faviconStore.get(domain: siteKey) {
             faviconRequestID = nil
             favicon = cached
             return
@@ -183,7 +201,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
                       self.faviconRequestID == requestID,
                       self.faviconSiteKey == siteKey else { return }
                 self.favicon = image
-                FaviconStore.shared.store(domain: siteKey, imageData: data)
+                self.services.faviconStore.store(domain: siteKey, imageData: data)
                 self.completeFaviconRequest(ifMatches: requestID)
             }
         }
@@ -259,7 +277,7 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
-        HistoryStore.shared.recordVisit(url: url, title: title)
+        services.historyStore.recordVisit(url: url, title: title)
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -287,11 +305,11 @@ extension TabSession: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
-        DownloadManager.shared.handleDownload(download)
+        services.downloadManager.handleDownload(download)
     }
 
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
-        DownloadManager.shared.handleDownload(download)
+        services.downloadManager.handleDownload(download)
     }
 }
 
