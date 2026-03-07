@@ -36,12 +36,10 @@ struct BrowserShellView<Content: View>: View {
                 }
             }
             .background {
-                if tabManager.tabLayout == .horizontal {
-                    TitlebarTabStripAccessory(
-                        tabManager: tabManager,
-                        isVisible: showsTopStrip
-                    )
-                }
+                TitlebarTabStripAccessory(
+                    tabManager: tabManager,
+                    isVisible: showsTopStrip
+                )
             }
     }
 

@@ -78,7 +78,7 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
             installAccessoryIfNeeded(on: window)
 
             let accessoryWidth = resolvedAccessoryWidth(for: window)
-            if let tabManager {
+            if let tabManager, isVisible {
                 hostingView.rootView = AnyView(
                     TitlebarTabStripContent(
                         tabManager: tabManager,
@@ -86,7 +86,7 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
                     )
                 )
             } else {
-                hostingView.rootView = AnyView(EmptyView())
+                hostingView.rootView = AnyView(Color.clear)
             }
 
             hostingView.frame = CGRect(
@@ -95,7 +95,6 @@ struct TitlebarTabStripAccessory: NSViewRepresentable {
                 width: accessoryWidth,
                 height: ChromeMetrics.topBandHeight
             )
-            accessoryController.isHidden = !isVisible
         }
 
         private func installAccessoryIfNeeded(on window: NSWindow) {
