@@ -16,6 +16,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             configureWindow(window)
         }
 
+        // Re-apply window config after display changes (prevents titlebar
+        // background flash when moving between screens via window managers)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidChangeScreen(_:)),
+            name: NSWindow.didChangeScreenNotification,
+            object: nil
+        )
+
         // Pre-compile content blocking rules
         if BrowserSettingsStore.shared.contentBlockingEnabled {
             Task { await ContentBlockerManager.shared.load() }
@@ -26,6 +35,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         for window in NSApplication.shared.windows {
             configureWindow(window)
         }
+    }
+
+    @objc
+    private func windowDidChangeScreen(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        configureWindow(window)
     }
 
     private func configureWindow(_ window: NSWindow) {

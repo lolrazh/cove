@@ -208,13 +208,8 @@ enum WindowChromeController {
     }
 
     private static func show(button: NSButton, at origin: CGPoint, animated: Bool) {
+        button.isEnabled = true
         if animated {
-            if button.isHidden {
-                button.alphaValue = 0
-                button.isHidden = false
-                button.setFrameOrigin(CGPoint(x: origin.x, y: origin.y + 10))
-            }
-
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.18
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
@@ -222,18 +217,12 @@ enum WindowChromeController {
                 button.animator().setFrameOrigin(origin)
             }
         } else {
-            button.isHidden = false
             button.alphaValue = 1
             button.setFrameOrigin(origin)
         }
     }
 
     private static func hide(button: NSButton, at origin: CGPoint, animated: Bool) {
-        guard !button.isHidden else {
-            button.setFrameOrigin(origin)
-            return
-        }
-
         if animated {
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.18
@@ -241,12 +230,12 @@ enum WindowChromeController {
                 button.animator().alphaValue = 0
                 button.animator().setFrameOrigin(origin)
             } completionHandler: {
-                button.isHidden = true
+                button.isEnabled = false
             }
         } else {
             button.alphaValue = 0
             button.setFrameOrigin(origin)
-            button.isHidden = true
+            button.isEnabled = false
         }
     }
 }
