@@ -1,12 +1,20 @@
 import SwiftUI
 
+@MainActor
 @main
 struct CoveApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    private let appServices: AppServices
+
+    init() {
+        let appServices = AppServices()
+        self.appServices = appServices
+        appServices.prepareForLaunch()
+    }
 
     var body: some Scene {
         WindowGroup {
-            BrowserView()
+            BrowserView(appServices: appServices)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
@@ -16,7 +24,10 @@ struct CoveApp: App {
         }
 
         Settings {
-            SettingsView()
+            SettingsView(
+                settingsStore: appServices.settingsStore,
+                historyStore: appServices.historyStore
+            )
         }
     }
 }

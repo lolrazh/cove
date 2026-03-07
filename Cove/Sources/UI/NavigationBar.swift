@@ -1,19 +1,27 @@
 import SwiftUI
 
 struct NavigationBar: View {
-    @ObservedObject var viewModel: WebViewModel
-    var onNavigate: ((String) -> Void)?
+    @ObservedObject var session: TabSession
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
+    @ObservedObject private var downloadManager: DownloadManager
 
     @State private var addressText: String
     @State private var showHistory: Bool = false
-    @ObservedObject private var downloadManager = DownloadManager.shared
     @FocusState private var isAddressFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(viewModel: WebViewModel, onNavigate: ((String) -> Void)? = nil) {
-        self._viewModel = ObservedObject(wrappedValue: viewModel)
-        self.onNavigate = onNavigate
-        _addressText = State(initialValue: viewModel.currentURL)
+    init(
+        session: TabSession,
+        settingsStore: BrowserSettingsStore,
+        historyStore: HistoryStore,
+        downloadManager: DownloadManager
+    ) {
+        self._session = ObservedObject(wrappedValue: session)
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
+        _addressText = State(initialValue: session.currentURL)
     }
 
     var body: some View {
@@ -22,7 +30,7 @@ struct NavigationBar: View {
             addressBar
             utilityCluster
         }
-        .onChange(of: viewModel.currentURL) { _, newURL in
+        .onChange(of: session.currentURL) { _, newURL in
             if !isAddressFocused {
                 addressText = newURL
             }
@@ -31,20 +39,20 @@ struct NavigationBar: View {
 
     private var navCluster: some View {
         HStack(spacing: 4) {
-            toolbarButton(enabled: viewModel.canGoBack, action: viewModel.goBack) {
+            toolbarButton(enabled: session.canGoBack, action: session.goBack) {
                 Image(systemName: ChromeSymbols.Navigation.back)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(viewModel.canGoBack ? .primary : .tertiary)
+                    .foregroundStyle(session.canGoBack ? .primary : .tertiary)
             }
 
-            toolbarButton(enabled: viewModel.canGoForward, action: viewModel.goForward) {
+            toolbarButton(enabled: session.canGoForward, action: session.goForward) {
                 Image(systemName: ChromeSymbols.Navigation.forward)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(viewModel.canGoForward ? .primary : .tertiary)
+                    .foregroundStyle(session.canGoForward ? .primary : .tertiary)
             }
 
             toolbarButton(action: {
-                viewModel.isLoading ? viewModel.stopLoading() : viewModel.reload()
+                session.isLoading ? session.stopLoading() : session.reload()
             }) {
                 reloadIcon
                     .foregroundStyle(.primary)
@@ -54,15 +62,14 @@ struct NavigationBar: View {
 
     private var addressBar: some View {
         HStack(spacing: 8) {
-            FaviconView(image: viewModel.favicon, size: 14)
+            FaviconView(image: session.favicon, size: 14)
 
             TextField("Search or enter URL", text: $addressText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, weight: .regular, design: .default))
                 .focused($isAddressFocused)
                 .onSubmit {
-                    onNavigate?(addressText)
-                    viewModel.loadURL(addressText)
+                    session.navigate(addressText)
                     isAddressFocused = false
                 }
         }
@@ -72,7 +79,7 @@ struct NavigationBar: View {
 
     private var utilityCluster: some View {
         HStack(spacing: 4) {
-            DownloadsStatusButton()
+            DownloadsStatusButton(downloadManager: downloadManager)
 
             toolbarButton(action: { showHistory.toggle() }) {
                 Image(systemName: ChromeSymbols.Navigation.history)
@@ -81,9 +88,10 @@ struct NavigationBar: View {
             }
             .popover(isPresented: $showHistory, arrowEdge: .bottom) {
                 HistoryView(
+                    settingsStore: settingsStore,
+                    historyStore: historyStore,
                     onNavigate: { url in
-                        onNavigate?(url)
-                        viewModel.loadURL(url)
+                        session.navigate(url)
                     },
                     onDismiss: { showHistory = false }
                 )
@@ -92,14 +100,14 @@ struct NavigationBar: View {
     }
 
     private var reloadIcon: some View {
-        let icon = Image(systemName: viewModel.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
+        let icon = Image(systemName: session.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
             .font(.system(size: 13, weight: .medium))
 
         return Group {
             if reduceMotion {
                 icon
             } else {
-                icon.symbolEffect(.bounce, value: viewModel.isLoading)
+                icon.symbolEffect(.bounce, value: session.isLoading)
             }
         }
     }

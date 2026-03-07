@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct BrowserShellView<Content: View>: View {
+    private let appServices: AppServices
     @ObservedObject var tabManager: TabManager
-    @ObservedObject var activeTab: Tab
+    @ObservedObject var activeTab: TabSession
     @Binding var areTabsVisible: Bool
     let content: Content
 
@@ -11,11 +12,13 @@ struct BrowserShellView<Content: View>: View {
     @State private var chromeHideTask: Task<Void, Never>?
 
     init(
+        appServices: AppServices,
         tabManager: TabManager,
-        activeTab: Tab,
+        activeTab: TabSession,
         areTabsVisible: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) {
+        self.appServices = appServices
         self._tabManager = ObservedObject(wrappedValue: tabManager)
         self._activeTab = ObservedObject(wrappedValue: activeTab)
         self._areTabsVisible = areTabsVisible
@@ -36,19 +39,16 @@ struct BrowserShellView<Content: View>: View {
                     sidebarRevealArea
                 }
             }
-            .background {
-                TitlebarTabStripAccessory(
-                    tabManager: tabManager,
-                    isVisible: showsTopStrip
-                )
-            }
     }
 
     // MARK: - Shell (Two Layers: Dark Frame + Light Panel)
 
     private var shell: some View {
         HStack(spacing: 0) {
-            SidebarTabView(tabManager: tabManager)
+            SidebarTabView(
+                tabManager: tabManager,
+                downloadManager: appServices.downloadManager
+            )
                 .frame(width: showsSidebar ? ChromeMetrics.sidebarWidth : 0)
                 .clipped()
                 .colorScheme(.dark)
@@ -112,8 +112,10 @@ struct BrowserShellView<Content: View>: View {
     private var contentPanel: some View {
         VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
             NavigationBar(
-                viewModel: activeTab.viewModel,
-                onNavigate: { _ in activeTab.isNewTabPage = false }
+                session: activeTab,
+                settingsStore: appServices.settingsStore,
+                historyStore: appServices.historyStore,
+                downloadManager: appServices.downloadManager
             )
             .id(activeTab.id)
             .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
@@ -138,8 +140,8 @@ struct BrowserShellView<Content: View>: View {
 
     @ViewBuilder
     private var contentLoadingIndicator: some View {
-        if activeTab.viewModel.isLoading {
-            ProgressView(value: activeTab.viewModel.estimatedProgress)
+        if activeTab.isLoading {
+            ProgressView(value: activeTab.estimatedProgress)
                 .progressViewStyle(.linear)
                 .tint(.accentColor)
                 .labelsHidden()

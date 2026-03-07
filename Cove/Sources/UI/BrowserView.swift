@@ -1,14 +1,26 @@
 import SwiftUI
 
 struct BrowserView: View {
-    @StateObject private var tabManager = TabManager()
+    private let appServices: AppServices
+    @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
+
+    init(appServices: AppServices) {
+        self.appServices = appServices
+        self._tabManager = StateObject(
+            wrappedValue: TabManager(
+                settings: appServices.settingsStore,
+                services: appServices.tabSessionServices
+            )
+        )
+    }
 
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(isVisible: stripVisible) {
+                WindowChromeHost(tabManager: tabManager, isVisible: stripVisible) {
                     BrowserShellView(
+                        appServices: appServices,
                         tabManager: tabManager,
                         activeTab: activeTab,
                         areTabsVisible: $areTabsVisible
@@ -44,16 +56,9 @@ struct BrowserView: View {
 
     @ViewBuilder
     private var activeTabContent: some View {
-        if !tabManager.tabs.isEmpty {
-            ZStack {
-                ForEach(tabManager.tabs) { tab in
-                    ActiveTabView(tab: tab)
-                        .opacity(tab.id == tabManager.activeTabID ? 1 : 0)
-                        .allowsHitTesting(tab.id == tabManager.activeTabID)
-                        .accessibilityHidden(tab.id != tabManager.activeTabID)
-                        .zIndex(tab.id == tabManager.activeTabID ? 1 : 0)
-                }
-            }
+        if let activeTab = tabManager.activeTab {
+            ActiveTabView(tab: activeTab, appServices: appServices)
+                .id(activeTab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { transaction in
                 transaction.animation = nil
@@ -64,17 +69,26 @@ struct BrowserView: View {
 }
 
 struct ActiveTabView: View {
-    @ObservedObject var tab: Tab
+    @ObservedObject var tab: TabSession
+    private let appServices: AppServices
+
+    init(tab: TabSession, appServices: AppServices) {
+        self._tab = ObservedObject(wrappedValue: tab)
+        self.appServices = appServices
+    }
 
     var body: some View {
         Group {
             if tab.isNewTabPage {
-                NewTabPage { input in
-                    tab.isNewTabPage = false
-                    tab.viewModel.loadURL(input)
+                NewTabPage(
+                    settingsStore: appServices.settingsStore,
+                    historyStore: appServices.historyStore,
+                    faviconStore: appServices.faviconStore
+                ) { input in
+                    tab.navigate(input)
                 }
             } else {
-                WebViewRepresentable(webView: tab.viewModel.webView)
+                WebViewRepresentable(webView: tab.webView)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

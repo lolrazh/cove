@@ -8,8 +8,6 @@ enum NewTabDestination {
 
 @MainActor
 final class BrowserSettingsStore: ObservableObject {
-    static let shared = BrowserSettingsStore()
-
     @Published private(set) var searchEngine: SearchEngine
     @Published private(set) var newTabPreference: NewTabPreference
     @Published private(set) var homePageURL: String
@@ -21,9 +19,8 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var downloadDestinationMode: DownloadDestinationMode
 
     private let defaults: UserDefaults
-    private var cancellables: Set<AnyCancellable> = []
 
-    private init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
 
         defaults.register(defaults: [
@@ -47,13 +44,6 @@ final class BrowserSettingsStore: ObservableObject {
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
         self.downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
-
-        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification, object: defaults)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.reloadFromDefaults()
-            }
-            .store(in: &cancellables)
     }
 
     var shouldShowRecentSites: Bool {
@@ -86,27 +76,57 @@ final class BrowserSettingsStore: ObservableObject {
     }
 
     func setShowsTabsInSidebar(_ showsTabsInSidebar: Bool) {
+        guard self.showsTabsInSidebar != showsTabsInSidebar else { return }
+        self.showsTabsInSidebar = showsTabsInSidebar
         defaults.set(showsTabsInSidebar, forKey: BrowserSettingKeys.showTabsInSidebar)
     }
 
     func setHideTabs(_ hideTabs: Bool) {
+        guard self.hideTabs != hideTabs else { return }
+        self.hideTabs = hideTabs
         defaults.set(hideTabs, forKey: BrowserSettingKeys.hideTabs)
     }
 
-    func clearHistory() {
-        HistoryStore.shared.clearAll()
+    func setSearchEngine(_ searchEngine: SearchEngine) {
+        guard self.searchEngine != searchEngine else { return }
+        self.searchEngine = searchEngine
+        defaults.set(searchEngine.rawValue, forKey: BrowserSettingKeys.searchEngine)
     }
 
-    private func reloadFromDefaults() {
-        searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
-        newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .startPage
-        homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
-        showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
-        hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
-        contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
-        saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
-        showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
-        downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
+    func setNewTabPreference(_ newTabPreference: NewTabPreference) {
+        guard self.newTabPreference != newTabPreference else { return }
+        self.newTabPreference = newTabPreference
+        defaults.set(newTabPreference.rawValue, forKey: BrowserSettingKeys.newTabPreference)
+    }
+
+    func setHomePageURL(_ homePageURL: String) {
+        guard self.homePageURL != homePageURL else { return }
+        self.homePageURL = homePageURL
+        defaults.set(homePageURL, forKey: BrowserSettingKeys.homePageURL)
+    }
+
+    func setContentBlockingEnabled(_ contentBlockingEnabled: Bool) {
+        guard self.contentBlockingEnabled != contentBlockingEnabled else { return }
+        self.contentBlockingEnabled = contentBlockingEnabled
+        defaults.set(contentBlockingEnabled, forKey: BrowserSettingKeys.contentBlockingEnabled)
+    }
+
+    func setSaveBrowsingHistory(_ saveBrowsingHistory: Bool) {
+        guard self.saveBrowsingHistory != saveBrowsingHistory else { return }
+        self.saveBrowsingHistory = saveBrowsingHistory
+        defaults.set(saveBrowsingHistory, forKey: BrowserSettingKeys.saveBrowsingHistory)
+    }
+
+    func setShowRecentSites(_ showRecentSites: Bool) {
+        guard self.showRecentSites != showRecentSites else { return }
+        self.showRecentSites = showRecentSites
+        defaults.set(showRecentSites, forKey: BrowserSettingKeys.showRecentSites)
+    }
+
+    func setDownloadDestinationMode(_ downloadDestinationMode: DownloadDestinationMode) {
+        guard self.downloadDestinationMode != downloadDestinationMode else { return }
+        self.downloadDestinationMode = downloadDestinationMode
+        defaults.set(downloadDestinationMode.rawValue, forKey: BrowserSettingKeys.downloadDestinationMode)
     }
 
     private static func resolveShowsTabsInSidebar(_ defaults: UserDefaults) -> Bool {

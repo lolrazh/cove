@@ -1,13 +1,26 @@
 import SwiftUI
 
 struct HistoryView: View {
+    @ObservedObject private var settingsStore: BrowserSettingsStore
+    private let historyStore: HistoryStore
     let onNavigate: (String) -> Void
     let onDismiss: () -> Void
 
-    @ObservedObject private var settings = BrowserSettingsStore.shared
     @State private var searchText: String = ""
     @State private var entries: [HistoryEntry] = []
     @FocusState private var isSearchFocused: Bool
+
+    init(
+        settingsStore: BrowserSettingsStore,
+        historyStore: HistoryStore,
+        onNavigate: @escaping (String) -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
+        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
+        self.historyStore = historyStore
+        self.onNavigate = onNavigate
+        self.onDismiss = onDismiss
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,7 +51,7 @@ struct HistoryView: View {
             Divider()
                 .padding(.top, 8)
 
-            if !settings.saveBrowsingHistory {
+            if !settingsStore.saveBrowsingHistory {
                 Spacer()
                 Text("Browsing history is turned off")
                     .font(.system(size: 12))
@@ -74,12 +87,12 @@ struct HistoryView: View {
     }
 
     private func loadHistory(query: String) {
-        guard settings.saveBrowsingHistory else {
+        guard settingsStore.saveBrowsingHistory else {
             entries = []
             return
         }
 
-        entries = HistoryStore.shared.search(query: query)
+        entries = historyStore.search(query: query)
     }
 }
 
