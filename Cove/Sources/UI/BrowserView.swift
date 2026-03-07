@@ -44,16 +44,9 @@ struct BrowserView: View {
 
     @ViewBuilder
     private var activeTabContent: some View {
-        if !tabManager.tabs.isEmpty {
-            ZStack {
-                ForEach(tabManager.tabs) { tab in
-                    ActiveTabView(tab: tab)
-                        .opacity(tab.id == tabManager.activeTabID ? 1 : 0)
-                        .allowsHitTesting(tab.id == tabManager.activeTabID)
-                        .accessibilityHidden(tab.id != tabManager.activeTabID)
-                        .zIndex(tab.id == tabManager.activeTabID ? 1 : 0)
-                }
-            }
+        if let activeTab = tabManager.activeTab {
+            ActiveTabView(tab: activeTab)
+                .id(activeTab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { transaction in
                 transaction.animation = nil
