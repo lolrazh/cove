@@ -112,36 +112,19 @@ private struct TrafficLightButtonStyle: ButtonStyle {
 
         switch type {
         case .close:
-            // x mark
-            Path { path in
-                path.move(to: CGPoint(x: 3.5, y: 3.5))
-                path.addLine(to: CGPoint(x: 8.5, y: 8.5))
-                path.move(to: CGPoint(x: 8.5, y: 3.5))
-                path.addLine(to: CGPoint(x: 3.5, y: 8.5))
-            }
-            .stroke(symbolColor, lineWidth: 1.1)
+            Image(systemName: "xmark")
+                .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                .foregroundStyle(symbolColor)
 
         case .minimize:
-            // minus
-            Path { path in
-                path.move(to: CGPoint(x: 2.5, y: 6))
-                path.addLine(to: CGPoint(x: 9.5, y: 6))
-            }
-            .stroke(symbolColor, lineWidth: 1.1)
+            Image(systemName: "minus")
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                .foregroundStyle(symbolColor)
 
         case .zoom:
-            // expand triangles (top-left and bottom-right)
-            Path { path in
-                path.move(to: CGPoint(x: 2.5, y: 5.5))
-                path.addLine(to: CGPoint(x: 2.5, y: 2.5))
-                path.addLine(to: CGPoint(x: 5.5, y: 2.5))
-                path.closeSubpath()
-                path.move(to: CGPoint(x: 6.5, y: 9.5))
-                path.addLine(to: CGPoint(x: 9.5, y: 9.5))
-                path.addLine(to: CGPoint(x: 9.5, y: 6.5))
-                path.closeSubpath()
-            }
-            .fill(symbolColor)
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 7, weight: .bold, design: .rounded))
+                .foregroundStyle(symbolColor)
         }
     }
 }

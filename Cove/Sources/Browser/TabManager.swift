@@ -35,7 +35,10 @@ final class TabManager: ObservableObject {
 
         settings.$showsTabsInSidebar
             .sink { [weak self] showsTabsInSidebar in
-                self?.apply(layout: showsTabsInSidebar ? .sidebar : .horizontal, persistsPreference: false)
+                guard let self else { return }
+                let newLayout: TabLayout = showsTabsInSidebar ? .sidebar : .horizontal
+                guard self.tabLayout != newLayout else { return }
+                self.apply(layout: newLayout, persistsPreference: false)
             }
             .store(in: &cancellables)
 
