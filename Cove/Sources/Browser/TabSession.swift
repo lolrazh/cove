@@ -1,9 +1,13 @@
-import SwiftUI
-import WebKit
+import Foundation
+import Combine
 import AppKit
+import WebKit
 
 @MainActor
-final class WebViewModel: NSObject, ObservableObject {
+final class TabSession: NSObject, Identifiable, ObservableObject {
+    let id: UUID
+
+    @Published var isNewTabPage: Bool
     @Published var currentURL: String = ""
     @Published var pageTitle: String = ""
     @Published var canGoBack: Bool = false
@@ -13,6 +17,7 @@ final class WebViewModel: NSObject, ObservableObject {
     @Published var favicon: NSImage?
 
     let webView: WKWebView
+
     private let webKitEnvironment: WebKitEnvironment
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private var observers: [NSKeyValueObservation] = []
@@ -23,9 +28,12 @@ final class WebViewModel: NSObject, ObservableObject {
     init(
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
+        showsStartPage: Bool = true,
         webKitEnvironment: WebKitEnvironment = .shared,
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
     ) {
+        self.id = UUID()
+        self.isNewTabPage = showsStartPage
         self.webKitEnvironment = webKitEnvironment
         self.onOpenInNewTab = onOpenInNewTab
         self.webView = webKitEnvironment.makeWebView()
@@ -40,6 +48,45 @@ final class WebViewModel: NSObject, ObservableObject {
         } else if let initialURL {
             loadURL(initialURL)
         }
+    }
+
+    deinit {
+        faviconTask?.cancel()
+    }
+
+    func navigate(_ input: String) {
+        guard let request = request(for: input) else { return }
+        isNewTabPage = false
+        loadRequest(request)
+    }
+
+    func loadURL(_ input: String) {
+        guard let request = request(for: input) else { return }
+        loadRequest(request)
+    }
+
+    func loadRequest(_ request: URLRequest) {
+        webKitEnvironment.applyBrowserUserAgent(to: webView)
+        webView.load(request)
+    }
+
+    func goBack() {
+        webView.goBack()
+    }
+
+    func goForward() {
+        webView.goForward()
+    }
+
+    func reload() {
+        guard webView.url != nil else { return }
+        webKitEnvironment.applyBrowserUserAgent(to: webView)
+        updateFavicon(for: webView.url, force: true)
+        webView.reload()
+    }
+
+    func stopLoading() {
+        webView.stopLoading()
     }
 
     private func setupObservers() {
@@ -77,18 +124,14 @@ final class WebViewModel: NSObject, ObservableObject {
         ]
     }
 
-    deinit {
-        faviconTask?.cancel()
-    }
-
     private func handleURLChange(_ url: URL?) {
         currentURL = url?.absoluteString ?? ""
         updateFavicon(for: url)
     }
 
-    func loadURL(_ input: String) {
+    private func request(for input: String) -> URLRequest? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else { return nil }
 
         let url: URL?
         if let directURL = directURL(for: trimmed) {
@@ -103,14 +146,8 @@ final class WebViewModel: NSObject, ObservableObject {
             url = BrowserSettingsStore.shared.searchEngine.searchURL(for: trimmed)
         }
 
-        if let url {
-            loadRequest(URLRequest(url: url))
-        }
-    }
-
-    func loadRequest(_ request: URLRequest) {
-        webKitEnvironment.applyBrowserUserAgent(to: webView)
-        webView.load(request)
+        guard let url else { return nil }
+        return URLRequest(url: url)
     }
 
     private func updateFavicon(for pageURL: URL?, force: Bool = false) {
@@ -212,18 +249,25 @@ final class WebViewModel: NSObject, ObservableObject {
         return URL(string: input)
     }
 
-    func goBack() { webView.goBack() }
-    func goForward() { webView.goForward() }
+    private func looksLikeURL(_ input: String) -> Bool {
+        if input.hasPrefix("http://") || input.hasPrefix("https://") { return true }
+        if input.contains(" ") { return false }
 
-    func reload() {
-        if webView.url != nil {
-            webKitEnvironment.applyBrowserUserAgent(to: webView)
-            updateFavicon(for: webView.url, force: true)
-            webView.reload()
+        let host = input.split(separator: "/").first.map(String.init) ?? input
+        let hostWithoutPort = host.split(separator: ":").first.map(String.init) ?? host
+
+        if hostWithoutPort == "localhost" { return true }
+
+        let parts = hostWithoutPort.split(separator: ".")
+        if parts.count == 4 && parts.allSatisfy({ $0.allSatisfy(\.isNumber) }) { return true }
+        if input.hasPrefix("[") { return true }
+
+        if parts.count >= 2, let tld = parts.last, tld.count >= 2, tld.allSatisfy(\.isLetter) {
+            return true
         }
-    }
 
-    func stopLoading() { webView.stopLoading() }
+        return false
+    }
 
     nonisolated private static func fetchFaviconData(from url: URL) async -> Data? {
         let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 4)
@@ -249,35 +293,9 @@ final class WebViewModel: NSObject, ObservableObject {
         rendered.isTemplate = false
         return rendered
     }
-
-    private func looksLikeURL(_ input: String) -> Bool {
-        if input.hasPrefix("http://") || input.hasPrefix("https://") { return true }
-        if input.contains(" ") { return false }
-
-        // Strip path/query/fragment for host detection
-        let host = input.split(separator: "/").first.map(String.init) ?? input
-        let hostWithoutPort = host.split(separator: ":").first.map(String.init) ?? host
-
-        // localhost (with optional port/path)
-        if hostWithoutPort == "localhost" { return true }
-
-        // IPv4: 192.168.1.1, 127.0.0.1, etc.
-        let parts = hostWithoutPort.split(separator: ".")
-        if parts.count == 4 && parts.allSatisfy({ $0.allSatisfy(\.isNumber) }) { return true }
-
-        // IPv6: [::1], [fe80::1], etc.
-        if input.hasPrefix("[") { return true }
-
-        // Domain with TLD: example.com, sub.example.co.uk
-        if parts.count >= 2, let tld = parts.last, tld.count >= 2, tld.allSatisfy(\.isLetter) {
-            return true
-        }
-
-        return false
-    }
 }
 
-extension WebViewModel: WKNavigationDelegate {
+extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
     }
 
@@ -301,7 +319,6 @@ extension WebViewModel: WKNavigationDelegate {
         return .allow
     }
 
-    // If the response can't be displayed (e.g. zip, dmg, pdf download), convert to download
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationResponse: WKNavigationResponse
@@ -312,7 +329,6 @@ extension WebViewModel: WKNavigationDelegate {
         return .allow
     }
 
-    // Hand off downloads to DownloadManager
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         DownloadManager.shared.handleDownload(download)
     }
@@ -322,7 +338,7 @@ extension WebViewModel: WKNavigationDelegate {
     }
 }
 
-extension WebViewModel: WKUIDelegate {
+extension TabSession: WKUIDelegate {
     func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BrowserShellView<Content: View>: View {
     @ObservedObject var tabManager: TabManager
-    @ObservedObject var activeTab: Tab
+    @ObservedObject var activeTab: TabSession
     @Binding var areTabsVisible: Bool
     let content: Content
 
@@ -12,7 +12,7 @@ struct BrowserShellView<Content: View>: View {
 
     init(
         tabManager: TabManager,
-        activeTab: Tab,
+        activeTab: TabSession,
         areTabsVisible: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) {
@@ -105,10 +105,7 @@ struct BrowserShellView<Content: View>: View {
 
     private var contentPanel: some View {
         VStack(spacing: ChromeMetrics.mainPanelSectionSpacing) {
-            NavigationBar(
-                viewModel: activeTab.viewModel,
-                onNavigate: { _ in activeTab.isNewTabPage = false }
-            )
+            NavigationBar(session: activeTab)
             .id(activeTab.id)
             .padding(.horizontal, ChromeMetrics.topNavigationHorizontalPadding)
             .padding(.vertical, ChromeMetrics.topNavigationVerticalPadding)
@@ -132,8 +129,8 @@ struct BrowserShellView<Content: View>: View {
 
     @ViewBuilder
     private var contentLoadingIndicator: some View {
-        if activeTab.viewModel.isLoading {
-            ProgressView(value: activeTab.viewModel.estimatedProgress)
+        if activeTab.isLoading {
+            ProgressView(value: activeTab.estimatedProgress)
                 .progressViewStyle(.linear)
                 .tint(.accentColor)
                 .labelsHidden()

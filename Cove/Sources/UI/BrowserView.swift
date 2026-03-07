@@ -64,17 +64,16 @@ struct BrowserView: View {
 }
 
 struct ActiveTabView: View {
-    @ObservedObject var tab: Tab
+    @ObservedObject var tab: TabSession
 
     var body: some View {
         Group {
             if tab.isNewTabPage {
                 NewTabPage { input in
-                    tab.isNewTabPage = false
-                    tab.viewModel.loadURL(input)
+                    tab.navigate(input)
                 }
             } else {
-                WebViewRepresentable(webView: tab.viewModel.webView)
+                WebViewRepresentable(webView: tab.webView)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

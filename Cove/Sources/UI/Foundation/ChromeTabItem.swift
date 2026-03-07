@@ -6,7 +6,7 @@ enum ChromeTabPresentation {
 }
 
 struct ChromeTabItem: View {
-    @ObservedObject var tab: Tab
+    @ObservedObject var tab: TabSession
     let presentation: ChromeTabPresentation
     let isActive: Bool
     let onSelect: () -> Void
@@ -21,7 +21,7 @@ struct ChromeTabItem: View {
 
     var body: some View {
         HStack(spacing: presentation == .horizontal ? 8 : 10) {
-            FaviconView(image: tab.viewModel.favicon, size: 14)
+            FaviconView(image: tab.favicon, size: 14)
 
             Text(tabTitle)
                 .font(.system(size: presentation == .horizontal ? 11.5 : 12, weight: isActive ? .medium : .regular))
@@ -53,7 +53,7 @@ struct ChromeTabItem: View {
     }
 
     private var tabTitle: String {
-        let title = tab.viewModel.pageTitle
+        let title = tab.pageTitle
         return title.isEmpty ? "New Tab" : title
     }
 }

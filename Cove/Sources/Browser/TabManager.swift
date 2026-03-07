@@ -9,7 +9,7 @@ enum TabLayout: String {
 
 @MainActor
 final class TabManager: ObservableObject {
-    @Published var tabs: [Tab] = []
+    @Published var tabs: [TabSession] = []
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
@@ -17,7 +17,7 @@ final class TabManager: ObservableObject {
     private let settings: BrowserSettingsStore
     private var cancellables: Set<AnyCancellable> = []
 
-    var activeTab: Tab? {
+    var activeTab: TabSession? {
         tabs.first { $0.id == activeTabID }
     }
 
@@ -42,7 +42,7 @@ final class TabManager: ObservableObject {
     }
 
     func addTab(url: String? = nil) {
-        let tab: Tab
+        let tab: TabSession
 
         if let url {
             tab = makeTab(initialURL: url, showsStartPage: false)
@@ -87,8 +87,8 @@ final class TabManager: ObservableObject {
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = false
-    ) -> Tab {
-        Tab(
+    ) -> TabSession {
+        TabSession(
             initialURL: initialURL,
             initialRequest: initialRequest,
             showsStartPage: showsStartPage
@@ -97,7 +97,7 @@ final class TabManager: ObservableObject {
         }
     }
 
-    private func open(_ tab: Tab) {
+    private func open(_ tab: TabSession) {
         tabs.append(tab)
         activeTabID = tab.id
     }
