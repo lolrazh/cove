@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 
 enum ChromeMetrics {
+    static let cornerStyle: RoundedCornerStyle = .continuous
     static let windowCornerRadius: CGFloat = 14
     static let shellGutter: CGFloat = 6
     static let windowInset: CGFloat = shellGutter
@@ -9,10 +10,10 @@ enum ChromeMetrics {
     static let surfaceBorderWidth: CGFloat = 1
     static let topChromeSpacing: CGFloat = 6
     static let topChromePadding: CGFloat = 8
-    static var panelCornerRadius: CGFloat { nestedCornerRadius(inside: windowCornerRadius, inset: windowInset) }
-    static var controlCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
-    static var fieldCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 1.5) }
-    static var tabCornerRadius: CGFloat { nestedCornerRadius(inside: panelCornerRadius, inset: 2) }
+    static let panelCornerRadius: CGFloat = 14
+    static let controlCornerRadius: CGFloat = 7
+    static let fieldCornerRadius: CGFloat = 7
+    static let tabCornerRadius: CGFloat = 7
     static let shellStripHeight: CGFloat = 36
     static let shellStripBottomSpacing: CGFloat = shellGutter
     static let shellControlsInterButtonSpacing: CGFloat = 8
@@ -41,12 +42,16 @@ enum ChromeMetrics {
     static let sidebarWidth: CGFloat = 240
     static let sidebarRevealHandleWidth: CGFloat = 12
 
+    static func roundedShape(radius: CGFloat) -> RoundedRectangle {
+        RoundedRectangle(cornerRadius: radius, style: cornerStyle)
+    }
+
     private static func nestedCornerRadius(
         inside outerRadius: CGFloat,
         inset: CGFloat,
-        minimum: CGFloat = 8
+        minimum: CGFloat = 4
     ) -> CGFloat {
-        max(outerRadius - (inset * 0.65), minimum)
+        max(outerRadius - inset, minimum)
     }
 }
 

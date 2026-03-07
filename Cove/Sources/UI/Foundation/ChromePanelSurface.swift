@@ -17,7 +17,7 @@ struct ChromePanelSurface: ViewModifier {
     var borderWidth: CGFloat? = nil
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let shape = ChromeMetrics.roundedShape(radius: cornerRadius)
 
         return content
             .background {
@@ -90,7 +90,7 @@ struct ChromeInteractiveSurface: ViewModifier {
     @State private var isHovered = false
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let shape = ChromeMetrics.roundedShape(radius: cornerRadius)
 
         return content
             .background {

@@ -111,7 +111,7 @@ struct RecentSiteCard: View {
                 FaviconView(image: favicon, size: 28)
                     .frame(width: 36, height: 36)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        ChromeMetrics.roundedShape(radius: 10)
                             .fill(ChromePalette.tertiaryFill)
                     )
             } else {
@@ -120,7 +120,7 @@ struct RecentSiteCard: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
                     .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        ChromeMetrics.roundedShape(radius: 10)
                             .fill(ChromePalette.tertiaryFill)
                     )
             }
