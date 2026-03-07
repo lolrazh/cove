@@ -11,9 +11,9 @@ enum ChromeMetrics {
     static let topChromeSpacing: CGFloat = 6
     static let topChromePadding: CGFloat = 8
     static let panelCornerRadius: CGFloat = 14
-    static let controlCornerRadius: CGFloat = 7
-    static let fieldCornerRadius: CGFloat = 7
-    static let tabCornerRadius: CGFloat = 7
+    static let controlCornerRadius: CGFloat = 10.5
+    static let fieldCornerRadius: CGFloat = 10.5
+    static let tabCornerRadius: CGFloat = 10.5
     static let shellStripHeight: CGFloat = 36
     static let shellStripBottomSpacing: CGFloat = shellGutter
     static let shellControlsInterButtonSpacing: CGFloat = 8
