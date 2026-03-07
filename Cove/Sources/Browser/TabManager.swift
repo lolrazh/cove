@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import Combine
 
 enum TabLayout: String {
     case horizontal
@@ -13,21 +14,22 @@ final class TabManager: ObservableObject {
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
 
-    private let settings = BrowserSettingsStore.shared
+    private let settings: BrowserSettingsStore
+    private var cancellables: Set<AnyCancellable> = []
 
     var activeTab: Tab? {
         tabs.first { $0.id == activeTabID }
     }
 
-    init() {
+    init(settings: BrowserSettingsStore = .shared) {
+        self.settings = settings
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
+        bindSettings()
         addTab()
     }
 
     func setLayout(_ layout: TabLayout) {
-        guard tabLayout != layout else { return }
-        tabLayout = layout
         settings.setShowsTabsInSidebar(layout == .sidebar)
     }
 
@@ -36,8 +38,6 @@ final class TabManager: ObservableObject {
     }
 
     func setHideTabs(_ hide: Bool) {
-        guard hideTabs != hide else { return }
-        hideTabs = hide
         settings.setHideTabs(hide)
     }
 
@@ -61,6 +61,26 @@ final class TabManager: ObservableObject {
     func addTab(request: URLRequest) {
         let tab = makeTab(initialRequest: request, showsStartPage: false)
         open(tab)
+    }
+
+    private func bindSettings() {
+        settings.$showsTabsInSidebar
+            .removeDuplicates()
+            .sink { [weak self] showsTabsInSidebar in
+                guard let self else { return }
+                let resolvedLayout: TabLayout = showsTabsInSidebar ? .sidebar : .horizontal
+                guard self.tabLayout != resolvedLayout else { return }
+                self.tabLayout = resolvedLayout
+            }
+            .store(in: &cancellables)
+
+        settings.$hideTabs
+            .removeDuplicates()
+            .sink { [weak self] hideTabs in
+                guard let self, self.hideTabs != hideTabs else { return }
+                self.hideTabs = hideTabs
+            }
+            .store(in: &cancellables)
     }
 
     private func makeTab(
