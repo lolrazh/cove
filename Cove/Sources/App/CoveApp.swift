@@ -8,7 +8,7 @@ struct CoveApp: App {
         WindowGroup {
             BrowserView()
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
         .windowBackgroundDragBehavior(.enabled)
         .commands {
