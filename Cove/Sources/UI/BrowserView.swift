@@ -7,60 +7,31 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                chromeShell(for: activeTab)
+                WindowChromeHost(controlsStyle: chromeControlsStyle) {
+                    BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
+                        activeTabContent
+                    }
+                }
             }
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .background(ChromePalette.window)
-        .background {
-            if tabManager.tabLayout == .sidebar {
-                WindowChromeAccessor(
-                    controlsStyle: sidebarChromeControlsStyle
-                )
-                .allowsHitTesting(false)
-            }
-        }
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
     }
 
-    // MARK: - Shell Routing
-
-    @ViewBuilder
-    private func chromeShell(for activeTab: Tab) -> some View {
-        if tabManager.tabLayout == .horizontal {
-            WindowChromeHost(controlsStyle: horizontalChromeControlsStyle) {
-                BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
-                    activeTabContent
-                }
-            }
-        } else {
-            BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
-                activeTabContent
-            }
-        }
-    }
-
     // MARK: - Chrome Controls
 
-    private var horizontalChromeControlsStyle: WindowChromeControlsStyle {
+    private var chromeControlsStyle: WindowChromeControlsStyle {
+        let isHorizontal = tabManager.tabLayout == .horizontal
         let stripVisible = !settings.hideTabs || tabManager.areTabsVisible
+
         return WindowChromeControlsStyle(
             leadingInset: ChromeMetrics.shellControlsLeadingInset,
             interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
             verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
             isVisible: stripVisible,
-            centerlineFromTop: stripVisible ? ChromeMetrics.topStripLaneCenterFromTop : nil
-        )
-    }
-
-    private var sidebarChromeControlsStyle: WindowChromeControlsStyle {
-        WindowChromeControlsStyle(
-            leadingInset: ChromeMetrics.shellControlsLeadingInset,
-            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
-            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: true,
-            centerlineFromTop: nil
+            centerlineFromTop: isHorizontal && stripVisible ? ChromeMetrics.topStripLaneCenterFromTop : nil
         )
     }
 
