@@ -20,6 +20,10 @@ User wanted more than a code review. They wanted the browser code to feel struct
 - ✅ **Collapsed fake tab layering** — replaced `Tab` + `WebViewModel` with a single `TabSession` that owns tab identity, start-page state, navigation state, and its `WKWebView`
 - ✅ **Separated navigation policy from tab runtime** — extracted `NavigationRequestBuilder` so URL-vs-search resolution is a pure policy object instead of being buried inside tab runtime
 - ✅ **Simplified browser view hosting** — `BrowserView` now hosts only the active session's view instead of keeping hidden `WKWebView`s stacked in a `ZStack`
+- ✅ **Injected tab-scoped browser services** — `TabSession` now receives history, favicon, download, and WebKit dependencies explicitly instead of reaching into service globals
+- ✅ **Removed the download settings singleton seam** — `DownloadManager` now reads destination policy from injected settings
+- ✅ **Made the app root explicit** — `CoveApp` now creates one `AppServices` container and passes browser services down through the runtime and UI
+- ✅ **Removed app-path service globals** — production browser code no longer reaches into `.shared` for settings/history/downloads/content blocking/WebKit wiring
 - ✅ **Kept history readable** — landed the work as staged commits instead of one giant "architecture cleanup" blob
 
 ## Technical Implementation
@@ -32,15 +36,20 @@ User wanted more than a code review. They wanted the browser code to feel struct
 - `de73d64` — `refactor: collapse browser tabs into tab sessions`
 - `9636a56` — `refactor: separate navigation policy from tab runtime`
 - `7293ac0` — `refactor: host only the active tab view`
+- `97198b9` — `refactor: inject tab session services`
+- `2e87857` — `refactor: inject settings into download manager`
+- `4046a33` — `refactor: introduce explicit app services`
 
 ### Ownership After Refactor
 ```
 App scope
-├── BrowserSettingsStore
-├── WebKitEnvironment
-├── FaviconStore
-├── HistoryStore
-└── DownloadManager
+└── AppServices
+    ├── BrowserSettingsStore
+    ├── HistoryStore
+    ├── FaviconStore
+    ├── DownloadManager
+    ├── ContentBlockerManager
+    └── WebKitEnvironment
 
 Window scope
 ├── TabManager
@@ -54,20 +63,27 @@ Pure policy
 ```
 
 ### Major Files Modified
-- `Cove/Sources/Browser/WebKitEnvironment.swift` — centralized `WKWebView` creation and browser user-agent policy
-- `Cove/Sources/Browser/TabManager.swift` — live settings subscription, popup tab routing, `TabSession` ownership
-- `Cove/Sources/Browser/TabSession.swift` — new tab-scoped runtime object replacing the old wrapper/model split
+- `Cove/Sources/App/AppServices.swift` — explicit app-scoped composition root for browser services
+- `Cove/Sources/Browser/WebKitEnvironment.swift` — centralized `WKWebView` creation and now depends on injected content-blocking policy
+- `Cove/Sources/Browser/TabManager.swift` — live settings subscription, popup tab routing, `TabSession` ownership, and window-scoped service composition
+- `Cove/Sources/Browser/TabSession.swift` — tab-scoped runtime object with explicit browser-service dependencies
 - `Cove/Sources/Browser/NavigationRequestBuilder.swift` — extracted URL/search resolution policy
-- `Cove/Sources/Browser/FaviconStore.swift` — lazy cache reads, no startup crash path
-- `Cove/Sources/Settings/BrowserSettingsStore.swift` — single settings writer
-- `Cove/Sources/Settings/SettingsView.swift` — store-backed bindings instead of direct `@AppStorage` mutation
+- `Cove/Sources/Browser/FaviconStore.swift` — lazy cache reads, no startup crash path, explicit construction
+- `Cove/Sources/Browser/HistoryStore.swift` — explicit settings dependency instead of hidden reads from global settings
+- `Cove/Sources/Browser/DownloadManager.swift` — explicit settings dependency instead of hidden reads from global settings
+- `Cove/Sources/Browser/ContentBlockerManager.swift` — explicit settings dependency instead of hidden reads from global settings
+- `Cove/Sources/Settings/BrowserSettingsStore.swift` — single settings writer with history clearing moved back out of the store
+- `Cove/Sources/Settings/SettingsView.swift` — injected settings/history instead of reaching into globals
 - `Cove/Sources/UI/Foundation/WindowChromeAccessor.swift` — single window chrome bridge
 - `Cove/Sources/UI/WindowChromeHost.swift` — window bridge host updated to own tab-aware chrome integration
-- `Cove/Sources/UI/BrowserView.swift` — active-tab-only hosting
-- `Cove/Sources/UI/BrowserShellView.swift` — consumes `TabSession` directly
-- `Cove/Sources/UI/NavigationBar.swift` — consumes `TabSession` directly
+- `Cove/Sources/UI/BrowserView.swift` — active-tab-only hosting plus explicit app-service injection into each window
+- `Cove/Sources/UI/BrowserShellView.swift` — consumes `TabSession` directly and receives app-scoped services for browser UI
+- `Cove/Sources/UI/NavigationBar.swift` — consumes `TabSession` directly and receives explicit history/download services
+- `Cove/Sources/UI/HistoryView.swift` — explicit settings/history dependencies instead of globals
+- `Cove/Sources/UI/NewTabPage.swift` — explicit settings/history/favicon dependencies instead of globals
+- `Cove/Sources/UI/DownloadsStatusButton.swift` — explicit download-manager dependency instead of globals
 - `Cove/Sources/UI/Foundation/ChromeTabItem.swift` — consumes `TabSession` directly
-- `Cove/Sources/App/AppDelegate.swift` — reduced back to app-global work only
+- `Cove/Sources/App/AppDelegate.swift` — reduced back to AppKit window setup only
 
 ### Files Deleted
 - `Cove/Sources/Browser/Tab.swift`
@@ -108,6 +124,14 @@ Pure policy
    - **Root cause:** This repo is `xcodegen`-managed, so adding/removing source files without regenerating left the project graph stale.
    - **Fix:** Ran `xcodegen generate` after file additions/deletions.
 
+9. **The app still had fake dependency injection after the first refactor**
+   - **Root cause:** `TabSession` had cleaner boundaries, but the production app path still reached into `.shared` settings/history/download/content-blocking services from runtime and UI code.
+   - **Fix:** Introduced `AppServices` as the app-scoped composition root and threaded explicit dependencies from `CoveApp` into window, tab, and UI surfaces.
+
+10. **`BrowserSettingsStore` was drifting into a side-effect owner**
+   - **Root cause:** Clearing history lived on the settings store, which mixed persistence settings with browser data mutation.
+   - **Fix:** Moved history clearing back to the composed settings UI, where the required `HistoryStore` dependency is explicit.
+
 ## Key Learnings
 - **Scope discipline matters more than cleverness.** The right question was not "how do we sync these objects?" but "should these objects even both own this state?"
 - **Wrapper objects that only forward `objectWillChange` are usually a design smell.** They preserve names while hiding the fact that ownership is wrong.
@@ -115,25 +139,31 @@ Pure policy
 - **Navigation policy and tab runtime should not be the same thing.** URL parsing, search fallback, and request creation are easier to test and reason about as a separate pure object.
 - **The view tree should match the actual interaction model.** If only one tab is active, only one tab view should be attached unless there is a concrete reason not to.
 - **With `xcodegen`, project regeneration is part of the edit cycle.** Adding/removing Swift files without regenerating produces fake build errors and stale project state.
+- **The app is not really dependency-injected until the app root is explicit.** Cleaning up inner objects helps, but the design stays dishonest if `CoveApp` is not the place where services are composed.
+- **Singletons at the boundary are less dangerous than singletons in the runtime path.** Keeping compatibility `shared` instances is tolerable; using them in the production browser path is what makes the architecture slippery.
 
 ## Architecture Decisions
 - **`BrowserSettingsStore` remains app-scoped and is now the sole settings writer** — one path for settings mutation, not a mix of `@AppStorage`, defaults notifications, and model-local state.
+- **`AppServices` is the one app-scoped composition root** — app-wide browser services are created once in `CoveApp` and then passed down explicitly.
 - **`TabSession` is the tab boundary** — it owns a tab's runtime identity, start-page state, `WKWebView`, delegates, and published navigation state.
 - **`NavigationRequestBuilder` is a pure policy helper** — request construction lives outside the tab runtime.
 - **`WindowChromeAccessor` is the single browser-window bridge** — `AppDelegate` should stay app-global; browser windows own their own chrome integration.
 - **Only the active session view is hosted** — sessions stay alive in memory, but the SwiftUI tree now reflects the active-tab model instead of layering hidden views.
+- **UI surfaces should consume explicit services, not convenience globals** — history, downloads, settings, and start-page data now follow the same ownership story as the browser runtime.
 
 ## Ready for Next Session
 - ✅ Branch: `refactor/browser-architecture-foundations`
 - ✅ Worktree is clean
 - ✅ Latest local commits are staged as readable architecture checkpoints
 - ✅ `xcodebuild -project "Cove.xcodeproj" -scheme "Cove" -configuration Debug clean build CODE_SIGNING_ALLOWED=NO` succeeds
+- ✅ `xcodegen generate` succeeds after adding `AppServices.swift`
+- ✅ Production app code no longer uses app-global browser service singletons in its runtime path
 - ⚠️ Remaining build warnings are pre-existing: `Database.swift` has two `withUnsafeBytes` "result unused" warnings, plus Xcode's AppIntents metadata warning
-- 🔧 Next high-value refactor: inject `HistoryStore`, `FaviconStore`, and `DownloadManager` into `TabSession` so it stops reaching for app-global singletons directly
-- 🔧 Next safety improvement: add a small test target around `NavigationRequestBuilder` and popup/new-tab routing
-- 🔧 Manual smoke testing still worth doing for popup sites, live settings propagation, downloads, history navigation, and tab switching after the active-view-hosting change
+- 🔧 Next high-value refactor: add a small test target around `NavigationRequestBuilder`, history/recent-sites behavior, and popup/download routing
+- 🔧 Next architecture question only if needed later: decide whether Cove wants a second browser-context layer for profiles/private windows, rather than forcing `AppServices` to represent every future context
+- 🔧 Manual smoke testing still worth doing for content-blocking startup/toggle, history search, recent sites, downloads, live settings propagation, and popup/new-tab flows
 
 ## Context for Future
-This session materially improved the browser architecture, but it did not finish the dependency story. The biggest remaining seam is that `TabSession` still talks directly to `HistoryStore.shared`, `FaviconStore.shared`, and `DownloadManager.shared`. The code is much cleaner now, but the runtime still has app-global service reach-through.
+This session started as a browser-architecture cleanup and ended by making the app boundary explicit. `CoveApp` now creates one `AppServices` container, `TabManager` remains the window composition point, `TabSession` remains the tab boundary, and browser UI surfaces consume injected services instead of browsing globals.
 
-If a future session keeps pushing toward "browser systems that scale cleanly," the next step is service injection plus a small test target, not another round of UI polish. The core ownership model is finally in decent shape: app settings/services at app scope, `TabManager` at window scope, `TabSession` at tab scope, and navigation policy extracted into its own object.
+If a future session keeps pushing toward "browser systems that scale cleanly," the next step is not more singleton cleanup. The next step is a small test target plus selective smoke testing, and only after that deciding whether Cove needs a second browser-context abstraction for profiles or private windows.
