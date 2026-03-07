@@ -1,16 +1,11 @@
 import SwiftUI
 
 struct WindowChromeHost<Content: View>: View {
-    let controlsStyle: WindowChromeControlsStyle
     let content: Content
 
     @State private var titlebarHeight: CGFloat = 0
 
-    init(
-        controlsStyle: WindowChromeControlsStyle,
-        @ViewBuilder content: () -> Content
-    ) {
-        self.controlsStyle = controlsStyle
+    init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
@@ -19,11 +14,8 @@ struct WindowChromeHost<Content: View>: View {
             .environment(\.titlebarHeight, titlebarHeight)
             .padding(.top, -chromeCompensationOffset)
             .background {
-                WindowChromeAccessor(
-                    controlsStyle: controlsStyle,
-                    titlebarHeight: $titlebarHeight
-                )
-                .allowsHitTesting(false)
+                WindowChromeAccessor(titlebarHeight: $titlebarHeight)
+                    .allowsHitTesting(false)
             }
     }
 

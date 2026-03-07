@@ -55,6 +55,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.backgroundColor = .windowBackgroundColor
         installWindowToolbarIfNeeded(on: window)
         window.toolbarStyle = .unifiedCompact
+        hideNativeTrafficLights(on: window)
+    }
+
+    private func hideNativeTrafficLights(on window: NSWindow) {
+        for type: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
+            window.standardWindowButton(type)?.isHidden = true
+        }
     }
 
     private func installWindowToolbarIfNeeded(on window: NSWindow) {

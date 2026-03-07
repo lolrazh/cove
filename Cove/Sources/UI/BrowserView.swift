@@ -7,7 +7,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(controlsStyle: chromeControlsStyle) {
+                WindowChromeHost {
                     BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
                         activeTabContent
                     }
@@ -18,19 +18,6 @@ struct BrowserView: View {
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
-    }
-
-    // MARK: - Chrome Controls
-
-    private var chromeControlsStyle: WindowChromeControlsStyle {
-        let stripVisible = !settings.hideTabs || tabManager.areTabsVisible
-
-        return WindowChromeControlsStyle(
-            leadingInset: ChromeMetrics.shellControlsLeadingInset,
-            interButtonSpacing: ChromeMetrics.shellControlsInterButtonSpacing,
-            verticalOffset: ChromeMetrics.shellControlsVerticalOffset,
-            isVisible: stripVisible
-        )
     }
 
     // MARK: - Tab Content

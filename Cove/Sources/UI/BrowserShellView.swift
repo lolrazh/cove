@@ -24,6 +24,12 @@ struct BrowserShellView<Content: View>: View {
 
     var body: some View {
         shell
+            .overlay(alignment: .topLeading) {
+                TrafficLightsView(isVisible: stripVisible)
+                    .padding(.leading, ChromeMetrics.shellControlsLeadingInset)
+                    .padding(.top, max(0, (titlebarHeight - 12) / 2))
+                    .allowsHitTesting(stripVisible)
+            }
             .overlay(alignment: .top) {
                 if isHorizontalImmersive {
                     topRevealArea
@@ -175,6 +181,10 @@ struct BrowserShellView<Content: View>: View {
     }
 
     // MARK: - Chrome Visibility
+
+    private var stripVisible: Bool {
+        !settings.hideTabs || tabManager.areTabsVisible
+    }
 
     var showsTopStrip: Bool {
         tabManager.tabLayout == .horizontal && (!settings.hideTabs || tabManager.areTabsVisible)
