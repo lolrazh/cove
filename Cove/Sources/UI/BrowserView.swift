@@ -7,7 +7,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost {
+                WindowChromeHost(isVisible: stripVisible) {
                     BrowserShellView(tabManager: tabManager, activeTab: activeTab) {
                         activeTabContent
                     }
@@ -18,6 +18,10 @@ struct BrowserView: View {
         .background(ChromePalette.window)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneValue(\.browserCommandContext, browserCommandContext)
+    }
+
+    private var stripVisible: Bool {
+        !settings.hideTabs || tabManager.areTabsVisible
     }
 
     // MARK: - Tab Content

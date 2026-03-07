@@ -204,7 +204,7 @@ private struct TitlebarTabStripContent: View {
             tabManager: tabManager,
             laneHeight: ChromeMetrics.topStripLaneHeight
         )
-        .padding(.leading, ChromeMetrics.shellControlsLeadingInset + ChromeMetrics.shellControlsClusterWidth + ChromeMetrics.shellControlsGapToTabs)
+        .padding(.leading, ChromeMetrics.shellControlsGapToTabs + ChromeMetrics.shellControlsEdgeBalanceInset)
         .padding(.trailing, ChromeMetrics.shellGutter)
         .frame(width: width, height: ChromeMetrics.topBandHeight, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)

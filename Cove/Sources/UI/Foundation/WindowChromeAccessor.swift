@@ -2,20 +2,30 @@ import SwiftUI
 import AppKit
 
 struct WindowChromeAccessor: NSViewRepresentable {
+    var isVisible: Bool
     var titlebarHeight: Binding<CGFloat>? = nil
 
     func makeNSView(context: Context) -> WindowChromeMeasureView {
         let view = WindowChromeMeasureView()
+        view.isVisible = isVisible
         view.titlebarHeight = titlebarHeight
         return view
     }
 
     func updateNSView(_ nsView: WindowChromeMeasureView, context: Context) {
+        nsView.isVisible = isVisible
         nsView.titlebarHeight = titlebarHeight
     }
 }
 
 final class WindowChromeMeasureView: NSView {
+    var isVisible: Bool = true {
+        didSet {
+            guard oldValue != isVisible else { return }
+            applyButtonVisibility(animated: true)
+        }
+    }
+
     var titlebarHeight: Binding<CGFloat>?
 
     private weak var observedWindow: NSWindow?
@@ -47,6 +57,7 @@ final class WindowChromeMeasureView: NSView {
     private func bindWindowObservation() {
         guard observedWindow !== window else {
             measureTitlebar()
+            applyButtonVisibility(animated: false)
             return
         }
 
@@ -68,6 +79,7 @@ final class WindowChromeMeasureView: NSView {
         }
 
         measureTitlebar()
+        applyButtonVisibility(animated: false)
     }
 
     private func stopObservingWindow() {
@@ -88,6 +100,24 @@ final class WindowChromeMeasureView: NSView {
         guard titlebarHeight.wrappedValue != resolved else { return }
         DispatchQueue.main.async {
             self.titlebarHeight?.wrappedValue = resolved
+        }
+    }
+
+    private func applyButtonVisibility(animated: Bool) {
+        guard let window else { return }
+        let targetAlpha: CGFloat = isVisible ? 1 : 0
+
+        for type: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
+            guard let button = window.standardWindowButton(type) else { continue }
+            if animated {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.18
+                    context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    button.animator().alphaValue = targetAlpha
+                }
+            } else {
+                button.alphaValue = targetAlpha
+            }
         }
     }
 }
