@@ -11,9 +11,10 @@ struct DownloadsStatusButton: View {
 
     var body: some View {
         Button(action: { showDownloads.toggle() }) {
-            VStack(spacing: 3) {
+            ZStack(alignment: .bottom) {
                 downloadsIcon
                     .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
                 if downloadManager.hasActiveDownloads {
                     GeometryReader { geometry in
@@ -27,11 +28,13 @@ struct DownloadsStatusButton: View {
                         }
                     }
                     .frame(width: 18, height: 4)
-                } else {
-                    Spacer()
-                        .frame(height: 4)
+                    .padding(.bottom, 3)
                 }
             }
+            .frame(
+                width: ChromeMetrics.iconButtonSize.width,
+                height: ChromeMetrics.iconButtonSize.height
+            )
         }
         .buttonStyle(ChromeButtonStyle(kind: .toolbar))
         .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
@@ -40,12 +43,8 @@ struct DownloadsStatusButton: View {
     }
 
     private var downloadsIcon: some View {
-        let icon = Image(
-            systemName: downloadManager.hasActiveDownloads
-                ? ChromeSymbols.Navigation.downloadsActive
-                : ChromeSymbols.Navigation.downloads
-        )
-        .font(.system(size: 13, weight: .medium))
+        let icon = Image(systemName: ChromeSymbols.Navigation.downloads)
+            .font(.system(size: 13, weight: .medium))
 
         return Group {
             if reduceMotion {
