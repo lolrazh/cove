@@ -174,8 +174,44 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
         let requestID = UUID()
         faviconRequestID = requestID
-        faviconTask = Task(priority: .utility) { [weak self] in
-            guard let data = await Self.fetchFaviconData(from: faviconURL),
+        faviconTask = Task(priority: .userInitiated) { [weak self] in
+            guard let data = await Self.fetchFaviconData(from: faviconURL, timeoutInterval: 1.5),
+                  !Task.isCancelled,
+                  let image = Self.renderFavicon(from: data) else {
+                await MainActor.run { [weak self] in
+                    self?.completeFaviconRequest(ifMatches: requestID)
+                }
+                return
+            }
+
+            await MainActor.run { [weak self] in
+                guard let self,
+                      self.faviconRequestID == requestID,
+                      self.faviconSiteKey == siteKey else { return }
+                self.favicon = image
+                self.services.faviconStore.store(domain: siteKey, imageData: data)
+                self.completeFaviconRequest(ifMatches: requestID)
+            }
+        }
+    }
+
+    private func updateFaviconFromPageIfNeeded() {
+        guard favicon == nil,
+              let pageURL = webView.url,
+              let siteKey = faviconSiteKey(for: pageURL),
+              faviconSiteKey == siteKey else { return }
+
+        let fallbackURL = canonicalFaviconURL(for: pageURL)
+        faviconTask?.cancel()
+        faviconTask = nil
+
+        let requestID = UUID()
+        faviconRequestID = requestID
+        faviconTask = Task(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+
+            let candidates = await self.documentFaviconCandidates(for: pageURL, fallback: fallbackURL)
+            guard let data = await Self.fetchFirstFaviconData(from: candidates, timeoutInterval: 1.5),
                   !Task.isCancelled,
                   let image = Self.renderFavicon(from: data) else {
                 await MainActor.run { [weak self] in
@@ -209,6 +245,38 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         faviconRequestID = nil
     }
 
+    private func documentFaviconCandidates(for pageURL: URL, fallback: URL?) async -> [URL] {
+        let script = """
+        (() => {
+          return Array.from(document.querySelectorAll('link[rel][href]'))
+            .map(link => {
+              const rel = (link.getAttribute('rel') || '').toLowerCase();
+              if (!rel.includes('icon')) return null;
+              if (rel.includes('apple-touch-icon') || rel.includes('mask-icon')) return null;
+
+              const href = link.href;
+              return href && href.length > 0 ? href : null;
+            })
+            .filter(Boolean);
+        })();
+        """
+
+        let hrefs: [String] = await withCheckedContinuation { continuation in
+            webView.evaluateJavaScript(script) { value, _ in
+                if let hrefs = value as? [String] {
+                    continuation.resume(returning: hrefs)
+                } else if let hrefs = value as? [NSString] {
+                    continuation.resume(returning: hrefs.map(String.init))
+                } else {
+                    continuation.resume(returning: [])
+                }
+            }
+        }
+
+        let candidates = Self.faviconCandidateURLs(from: hrefs, relativeTo: pageURL)
+        return Self.normalizedFaviconCandidates(candidates, fallback: fallback)
+    }
+
     private func faviconSiteKey(for pageURL: URL) -> String? {
         guard let host = pageURL.host?.lowercased() else { return nil }
 
@@ -232,14 +300,69 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         return components.url
     }
 
-    nonisolated private static func fetchFaviconData(from url: URL) async -> Data? {
-        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 4)
+    nonisolated private static func fetchFaviconData(from url: URL, timeoutInterval: TimeInterval) async -> Data? {
+        let request = URLRequest(
+            url: url,
+            cachePolicy: .returnCacheDataElseLoad,
+            timeoutInterval: timeoutInterval
+        )
 
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               let http = response as? HTTPURLResponse,
               http.statusCode == 200,
               !data.isEmpty else { return nil }
         return data
+    }
+
+    nonisolated private static func fetchFirstFaviconData(
+        from urls: [URL],
+        timeoutInterval: TimeInterval
+    ) async -> Data? {
+        let candidates = Array(urls.prefix(6))
+        guard !candidates.isEmpty else { return nil }
+
+        return await withTaskGroup(of: Data?.self, returning: Data?.self) { group in
+            for url in candidates {
+                group.addTask {
+                    await Self.fetchFaviconData(from: url, timeoutInterval: timeoutInterval)
+                }
+            }
+
+            while let data = await group.next() {
+                if let data {
+                    group.cancelAll()
+                    return data
+                }
+            }
+
+            return nil
+        }
+    }
+
+    nonisolated private static func faviconCandidateURLs(from hrefs: [String], relativeTo pageURL: URL) -> [URL] {
+        return hrefs.compactMap { href in
+            guard let url = URL(string: href, relativeTo: pageURL)?.absoluteURL,
+                  let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https" else {
+                return nil
+            }
+
+            return url
+        }
+    }
+
+    nonisolated private static func normalizedFaviconCandidates(_ urls: [URL], fallback: URL?) -> [URL] {
+        var ordered: [URL] = []
+        var seen: Set<String> = []
+
+        for url in urls + [fallback].compactMap({ $0 }) {
+            let key = url.absoluteString
+            if seen.insert(key).inserted {
+                ordered.append(url)
+            }
+        }
+
+        return ordered
     }
 
     nonisolated private static func renderFavicon(from data: Data) -> NSImage? {
@@ -266,6 +389,7 @@ extension TabSession: WKNavigationDelegate {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
         services.historyStore.recordVisit(url: url, title: title)
+        updateFaviconFromPageIfNeeded()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
