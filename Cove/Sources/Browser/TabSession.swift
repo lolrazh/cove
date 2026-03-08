@@ -23,16 +23,20 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var estimatedProgress: Double = 0
     @Published var favicon: NSImage?
 
-    let webView: WKWebView
+    private(set) var webView: WKWebView
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private var observers: [NSKeyValueObservation] = []
+    private var webViewCanGoBack = false
+    private var webViewCanGoForward = false
     private var faviconTask: Task<Void, Never>?
     private var faviconSiteKey: String?
     private var faviconRequestID: UUID?
+    private var hasSyntheticStartPageEntry: Bool
+    private var syntheticForwardToWebContent = false
 
     init(
         id: UUID = UUID(),
@@ -46,6 +50,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     ) {
         self.id = id
         self.isNewTabPage = showsStartPage
+        self.hasSyntheticStartPageEntry = showsStartPage
         self.settings = settings
         self.services = services
         self.requestBuilder = requestBuilder
@@ -53,10 +58,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.webView = services.webKitEnvironment.makeWebView()
         super.init()
 
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
-
+        configureWebView(webView)
         setupObservers()
+        refreshNavigationState()
         if let initialRequest {
             loadRequest(initialRequest)
         } else if let initialURL {
@@ -70,8 +74,19 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func navigate(_ input: String) {
         guard let request = request(for: input) else { return }
+
+        if isNewTabPage && syntheticForwardToWebContent {
+            replaceWebViewForFreshNavigation()
+            syntheticForwardToWebContent = false
+        }
+
+        if isNewTabPage {
+            hasSyntheticStartPageEntry = true
+        }
+
         isNewTabPage = false
         loadRequest(request)
+        refreshNavigationState()
     }
 
     func loadURL(_ input: String) {
@@ -84,10 +99,22 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func goBack() {
-        webView.goBack()
+        guard !isNewTabPage else { return }
+
+        if webViewCanGoBack {
+            webView.goBack()
+        } else if hasSyntheticStartPageEntry {
+            showSyntheticStartPage()
+        }
     }
 
     func goForward() {
+        if isNewTabPage {
+            guard syntheticForwardToWebContent else { return }
+            revealWebViewFromSyntheticStartPage()
+            return
+        }
+
         webView.goForward()
     }
 
@@ -110,39 +137,119 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             },
             webView.observe(\.title) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.pageTitle = webView.title ?? ""
+                    self?.handleTitleChange(webView.title)
                 }
             },
             webView.observe(\.canGoBack) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.canGoBack = webView.canGoBack
+                    self?.webViewCanGoBack = webView.canGoBack
+                    self?.refreshNavigationState()
                 }
             },
             webView.observe(\.canGoForward) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.canGoForward = webView.canGoForward
+                    self?.webViewCanGoForward = webView.canGoForward
+                    self?.refreshNavigationState()
                 }
             },
             webView.observe(\.isLoading) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.isLoading = webView.isLoading
+                    self?.handleLoadingChange(webView.isLoading)
                 }
             },
             webView.observe(\.estimatedProgress) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.estimatedProgress = webView.estimatedProgress
+                    self?.handleEstimatedProgressChange(webView.estimatedProgress)
                 }
             },
         ]
     }
 
     private func handleURLChange(_ url: URL?) {
+        guard !isShowingSyntheticStartPage else { return }
         currentURL = url?.absoluteString ?? ""
         updateFavicon(for: url)
     }
 
+    private func handleTitleChange(_ title: String?) {
+        guard !isShowingSyntheticStartPage else { return }
+        pageTitle = title ?? ""
+    }
+
+    private func handleLoadingChange(_ isLoading: Bool) {
+        guard !isShowingSyntheticStartPage else { return }
+        self.isLoading = isLoading
+    }
+
+    private func handleEstimatedProgressChange(_ progress: Double) {
+        guard !isShowingSyntheticStartPage else { return }
+        estimatedProgress = progress
+    }
+
     private func request(for input: String) -> URLRequest? {
         requestBuilder.request(for: input, searchEngine: settings.searchEngine)
+    }
+
+    private func configureWebView(_ webView: WKWebView) {
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+    }
+
+    private func replaceWebViewForFreshNavigation() {
+        observers.removeAll()
+        webView.stopLoading()
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+
+        let replacement = services.webKitEnvironment.makeWebView()
+        webView = replacement
+        configureWebView(replacement)
+
+        webViewCanGoBack = false
+        webViewCanGoForward = false
+        currentURL = ""
+        pageTitle = ""
+        isLoading = false
+        estimatedProgress = 0
+        resetFavicon()
+        setupObservers()
+    }
+
+    private func showSyntheticStartPage() {
+        isNewTabPage = true
+        syntheticForwardToWebContent = true
+        currentURL = ""
+        pageTitle = ""
+        isLoading = false
+        estimatedProgress = 0
+        resetFavicon()
+        refreshNavigationState()
+    }
+
+    private func revealWebViewFromSyntheticStartPage() {
+        isNewTabPage = false
+        syntheticForwardToWebContent = false
+        currentURL = webView.url?.absoluteString ?? ""
+        pageTitle = webView.title ?? ""
+        isLoading = webView.isLoading
+        estimatedProgress = webView.estimatedProgress
+        refreshNavigationState()
+        updateFavicon(for: webView.url)
+    }
+
+    private func refreshNavigationState() {
+        if isNewTabPage {
+            canGoBack = false
+            canGoForward = syntheticForwardToWebContent
+            return
+        }
+
+        canGoBack = webViewCanGoBack || hasSyntheticStartPageEntry
+        canGoForward = webViewCanGoForward
+    }
+
+    private var isShowingSyntheticStartPage: Bool {
+        isNewTabPage && syntheticForwardToWebContent
     }
 
     private func updateFavicon(for pageURL: URL?, force: Bool = false) {
