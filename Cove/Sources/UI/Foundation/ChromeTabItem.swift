@@ -12,6 +12,7 @@ struct ChromeTabItem: View {
     let onSelect: () -> Void
     let onClose: () -> Void
     let canClose: Bool
+    var horizontalWidth: CGFloat? = nil
 
     @State private var isHovered = false
 
@@ -24,10 +25,12 @@ struct ChromeTabItem: View {
             FaviconView(image: tab.favicon, size: 14)
 
             Text(tabTitle)
-                .font(.system(size: presentation == .horizontal ? 11.5 : 12, weight: isActive ? .medium : .regular))
+                .font(.system(size: presentation == .horizontal ? 11.5 : 12, weight: titleWeight))
+                .foregroundStyle(presentation == .horizontal && !isActive ? .secondary : .primary)
                 .lineLimit(1)
+                .truncationMode(.tail)
                 .frame(
-                    maxWidth: presentation == .horizontal ? 170 : .infinity,
+                    maxWidth: titleMaxWidth,
                     alignment: .leading
                 )
 
@@ -35,6 +38,7 @@ struct ChromeTabItem: View {
         }
         .padding(.horizontal, presentation == .horizontal ? 10 : 12)
         .padding(.vertical, presentation == .horizontal ? 7 : 8)
+        .frame(width: presentation == .horizontal ? horizontalWidth : nil, alignment: .leading)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil, alignment: .leading)
         .chromeInteractiveSurface(isSelected: isActive, cornerRadius: ChromeMetrics.tabCornerRadius, showsBorder: isActive)
         .onHover { isHovered = $0 }
@@ -55,5 +59,23 @@ struct ChromeTabItem: View {
     private var tabTitle: String {
         let title = tab.pageTitle
         return title.isEmpty ? "New Tab" : title
+    }
+
+    private var titleWeight: Font.Weight {
+        switch presentation {
+        case .horizontal:
+            return .regular
+        case .sidebar:
+            return isActive ? .medium : .regular
+        }
+    }
+
+    private var titleMaxWidth: CGFloat? {
+        switch presentation {
+        case .horizontal:
+            return horizontalWidth == nil ? 170 : .infinity
+        case .sidebar:
+            return .infinity
+        }
     }
 }
