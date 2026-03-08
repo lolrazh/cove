@@ -64,12 +64,12 @@ final class TabManager: ObservableObject {
             }
         }
 
-        open(tab)
+        open(tab, nextTo: activeTabID)
     }
 
-    func addTab(request: URLRequest) {
+    func addTab(request: URLRequest, nextTo openerID: UUID? = nil) {
         let tab = makeTab(initialRequest: request, showsStartPage: false)
-        open(tab)
+        open(tab, nextTo: openerID ?? activeTabID)
     }
 
     private func bindSettings() {
@@ -97,19 +97,28 @@ final class TabManager: ObservableObject {
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = false
     ) -> TabSession {
-        TabSession(
+        let tabID = UUID()
+
+        return TabSession(
+            id: tabID,
             initialURL: initialURL,
             initialRequest: initialRequest,
             showsStartPage: showsStartPage,
             settings: settings,
             services: services
         ) { [weak self] request in
-            self?.addTab(request: request)
+            self?.addTab(request: request, nextTo: tabID)
         }
     }
 
-    private func open(_ tab: TabSession) {
-        tabs.append(tab)
+    private func open(_ tab: TabSession, nextTo openerID: UUID? = nil) {
+        if let openerID,
+           let openerIndex = tabs.firstIndex(where: { $0.id == openerID }) {
+            tabs.insert(tab, at: openerIndex + 1)
+        } else {
+            tabs.append(tab)
+        }
+
         activeTabID = tab.id
     }
 

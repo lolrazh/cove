@@ -35,6 +35,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var faviconRequestID: UUID?
 
     init(
+        id: UUID = UUID(),
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = true,
@@ -43,7 +44,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
     ) {
-        self.id = UUID()
+        self.id = id
         self.isNewTabPage = showsStartPage
         self.settings = settings
         self.services = services
