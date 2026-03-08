@@ -15,6 +15,7 @@ struct CoveApp: App {
     var body: some Scene {
         WindowGroup {
             BrowserView(appServices: appServices)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
