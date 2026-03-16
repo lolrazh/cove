@@ -18,6 +18,7 @@
 		288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAD4F48AAADD750585F40AB /* NavigationBar.swift */; };
 		2BCB31FC3951B522E8BAD297 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6949A5A721596A8C82526E29 /* AppDelegate.swift */; };
 		2E68D5EC61BEEF96F135EBBF /* BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */; };
+		3AF825DE92C8A7FA1413EF0D /* FaviconFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED634449436374F07F550C3C /* FaviconFetcher.swift */; };
 		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
 		4EE45757F76BCE50BA2AED6D /* BrowserShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1371EC35AEAB2357849190 /* BrowserShellView.swift */; };
 		4FC7B1AFFCADD998D88AAC01 /* ChromeTabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E085EBC7AAE7AC011C39A11A /* ChromeTabItem.swift */; };
@@ -82,6 +83,7 @@
 		E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTokens.swift; sourceTree = "<group>"; };
 		E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		E97C600BF67A95C4A3686BC7 /* Cove.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cove.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED634449436374F07F550C3C /* FaviconFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconFetcher.swift; sourceTree = "<group>"; };
 		FA1371EC35AEAB2357849190 /* BrowserShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserShellView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -136,6 +138,7 @@
 				06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */,
 				2CE2F65859C71D28B5A91955 /* Database.swift */,
 				47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */,
+				ED634449436374F07F550C3C /* FaviconFetcher.swift */,
 				408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */,
 				AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */,
 				6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */,
@@ -281,6 +284,7 @@
 				E15406F2815B902D35964435 /* DownloadManager.swift in Sources */,
 				B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */,
 				EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */,
+				3AF825DE92C8A7FA1413EF0D /* FaviconFetcher.swift in Sources */,
 				F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */,
 				5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */,
 				13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */,

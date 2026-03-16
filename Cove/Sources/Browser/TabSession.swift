@@ -29,12 +29,10 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
+    private let faviconFetcher: FaviconFetcher
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
     private var webViewCanGoForward = false
-    private var faviconTask: Task<Void, Never>?
-    private var faviconSiteKey: String?
-    private var faviconRequestID: UUID?
     private var hasSyntheticStartPageEntry: Bool
     private var syntheticForwardToWebContent = false
 
@@ -55,6 +53,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.services = services
         self.requestBuilder = requestBuilder
         self.onOpenInNewTab = onOpenInNewTab
+        self.faviconFetcher = FaviconFetcher(store: services.faviconStore)
         self.webView = services.webKitEnvironment.makeWebView()
         super.init()
 
@@ -66,10 +65,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         } else if let initialURL {
             loadURL(initialURL)
         }
-    }
-
-    deinit {
-        faviconTask?.cancel()
     }
 
     func navigate(_ input: String) {
@@ -128,17 +123,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         webView.stopLoading()
     }
 
+    // MARK: - Observers
+
     private func setupObservers() {
         observers = [
             webView.observe(\.url) { [weak self] webView, _ in
-                Task { @MainActor in
-                    self?.handleURLChange(webView.url)
-                }
+                Task { @MainActor in self?.handleURLChange(webView.url) }
             },
             webView.observe(\.title) { [weak self] webView, _ in
-                Task { @MainActor in
-                    self?.handleTitleChange(webView.title)
-                }
+                Task { @MainActor in self?.handleTitleChange(webView.title) }
             },
             webView.observe(\.canGoBack) { [weak self] webView, _ in
                 Task { @MainActor in
@@ -153,14 +146,10 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
                 }
             },
             webView.observe(\.isLoading) { [weak self] webView, _ in
-                Task { @MainActor in
-                    self?.handleLoadingChange(webView.isLoading)
-                }
+                Task { @MainActor in self?.handleLoadingChange(webView.isLoading) }
             },
             webView.observe(\.estimatedProgress) { [weak self] webView, _ in
-                Task { @MainActor in
-                    self?.handleEstimatedProgressChange(webView.estimatedProgress)
-                }
+                Task { @MainActor in self?.handleEstimatedProgressChange(webView.estimatedProgress) }
             },
         ]
     }
@@ -185,6 +174,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         guard !isShowingSyntheticStartPage else { return }
         estimatedProgress = progress
     }
+
+    // MARK: - Navigation helpers
 
     private func request(for input: String) -> URLRequest? {
         requestBuilder.request(for: input, searchEngine: settings.searchEngine)
@@ -211,7 +202,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         pageTitle = ""
         isLoading = false
         estimatedProgress = 0
-        resetFavicon()
+        faviconFetcher.reset()
+        favicon = nil
         setupObservers()
     }
 
@@ -222,7 +214,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         pageTitle = ""
         isLoading = false
         estimatedProgress = 0
-        resetFavicon()
+        faviconFetcher.reset()
+        favicon = nil
         refreshNavigationState()
     }
 
@@ -252,241 +245,16 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         isNewTabPage && syntheticForwardToWebContent
     }
 
+    // MARK: - Favicon
+
     private func updateFavicon(for pageURL: URL?, force: Bool = false) {
-        guard let pageURL,
-              let siteKey = faviconSiteKey(for: pageURL),
-              let faviconURL = canonicalFaviconURL(for: pageURL) else {
-            resetFavicon()
-            return
+        faviconFetcher.update(for: pageURL, force: force) { [weak self] image in
+            self?.favicon = image
         }
-
-        let siteChanged = faviconSiteKey != siteKey
-        if !siteChanged && !force && (favicon != nil || faviconTask != nil) {
-            return
-        }
-
-        faviconSiteKey = siteKey
-        faviconTask?.cancel()
-        faviconTask = nil
-
-        if siteChanged || force {
-            favicon = nil
-        }
-
-        if let cached = services.faviconStore.get(domain: siteKey) {
-            faviconRequestID = nil
-            favicon = cached
-            return
-        }
-
-        let requestID = UUID()
-        faviconRequestID = requestID
-        faviconTask = Task(priority: .userInitiated) { [weak self] in
-            guard let data = await Self.fetchFaviconData(from: faviconURL, timeoutInterval: 1.5),
-                  !Task.isCancelled,
-                  let image = Self.renderFavicon(from: data) else {
-                await MainActor.run { [weak self] in
-                    self?.completeFaviconRequest(ifMatches: requestID)
-                }
-                return
-            }
-
-            await MainActor.run { [weak self] in
-                guard let self,
-                      self.faviconRequestID == requestID,
-                      self.faviconSiteKey == siteKey else { return }
-                self.favicon = image
-                self.services.faviconStore.store(domain: siteKey, imageData: data)
-                self.completeFaviconRequest(ifMatches: requestID)
-            }
-        }
-    }
-
-    private func updateFaviconFromPageIfNeeded() {
-        guard favicon == nil,
-              let pageURL = webView.url,
-              let siteKey = faviconSiteKey(for: pageURL),
-              faviconSiteKey == siteKey else { return }
-
-        let fallbackURL = canonicalFaviconURL(for: pageURL)
-        faviconTask?.cancel()
-        faviconTask = nil
-
-        let requestID = UUID()
-        faviconRequestID = requestID
-        faviconTask = Task(priority: .userInitiated) { [weak self] in
-            guard let self else { return }
-
-            let candidates = await self.documentFaviconCandidates(for: pageURL, fallback: fallbackURL)
-            guard let data = await Self.fetchFirstFaviconData(from: candidates, timeoutInterval: 1.5),
-                  !Task.isCancelled,
-                  let image = Self.renderFavicon(from: data) else {
-                await MainActor.run { [weak self] in
-                    self?.completeFaviconRequest(ifMatches: requestID)
-                }
-                return
-            }
-
-            await MainActor.run { [weak self] in
-                guard let self,
-                      self.faviconRequestID == requestID,
-                      self.faviconSiteKey == siteKey else { return }
-                self.favicon = image
-                self.services.faviconStore.store(domain: siteKey, imageData: data)
-                self.completeFaviconRequest(ifMatches: requestID)
-            }
-        }
-    }
-
-    private func resetFavicon() {
-        faviconTask?.cancel()
-        faviconTask = nil
-        faviconSiteKey = nil
-        faviconRequestID = nil
-        favicon = nil
-    }
-
-    private func completeFaviconRequest(ifMatches requestID: UUID) {
-        guard faviconRequestID == requestID else { return }
-        faviconTask = nil
-        faviconRequestID = nil
-    }
-
-    private func documentFaviconCandidates(for pageURL: URL, fallback: URL?) async -> [URL] {
-        let script = """
-        (() => {
-          return Array.from(document.querySelectorAll('link[rel][href]'))
-            .map(link => {
-              const rel = (link.getAttribute('rel') || '').toLowerCase();
-              if (!rel.includes('icon')) return null;
-              if (rel.includes('apple-touch-icon') || rel.includes('mask-icon')) return null;
-
-              const href = link.href;
-              return href && href.length > 0 ? href : null;
-            })
-            .filter(Boolean);
-        })();
-        """
-
-        let hrefs: [String] = await withCheckedContinuation { continuation in
-            webView.evaluateJavaScript(script) { value, _ in
-                if let hrefs = value as? [String] {
-                    continuation.resume(returning: hrefs)
-                } else if let hrefs = value as? [NSString] {
-                    continuation.resume(returning: hrefs.map(String.init))
-                } else {
-                    continuation.resume(returning: [])
-                }
-            }
-        }
-
-        let candidates = Self.faviconCandidateURLs(from: hrefs, relativeTo: pageURL)
-        return Self.normalizedFaviconCandidates(candidates, fallback: fallback)
-    }
-
-    private func faviconSiteKey(for pageURL: URL) -> String? {
-        guard let host = pageURL.host?.lowercased() else { return nil }
-
-        if let port = pageURL.port {
-            return "\(host):\(port)"
-        }
-
-        return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
-    private func canonicalFaviconURL(for pageURL: URL) -> URL? {
-        guard let scheme = pageURL.scheme?.lowercased(),
-              scheme == "http" || scheme == "https",
-              let host = pageURL.host else { return nil }
-
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = host
-        components.port = pageURL.port
-        components.path = "/favicon.ico"
-        return components.url
-    }
-
-    nonisolated private static func fetchFaviconData(from url: URL, timeoutInterval: TimeInterval) async -> Data? {
-        let request = URLRequest(
-            url: url,
-            cachePolicy: .returnCacheDataElseLoad,
-            timeoutInterval: timeoutInterval
-        )
-
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              let http = response as? HTTPURLResponse,
-              http.statusCode == 200,
-              !data.isEmpty else { return nil }
-        return data
-    }
-
-    nonisolated private static func fetchFirstFaviconData(
-        from urls: [URL],
-        timeoutInterval: TimeInterval
-    ) async -> Data? {
-        let candidates = Array(urls.prefix(6))
-        guard !candidates.isEmpty else { return nil }
-
-        return await withTaskGroup(of: Data?.self, returning: Data?.self) { group in
-            for url in candidates {
-                group.addTask {
-                    await Self.fetchFaviconData(from: url, timeoutInterval: timeoutInterval)
-                }
-            }
-
-            while let data = await group.next() {
-                if let data {
-                    group.cancelAll()
-                    return data
-                }
-            }
-
-            return nil
-        }
-    }
-
-    nonisolated private static func faviconCandidateURLs(from hrefs: [String], relativeTo pageURL: URL) -> [URL] {
-        return hrefs.compactMap { href in
-            guard let url = URL(string: href, relativeTo: pageURL)?.absoluteURL,
-                  let scheme = url.scheme?.lowercased(),
-                  scheme == "http" || scheme == "https" else {
-                return nil
-            }
-
-            return url
-        }
-    }
-
-    nonisolated private static func normalizedFaviconCandidates(_ urls: [URL], fallback: URL?) -> [URL] {
-        var ordered: [URL] = []
-        var seen: Set<String> = []
-
-        for url in urls + [fallback].compactMap({ $0 }) {
-            let key = url.absoluteString
-            if seen.insert(key).inserted {
-                ordered.append(url)
-            }
-        }
-
-        return ordered
-    }
-
-    nonisolated private static func renderFavicon(from data: Data) -> NSImage? {
-        guard let image = NSImage(data: data), image.isValid else { return nil }
-        let targetSize = NSSize(width: 32, height: 32)
-        let rendered = NSImage(size: targetSize, flipped: false) { rect in
-            NSGraphicsContext.current?.imageInterpolation = .high
-            image.draw(in: rect,
-                       from: NSRect(origin: .zero, size: image.size),
-                       operation: .copy,
-                       fraction: 1.0)
-            return true
-        }
-        rendered.isTemplate = false
-        return rendered
     }
 }
+
+// MARK: - WKNavigationDelegate
 
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
@@ -496,7 +264,9 @@ extension TabSession: WKNavigationDelegate {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
         services.historyStore.recordVisit(url: url, title: title)
-        updateFaviconFromPageIfNeeded()
+        faviconFetcher.upgradeFromPage(webView, currentImage: favicon) { [weak self] image in
+            self?.favicon = image
+        }
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -509,7 +279,6 @@ extension TabSession: WKNavigationDelegate {
         if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
         }
-
         return .allow
     }
 
@@ -517,9 +286,7 @@ extension TabSession: WKNavigationDelegate {
         _ webView: WKWebView,
         decidePolicyFor navigationResponse: WKNavigationResponse
     ) async -> WKNavigationResponsePolicy {
-        if !navigationResponse.canShowMIMEType {
-            return .download
-        }
+        if !navigationResponse.canShowMIMEType { return .download }
         return .allow
     }
 
@@ -531,6 +298,8 @@ extension TabSession: WKNavigationDelegate {
         services.downloadManager.handleDownload(download)
     }
 }
+
+// MARK: - WKUIDelegate
 
 extension TabSession: WKUIDelegate {
     func webView(
