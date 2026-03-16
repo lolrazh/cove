@@ -25,7 +25,7 @@ struct BrowserView: View {
                         activeTab: activeTab,
                         areTabsVisible: $areTabsVisible
                     ) {
-                        activeTabContent
+                        activeTabContent(activeTab)
                     }
                 }
             }
@@ -52,20 +52,12 @@ struct BrowserView: View {
         !tabManager.hideTabs || areTabsVisible
     }
 
-    // MARK: - Tab Content
-
-    @ViewBuilder
-    private var activeTabContent: some View {
-        if let activeTab = tabManager.activeTab {
-            ActiveTabView(tab: activeTab, appServices: appServices)
-                .id(activeTab.id)
+    private func activeTabContent(_ tab: TabSession) -> some View {
+        ActiveTabView(tab: tab, appServices: appServices)
+            .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transaction { transaction in
-                transaction.animation = nil
-            }
-        }
+            .transaction { $0.animation = nil }
     }
-
 }
 
 struct ActiveTabView: View {

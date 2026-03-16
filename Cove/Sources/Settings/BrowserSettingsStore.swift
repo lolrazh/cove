@@ -75,58 +75,30 @@ final class BrowserSettingsStore: ObservableObject {
         }
     }
 
-    func setShowsTabsInSidebar(_ showsTabsInSidebar: Bool) {
-        guard self.showsTabsInSidebar != showsTabsInSidebar else { return }
-        self.showsTabsInSidebar = showsTabsInSidebar
-        defaults.set(showsTabsInSidebar, forKey: BrowserSettingKeys.showTabsInSidebar)
+    // MARK: - Setters
+
+    func setSearchEngine(_ v: SearchEngine) { set(\.searchEngine, to: v, key: BrowserSettingKeys.searchEngine) }
+    func setNewTabPreference(_ v: NewTabPreference) { set(\.newTabPreference, to: v, key: BrowserSettingKeys.newTabPreference) }
+    func setHomePageURL(_ v: String) { set(\.homePageURL, to: v, key: BrowserSettingKeys.homePageURL) }
+    func setShowsTabsInSidebar(_ v: Bool) { set(\.showsTabsInSidebar, to: v, key: BrowserSettingKeys.showTabsInSidebar) }
+    func setHideTabs(_ v: Bool) { set(\.hideTabs, to: v, key: BrowserSettingKeys.hideTabs) }
+    func setContentBlockingEnabled(_ v: Bool) { set(\.contentBlockingEnabled, to: v, key: BrowserSettingKeys.contentBlockingEnabled) }
+    func setSaveBrowsingHistory(_ v: Bool) { set(\.saveBrowsingHistory, to: v, key: BrowserSettingKeys.saveBrowsingHistory) }
+    func setShowRecentSites(_ v: Bool) { set(\.showRecentSites, to: v, key: BrowserSettingKeys.showRecentSites) }
+    func setDownloadDestinationMode(_ v: DownloadDestinationMode) { set(\.downloadDestinationMode, to: v, key: BrowserSettingKeys.downloadDestinationMode) }
+
+    // MARK: - Private
+
+    private func set<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<BrowserSettingsStore, T>, to value: T, key: String) {
+        guard self[keyPath: keyPath] != value else { return }
+        self[keyPath: keyPath] = value
+        defaults.set(value, forKey: key)
     }
 
-    func setHideTabs(_ hideTabs: Bool) {
-        guard self.hideTabs != hideTabs else { return }
-        self.hideTabs = hideTabs
-        defaults.set(hideTabs, forKey: BrowserSettingKeys.hideTabs)
-    }
-
-    func setSearchEngine(_ searchEngine: SearchEngine) {
-        guard self.searchEngine != searchEngine else { return }
-        self.searchEngine = searchEngine
-        defaults.set(searchEngine.rawValue, forKey: BrowserSettingKeys.searchEngine)
-    }
-
-    func setNewTabPreference(_ newTabPreference: NewTabPreference) {
-        guard self.newTabPreference != newTabPreference else { return }
-        self.newTabPreference = newTabPreference
-        defaults.set(newTabPreference.rawValue, forKey: BrowserSettingKeys.newTabPreference)
-    }
-
-    func setHomePageURL(_ homePageURL: String) {
-        guard self.homePageURL != homePageURL else { return }
-        self.homePageURL = homePageURL
-        defaults.set(homePageURL, forKey: BrowserSettingKeys.homePageURL)
-    }
-
-    func setContentBlockingEnabled(_ contentBlockingEnabled: Bool) {
-        guard self.contentBlockingEnabled != contentBlockingEnabled else { return }
-        self.contentBlockingEnabled = contentBlockingEnabled
-        defaults.set(contentBlockingEnabled, forKey: BrowserSettingKeys.contentBlockingEnabled)
-    }
-
-    func setSaveBrowsingHistory(_ saveBrowsingHistory: Bool) {
-        guard self.saveBrowsingHistory != saveBrowsingHistory else { return }
-        self.saveBrowsingHistory = saveBrowsingHistory
-        defaults.set(saveBrowsingHistory, forKey: BrowserSettingKeys.saveBrowsingHistory)
-    }
-
-    func setShowRecentSites(_ showRecentSites: Bool) {
-        guard self.showRecentSites != showRecentSites else { return }
-        self.showRecentSites = showRecentSites
-        defaults.set(showRecentSites, forKey: BrowserSettingKeys.showRecentSites)
-    }
-
-    func setDownloadDestinationMode(_ downloadDestinationMode: DownloadDestinationMode) {
-        guard self.downloadDestinationMode != downloadDestinationMode else { return }
-        self.downloadDestinationMode = downloadDestinationMode
-        defaults.set(downloadDestinationMode.rawValue, forKey: BrowserSettingKeys.downloadDestinationMode)
+    private func set<T: Equatable & RawRepresentable>(_ keyPath: ReferenceWritableKeyPath<BrowserSettingsStore, T>, to value: T, key: String) {
+        guard self[keyPath: keyPath] != value else { return }
+        self[keyPath: keyPath] = value
+        defaults.set(value.rawValue, forKey: key)
     }
 
     private static func resolveShowsTabsInSidebar(_ defaults: UserDefaults) -> Bool {

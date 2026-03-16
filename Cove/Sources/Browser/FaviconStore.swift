@@ -56,8 +56,4 @@ final class FaviconStore {
             params: [domain, imageData, Date().timeIntervalSince1970]
         )
     }
-
-    func image(for domain: String) -> NSImage? {
-        get(domain: domain)
-    }
 }
