@@ -13,7 +13,6 @@ final class Database {
             throw DatabaseError.openFailed(msg)
         }
 
-        // WAL mode for better concurrent read/write performance
         execute("PRAGMA journal_mode=WAL")
     }
 
@@ -26,40 +25,10 @@ final class Database {
         sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK
     }
 
-    func prepare(_ sql: String) throws -> OpaquePointer? {
-        var stmt: OpaquePointer?
-        if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) != SQLITE_OK {
-            let msg = String(cString: sqlite3_errmsg(db))
-            throw DatabaseError.prepareFailed(msg)
-        }
-        return stmt
-    }
-
     func run(_ sql: String, params: [Any?] = []) throws {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-
-        for (i, param) in params.enumerated() {
-            let idx = Int32(i + 1)
-            switch param {
-            case let v as String:
-                sqlite3_bind_text(stmt, idx, (v as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-            case let v as Int64:
-                sqlite3_bind_int64(stmt, idx, v)
-            case let v as Double:
-                sqlite3_bind_double(stmt, idx, v)
-            case let v as Int:
-                sqlite3_bind_int64(stmt, idx, Int64(v))
-            case let v as Data:
-                v.withUnsafeBytes { ptr in
-                    sqlite3_bind_blob(stmt, idx, ptr.baseAddress, Int32(v.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-                }
-            case nil:
-                sqlite3_bind_null(stmt, idx)
-            default:
-                sqlite3_bind_text(stmt, idx, "\(param!)", -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-            }
-        }
+        bind(params, to: stmt)
 
         if sqlite3_step(stmt) != SQLITE_DONE {
             let msg = String(cString: sqlite3_errmsg(db))
@@ -70,28 +39,7 @@ final class Database {
     func query(_ sql: String, params: [Any?] = []) throws -> [[String: Any]] {
         let stmt = try prepare(sql)
         defer { sqlite3_finalize(stmt) }
-
-        for (i, param) in params.enumerated() {
-            let idx = Int32(i + 1)
-            switch param {
-            case let v as String:
-                sqlite3_bind_text(stmt, idx, (v as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-            case let v as Int64:
-                sqlite3_bind_int64(stmt, idx, v)
-            case let v as Double:
-                sqlite3_bind_double(stmt, idx, v)
-            case let v as Int:
-                sqlite3_bind_int64(stmt, idx, Int64(v))
-            case let v as Data:
-                v.withUnsafeBytes { ptr in
-                    sqlite3_bind_blob(stmt, idx, ptr.baseAddress, Int32(v.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-                }
-            case nil:
-                sqlite3_bind_null(stmt, idx)
-            default:
-                sqlite3_bind_text(stmt, idx, "\(param!)", -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-            }
-        }
+        bind(params, to: stmt)
 
         var results: [[String: Any]] = []
         let colCount = sqlite3_column_count(stmt)
@@ -122,6 +70,41 @@ final class Database {
         }
 
         return results
+    }
+
+    // MARK: - Private
+
+    private func prepare(_ sql: String) throws -> OpaquePointer? {
+        var stmt: OpaquePointer?
+        if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) != SQLITE_OK {
+            let msg = String(cString: sqlite3_errmsg(db))
+            throw DatabaseError.prepareFailed(msg)
+        }
+        return stmt
+    }
+
+    private func bind(_ params: [Any?], to stmt: OpaquePointer?) {
+        for (i, param) in params.enumerated() {
+            let idx = Int32(i + 1)
+            switch param {
+            case let v as String:
+                sqlite3_bind_text(stmt, idx, (v as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            case let v as Int64:
+                sqlite3_bind_int64(stmt, idx, v)
+            case let v as Double:
+                sqlite3_bind_double(stmt, idx, v)
+            case let v as Int:
+                sqlite3_bind_int64(stmt, idx, Int64(v))
+            case let v as Data:
+                _ = v.withUnsafeBytes { ptr in
+                    sqlite3_bind_blob(stmt, idx, ptr.baseAddress, Int32(v.count), unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+                }
+            case nil:
+                sqlite3_bind_null(stmt, idx)
+            default:
+                sqlite3_bind_text(stmt, idx, "\(param!)", -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            }
+        }
     }
 }
 
