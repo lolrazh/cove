@@ -72,6 +72,19 @@ final class TabManager: ObservableObject {
         open(tab, nextTo: openerID ?? activeTabID)
     }
 
+    func openExternalURL(_ url: URL) {
+        guard ExternalURLRouter.canOpen(url) else { return }
+
+        if tabs.count == 1,
+           let activeTab,
+           activeTab.isNewTabPage,
+           activeTab.currentURL.isEmpty {
+            activeTab.navigate(url.absoluteString)
+        } else {
+            addTab(url: url.absoluteString)
+        }
+    }
+
     private func bindSettings() {
         settings.$showsTabsInSidebar
             .removeDuplicates()
@@ -147,6 +160,28 @@ final class TabManager: ObservableObject {
 
     func selectTab(_ id: UUID) {
         activeTabID = id
+    }
+
+    func closeActiveTab() {
+        guard let activeTabID else { return }
+        closeTab(activeTabID)
+    }
+
+    func focusAddressBar() {
+        activeTab?.requestAddressFocus()
+    }
+
+    func goBack() {
+        activeTab?.goBack()
+    }
+
+    func goForward() {
+        activeTab?.goForward()
+    }
+
+    func reloadOrStop() {
+        guard let activeTab else { return }
+        activeTab.isLoading ? activeTab.stopLoading() : activeTab.reload()
     }
 
 }

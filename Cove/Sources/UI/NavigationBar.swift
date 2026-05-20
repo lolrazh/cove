@@ -8,7 +8,7 @@ struct NavigationBar: View {
 
     @State private var addressText: String
     @State private var showHistory: Bool = false
-    @FocusState private var isAddressFocused: Bool
+    @State private var isAddressFocused: Bool = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
@@ -64,14 +64,14 @@ struct NavigationBar: View {
         HStack(spacing: 8) {
             FaviconView(image: session.favicon, size: 14)
 
-            TextField("Search or enter URL", text: $addressText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .regular, design: .default))
-                .focused($isAddressFocused)
-                .onSubmit {
-                    session.navigate(addressText)
-                    isAddressFocused = false
-                }
+            AddressTextField(
+                text: $addressText,
+                isFocused: $isAddressFocused,
+                placeholder: "Search or enter URL",
+                focusRequest: session.addressFocusRequest,
+                onSubmit: submitAddress
+            )
+            .frame(height: 18)
         }
         .frame(maxWidth: .infinity)
         .chromeFieldStyle(focused: isAddressFocused, prominence: .regular)
@@ -123,5 +123,10 @@ struct NavigationBar: View {
         }
         .disabled(!enabled)
         .buttonStyle(ChromeButtonStyle(kind: .toolbar, isSelected: isSelected))
+    }
+
+    private func submitAddress() {
+        session.navigate(addressText)
+        isAddressFocused = false
     }
 }

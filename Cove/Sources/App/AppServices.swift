@@ -8,6 +8,7 @@ final class AppServices {
     let downloadManager: DownloadManager
     let contentBlockerManager: ContentBlockerManager
     let webKitEnvironment: WebKitEnvironment
+    let externalURLRouter: ExternalURLRouter
 
     private var didPrepareLaunch = false
 
@@ -17,6 +18,7 @@ final class AppServices {
         let faviconStore = FaviconStore()
         let downloadManager = DownloadManager(settings: settingsStore)
         let contentBlockerManager = ContentBlockerManager(settings: settingsStore)
+        let externalURLRouter = ExternalURLRouter()
 
         self.settingsStore = settingsStore
         self.historyStore = historyStore
@@ -24,6 +26,7 @@ final class AppServices {
         self.downloadManager = downloadManager
         self.contentBlockerManager = contentBlockerManager
         self.webKitEnvironment = WebKitEnvironment(contentBlockerManager: contentBlockerManager)
+        self.externalURLRouter = externalURLRouter
     }
 
     var tabSessionServices: TabSessionServices {

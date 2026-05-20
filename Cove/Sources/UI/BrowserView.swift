@@ -35,6 +35,7 @@ struct BrowserView: View {
         .focusedObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
+            consumeQueuedExternalURLs()
         }
         .onChange(of: tabManager.hideTabs) { _, hide in
             withAnimation(ChromeMotion.shell) {
@@ -45,6 +46,13 @@ struct BrowserView: View {
             withAnimation(ChromeMotion.shell) {
                 areTabsVisible = !tabManager.hideTabs
             }
+        }
+        .onOpenURL { url in
+            appServices.externalURLRouter.enqueue([url])
+        }
+        .onReceive(appServices.externalURLRouter.$queuedURLs) { queuedURLs in
+            guard !queuedURLs.isEmpty else { return }
+            consumeQueuedExternalURLs()
         }
     }
 
@@ -57,6 +65,12 @@ struct BrowserView: View {
             .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { $0.animation = nil }
+    }
+
+    private func consumeQueuedExternalURLs() {
+        appServices.externalURLRouter.consume { url in
+            tabManager.openExternalURL(url)
+        }
     }
 }
 

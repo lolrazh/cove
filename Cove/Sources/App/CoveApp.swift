@@ -9,6 +9,7 @@ struct CoveApp: App {
     init() {
         let appServices = AppServices()
         self.appServices = appServices
+        appDelegate.externalURLRouter = appServices.externalURLRouter
         appServices.prepareForLaunch()
     }
 

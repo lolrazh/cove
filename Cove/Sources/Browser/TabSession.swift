@@ -22,6 +22,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var isLoading: Bool = false
     @Published var estimatedProgress: Double = 0
     @Published var favicon: NSImage?
+    @Published private(set) var addressFocusRequest: Int = 0
 
     private(set) var webView: WKWebView
 
@@ -121,6 +122,10 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func stopLoading() {
         webView.stopLoading()
+    }
+
+    func requestAddressFocus() {
+        addressFocusRequest &+= 1
     }
 
     // MARK: - Observers
