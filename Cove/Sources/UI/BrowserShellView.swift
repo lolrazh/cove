@@ -39,20 +39,22 @@ struct BrowserShellView<Content: View>: View {
                     sidebarRevealArea
                 }
             }
+            .overlay(alignment: .leading) {
+                if showsFloatingSidebar {
+                    floatingSidebar
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                }
+            }
     }
 
     // MARK: - Shell (Two Layers: Dark Frame + Light Panel)
 
     private var shell: some View {
         HStack(spacing: 0) {
-            SidebarTabView(
-                tabManager: tabManager,
-                downloadManager: appServices.downloadManager
-            )
-                .frame(width: showsSidebar ? ChromeMetrics.sidebarWidth : 0)
-                .clipped()
-                .colorScheme(.dark)
-                .onHover(perform: handleChromeHover)
+            if showsPersistentSidebar {
+                sidebarContent
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+            }
 
             VStack(spacing: 0) {
                 topChromeZone
@@ -67,6 +69,7 @@ struct BrowserShellView<Content: View>: View {
             cornerRadius: ChromeMetrics.windowCornerRadius,
             borderWidth: ChromeMetrics.windowBorderWidth
         )
+        .animation(ChromeMotion.shell, value: showsPersistentSidebar)
     }
 
     // MARK: - Top Chrome Zone
@@ -138,6 +141,31 @@ struct BrowserShellView<Content: View>: View {
         .chromePanelSurface(.window, cornerRadius: ChromeMetrics.panelCornerRadius)
     }
 
+    private var sidebarContent: some View {
+        SidebarTabView(
+            tabManager: tabManager,
+            downloadManager: appServices.downloadManager
+        )
+        .frame(width: ChromeMetrics.sidebarWidth)
+        .clipped()
+        .colorScheme(.dark)
+        .onHover(perform: handleChromeHover)
+    }
+
+    private var floatingSidebar: some View {
+        sidebarContent
+            .frame(maxHeight: .infinity, alignment: .top)
+            .chromePanelSurface(
+                .browserShell,
+                cornerRadius: ChromeMetrics.windowCornerRadius,
+                showsShadow: true,
+                borderWidth: ChromeMetrics.windowBorderWidth
+            )
+            .padding(.leading, ChromeMetrics.shellGutter)
+            .padding(.bottom, ChromeMetrics.shellGutter)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
+    }
+
     @ViewBuilder
     private var contentLoadingIndicator: some View {
         if activeTab.isLoading {
@@ -188,8 +216,12 @@ struct BrowserShellView<Content: View>: View {
         tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || areTabsVisible)
     }
 
-    private var showsSidebar: Bool {
-        tabManager.tabLayout == .sidebar && (!tabManager.hideTabs || areTabsVisible)
+    private var showsPersistentSidebar: Bool {
+        tabManager.tabLayout == .sidebar && !tabManager.hideTabs
+    }
+
+    private var showsFloatingSidebar: Bool {
+        tabManager.tabLayout == .sidebar && tabManager.hideTabs && areTabsVisible
     }
 
     private var isHorizontalImmersive: Bool {
