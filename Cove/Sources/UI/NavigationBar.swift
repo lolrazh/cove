@@ -54,18 +54,14 @@ struct NavigationBar: View {
     }
 
     private var addressBar: some View {
-        HStack(spacing: 8) {
-            FaviconView(image: session.favicon, size: 14)
-
-            AddressTextField(
-                text: $addressText,
-                isFocused: $isAddressFocused,
-                placeholder: "Search or enter URL",
-                focusRequest: session.addressFocusRequest,
-                onSubmit: submitAddress
-            )
-            .frame(height: 18)
-        }
+        AddressTextField(
+            text: $addressText,
+            isFocused: $isAddressFocused,
+            placeholder: "Search or enter URL",
+            focusRequest: session.addressFocusRequest,
+            onSubmit: submitAddress
+        )
+        .frame(height: 18)
         .frame(maxWidth: .infinity)
         .chromeFieldStyle(focused: isAddressFocused)
     }
