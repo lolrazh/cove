@@ -22,7 +22,7 @@ struct CoveApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .windowBackgroundDragBehavior(.enabled)
         .commands {
-            BrowserViewCommands()
+            BrowserViewCommands(recentlyClosed: appServices.recentlyClosedTabs)
         }
 
         Settings {

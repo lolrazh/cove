@@ -11,6 +11,7 @@
 		03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */; };
 		082942FAB006646A2CDB8DA5 /* Database.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CE2F65859C71D28B5A91955 /* Database.swift */; };
 		13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */; };
+		211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */; };
 		25D5A87F08AB34D1E31F7917 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DE51D644E19087E579BD8A /* AppServices.swift */; };
 		2650DF001201AE15A92D540E /* ChromeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */; };
 		27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */; };
@@ -50,6 +51,7 @@
 /* Begin PBXFileReference section */
 		04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
 		06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentBlockerManager.swift; sourceTree = "<group>"; };
+		1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyClosedTabs.swift; sourceTree = "<group>"; };
 		2C4EDC71019502B637450CF1 /* WindowChromeHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowChromeHost.swift; sourceTree = "<group>"; };
 		2CE2F65859C71D28B5A91955 /* Database.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Database.swift; sourceTree = "<group>"; };
 		3C182C3B5A43907E9CB570F4 /* FaviconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconView.swift; sourceTree = "<group>"; };
@@ -145,6 +147,7 @@
 				408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */,
 				AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */,
 				6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */,
+				1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */,
 				B521F2DECB254B5E3D0FEE1E /* TabManager.swift */,
 				8FE6C74D8892131AED706785 /* TabSession.swift */,
 				CDE393CB38957EFE4E7721D0 /* WebKitEnvironment.swift */,
@@ -297,6 +300,7 @@
 				288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */,
 				27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */,
 				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,
+				211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */,
 				977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */,
 				7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */,
 				4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */,

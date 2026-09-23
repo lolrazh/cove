@@ -9,6 +9,7 @@ final class AppServices {
     let contentBlockerManager: ContentBlockerManager
     let webKitEnvironment: WebKitEnvironment
     let externalURLRouter: ExternalURLRouter
+    let recentlyClosedTabs = RecentlyClosedTabs()
 
     private var didPrepareLaunch = false
 

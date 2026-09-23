@@ -10,7 +10,8 @@ struct BrowserView: View {
         self._tabManager = StateObject(
             wrappedValue: TabManager(
                 settings: appServices.settingsStore,
-                services: appServices.tabSessionServices
+                services: appServices.tabSessionServices,
+                recentlyClosed: appServices.recentlyClosedTabs
             )
         )
     }

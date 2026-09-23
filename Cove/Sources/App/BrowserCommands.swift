@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BrowserViewCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
+    @ObservedObject var recentlyClosed: RecentlyClosedTabs
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -10,6 +11,14 @@ struct BrowserViewCommands: Commands {
             }
             .keyboardShortcut("t", modifiers: .command)
             .disabled(tabManager == nil)
+        }
+
+        CommandMenu("History") {
+            Button("Reopen Last Closed Tab") {
+                tabManager?.reopenClosedTab()
+            }
+            .keyboardShortcut("t", modifiers: [.command, .shift])
+            .disabled(tabManager == nil || recentlyClosed.entries.isEmpty)
         }
 
         CommandMenu("Browser") {
