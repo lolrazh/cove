@@ -32,7 +32,7 @@ struct BrowserView: View {
         }
         .background(ChromePalette.shell)
         .frame(minWidth: 900, minHeight: 640)
-        .focusedObject(tabManager)
+        .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
             consumeQueuedExternalURLs()
