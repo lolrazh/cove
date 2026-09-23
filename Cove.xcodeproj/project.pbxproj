@@ -43,6 +43,7 @@
 		DACA7BB4F240D74D6D4F75BC /* HistoryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AC76D6D2302673F260F494 /* HistoryWindow.swift */; };
 		E15406F2815B902D35964435 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */; };
 		EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */; };
+		EC6E05E8D51B6BB511918629 /* FaviconImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C09C21F89D86520A6E27B5B /* FaviconImage.swift */; };
 		ED79ED199F3E000E428EB3E1 /* ExternalURLRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D074D3DB89A2FB59BE6F5D /* ExternalURLRouter.swift */; };
 		F2EBBDA1FA1B344B886766C1 /* ChromeButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */; };
 		F6DF645F2D8E660A51FED9A8 /* WebKitEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE393CB38957EFE4E7721D0 /* WebKitEnvironment.swift */; };
@@ -68,6 +69,7 @@
 		752524CBC59FC53BFE4BFB71 /* ChromeSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeSymbols.swift; sourceTree = "<group>"; };
 		76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeButtonStyle.swift; sourceTree = "<group>"; };
 		7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
+		7C09C21F89D86520A6E27B5B /* FaviconImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconImage.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
 		8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedTabShape.swift; sourceTree = "<group>"; };
 		8FE6C74D8892131AED706785 /* TabSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSession.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				2CE2F65859C71D28B5A91955 /* Database.swift */,
 				47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */,
 				ED634449436374F07F550C3C /* FaviconFetcher.swift */,
+				7C09C21F89D86520A6E27B5B /* FaviconImage.swift */,
 				408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */,
 				AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */,
 				6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */,
@@ -296,6 +299,7 @@
 				EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */,
 				ED79ED199F3E000E428EB3E1 /* ExternalURLRouter.swift in Sources */,
 				3AF825DE92C8A7FA1413EF0D /* FaviconFetcher.swift in Sources */,
+				EC6E05E8D51B6BB511918629 /* FaviconImage.swift in Sources */,
 				F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */,
 				5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */,
 				C6604A20A5CA841030AC56A9 /* HistoryMenu.swift in Sources */,

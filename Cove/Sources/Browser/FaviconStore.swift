@@ -39,7 +39,7 @@ final class FaviconStore {
                 params: [domain]
               ))?.first,
               let data = row["image_data"] as? Data,
-              let image = NSImage(data: data), image.isValid else {
+              let image = FaviconImage.make(from: data) else {
             return nil
         }
 
@@ -55,7 +55,7 @@ final class FaviconStore {
     }
 
     func store(domain: String, imageData: Data) {
-        guard let image = NSImage(data: imageData), image.isValid else { return }
+        guard let image = FaviconImage.make(from: imageData) else { return }
         memoryCache[domain] = image
         guard let db else { return }
         try? db.run(
