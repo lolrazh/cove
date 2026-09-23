@@ -43,13 +43,11 @@ struct NavigationBar: View {
         HStack(spacing: 4) {
             toolbarButton(enabled: session.canGoBack, action: session.goBack) {
                 Image(systemName: ChromeSymbols.Navigation.back)
-                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(session.canGoBack ? .primary : .tertiary)
             }
 
             toolbarButton(enabled: session.canGoForward, action: session.goForward) {
                 Image(systemName: ChromeSymbols.Navigation.forward)
-                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(session.canGoForward ? .primary : .tertiary)
             }
 
@@ -85,7 +83,6 @@ struct NavigationBar: View {
 
             toolbarButton(action: { showHistory.toggle() }) {
                 Image(systemName: ChromeSymbols.Navigation.history)
-                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
             }
             .popover(isPresented: $showHistory, arrowEdge: .bottom) {
@@ -103,7 +100,6 @@ struct NavigationBar: View {
 
     private var reloadIcon: some View {
         let icon = Image(systemName: session.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
-            .font(.system(size: 13, weight: .medium))
 
         return Group {
             if reduceMotion {

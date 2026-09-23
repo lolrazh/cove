@@ -51,7 +51,6 @@ struct TabStripView: View {
             }
             Button(action: { tabManager.addTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
-                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle())

@@ -33,7 +33,6 @@ struct SidebarTabView: View {
 
             Button(action: onToggleDocked) {
                 Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
-                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle())
@@ -75,14 +74,13 @@ private struct SidebarNewTabItem: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: ChromeSymbols.Tabs.add)
-                .font(.system(size: 12, weight: .medium))
                 .frame(width: 16, height: 16)
 
             Text("New Tab")
-                .font(.system(size: 12))
 
             Spacer(minLength: 0)
         }
+        .font(.callout)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .frame(height: ChromeMetrics.sidebarRowHeight)

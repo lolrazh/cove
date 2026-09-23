@@ -15,7 +15,7 @@ struct DownloadPopover: View {
     private var header: some View {
         HStack {
             Text("Downloads")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.headline)
             Spacer()
             if manager.items.contains(where: { $0.state != .downloading }) {
                 Button("Clear") { manager.clearCompleted() }
@@ -31,7 +31,7 @@ struct DownloadPopover: View {
             LazyVStack(spacing: 0) {
                 if manager.items.isEmpty {
                     Text("No downloads")
-                        .font(.system(size: 12))
+                        .font(.callout)
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -56,14 +56,14 @@ private struct DownloadItemRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.filename)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.callout.weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
 
                 HStack(spacing: 4) {
                     if !item.fileExtension.isEmpty {
                         Text(item.fileExtension)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
                     }
 
@@ -119,19 +119,19 @@ private struct DownloadItemRow: View {
         switch item.state {
         case .downloading:
             Text(downloadSizeText)
-                .font(.system(size: 10).monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.tertiary)
         case .completed:
             Text(item.totalBytes > 0 ? formatBytes(item.totalBytes) : "")
-                .font(.system(size: 10).monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.tertiary)
         case .failed:
             Text("Failed")
-                .font(.system(size: 10))
+                .font(.caption)
                 .foregroundStyle(.red)
         case .cancelled:
             Text("Cancelled")
-                .font(.system(size: 10))
+                .font(.caption)
                 .foregroundStyle(.quaternary)
         }
     }
@@ -151,14 +151,12 @@ private struct DownloadItemRow: View {
         case .downloading:
             Button { manager.cancelDownload(item) } label: {
                 Image(systemName: ChromeSymbols.Tabs.close)
-                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle(size: .accessory))
         case .completed:
             Button { manager.revealInFinder(item) } label: {
                 Image(systemName: ChromeSymbols.Navigation.search)
-                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle(size: .accessory))
@@ -166,7 +164,6 @@ private struct DownloadItemRow: View {
         case .failed, .cancelled:
             Button { manager.remove(item) } label: {
                 Image(systemName: ChromeSymbols.Tabs.close)
-                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle(size: .accessory))

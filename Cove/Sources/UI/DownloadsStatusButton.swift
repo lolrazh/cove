@@ -44,7 +44,6 @@ struct DownloadsStatusButton: View {
 
     private var downloadsIcon: some View {
         let icon = Image(systemName: ChromeSymbols.Navigation.downloads)
-            .font(.system(size: 13, weight: .medium))
 
         return Group {
             if reduceMotion {

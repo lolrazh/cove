@@ -27,6 +27,7 @@ private struct ChromeButtonBody: View {
 
     var body: some View {
         configuration.label
+            .font(font)
             .frame(minWidth: side, minHeight: side)
             .frame(maxWidth: size == .row ? .infinity : nil, alignment: size == .row ? .leading : .center)
             .background(fill, in: shape)
@@ -39,7 +40,16 @@ private struct ChromeButtonBody: View {
     }
 
     private var shape: ConcentricRectangle {
-        .chrome(minimum: size == .accessory ? 5 : 8)
+        .chrome(minimum: size == .accessory ? ChromeRadius.accessory : ChromeRadius.control)
+    }
+
+    /// Icons size themselves from this; call sites don't set fonts.
+    private var font: Font? {
+        switch size {
+        case .icon: .body.weight(.medium)
+        case .accessory: .subheadline.weight(.semibold)
+        case .row: nil
+        }
     }
 
     private var side: CGFloat? {
@@ -86,7 +96,7 @@ extension View {
     func chromeHoverSurface(
         isSelected: Bool = false,
         restingFill: Bool = false,
-        minimumRadius: CGFloat = 8
+        minimumRadius: CGFloat = ChromeRadius.control
     ) -> some View {
         modifier(ChromeHoverSurface(isSelected: isSelected, restingFill: restingFill, minimumRadius: minimumRadius))
     }

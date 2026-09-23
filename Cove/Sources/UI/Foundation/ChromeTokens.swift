@@ -43,10 +43,28 @@ enum ChromeMotion {
     static let shell = Animation.smooth(duration: 0.26)
 }
 
+/// Minimum corner radii, one per component size. Actual radii come from
+/// `ConcentricRectangle`: near the window's corners a shape follows them, and
+/// further in it falls back to its minimum.
+///
+/// Text and icon sizes need no tokens of our own: views use the system text
+/// styles (`.body` 13pt, `.callout` 12pt, `.subheadline` 11pt, `.caption` 10pt
+/// on macOS), and SF Symbols size themselves from the surrounding text style.
+enum ChromeRadius {
+    /// Small accessories inside a row, like a tab's close button.
+    static let accessory: CGFloat = 5
+    /// Icon buttons and text fields.
+    static let control: CGFloat = 8
+    /// Tabs and sidebar rows.
+    static let tab: CGFloat = 10
+    /// Large surfaces inside the page, like new tab tiles.
+    static let tile: CGFloat = 14
+}
+
 extension Shape where Self == ConcentricRectangle {
     /// The one corner shape in Cove: continuous corners, concentric with the
     /// enclosing container (ultimately the window), never tighter than `minimum`.
-    static func chrome(minimum: CGFloat = 8) -> ConcentricRectangle {
+    static func chrome(minimum: CGFloat = ChromeRadius.control) -> ConcentricRectangle {
         ConcentricRectangle(corners: .concentric(minimum: .fixed(minimum)), isUniform: true)
     }
 }

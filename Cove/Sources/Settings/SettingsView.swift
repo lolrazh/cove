@@ -116,7 +116,7 @@ private struct GeneralSettingsPane: View {
             Section {
                 Text("Cove keeps the top chrome custom, but uses native macOS behavior where it improves clarity and feel.")
                     .foregroundStyle(.secondary)
-                    .font(.system(size: 12))
+                    .font(.callout)
             }
         }
         .formStyle(.grouped)
@@ -176,7 +176,7 @@ private struct PrivacySettingsPane: View {
 
                 Text("Turning off history also removes recent sites from the start page.")
                     .foregroundStyle(.secondary)
-                    .font(.system(size: 12))
+                    .font(.callout)
             }
         }
         .formStyle(.grouped)
@@ -214,7 +214,7 @@ private struct DownloadsSettingsPane: View {
             Section {
                 Text("Custom persistent download folders can come later. The native first pass is Downloads or asking every time.")
                     .foregroundStyle(.secondary)
-                    .font(.system(size: 12))
+                    .font(.callout)
             }
         }
         .formStyle(.grouped)

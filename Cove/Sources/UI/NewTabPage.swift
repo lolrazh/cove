@@ -30,25 +30,24 @@ struct NewTabPage: View {
 
             // Title
             Text("Cove")
-                .font(.system(size: 28, weight: .thin, design: .default))
+                .font(.largeTitle.weight(.thin))
                 .foregroundStyle(.primary.opacity(0.6))
                 .padding(.bottom, 24)
 
             // Search bar
             HStack(spacing: 10) {
                 Image(systemName: ChromeSymbols.Navigation.search)
-                    .font(.system(size: 14, weight: .light))
                     .foregroundStyle(.tertiary)
 
                 TextField("Search or enter URL", text: $searchText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15))
                     .focused($isSearchFocused)
                     .onSubmit {
                         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
                         onNavigate(searchText)
                     }
             }
+            .font(.title3)
             .chromeFieldStyle(focused: isSearchFocused, large: true)
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
@@ -57,7 +56,7 @@ struct NewTabPage: View {
             if settingsStore.shouldShowRecentSites && !recentSites.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recent")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.tertiary)
                         .padding(.leading, 4)
                         .padding(.top, 28)
@@ -132,19 +131,20 @@ struct RecentSiteCard: View {
                     .frame(width: 36, height: 36)
             } else {
                 Text(domainInitial)
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .font(.title2.weight(.medium))
+                    .fontDesign(.rounded)
                     .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
             }
 
             Text(domainName)
-                .font(.system(size: 11))
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .chromeHoverSurface(restingFill: true, minimumRadius: 14)
+        .chromeHoverSurface(restingFill: true, minimumRadius: ChromeRadius.tile)
     }
 
     private var domainName: String {

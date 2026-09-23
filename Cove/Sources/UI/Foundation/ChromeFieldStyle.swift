@@ -7,7 +7,7 @@ private struct ChromeFieldStyle: ViewModifier {
     let isLarge: Bool
 
     func body(content: Content) -> some View {
-        let shape = ConcentricRectangle.chrome(minimum: isLarge ? 12 : 8)
+        let shape = ConcentricRectangle.chrome(minimum: isLarge ? ChromeRadius.tile : ChromeRadius.control)
 
         content
             .padding(.horizontal, isLarge ? 16 : 10)
