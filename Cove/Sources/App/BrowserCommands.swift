@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BrowserViewCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
+    @Environment(\.openWindow) private var openWindow
     let appServices: AppServices
 
     var body: some Commands {
@@ -33,7 +34,8 @@ struct BrowserViewCommands: Commands {
                 tabManager: tabManager,
                 historyStore: appServices.historyStore,
                 recentlyClosed: appServices.recentlyClosedTabs,
-                faviconStore: appServices.faviconStore
+                faviconStore: appServices.faviconStore,
+                onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
             )
         }
 

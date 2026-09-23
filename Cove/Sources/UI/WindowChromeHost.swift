@@ -32,6 +32,18 @@ struct WindowChromeHost<Content: View>: View {
     }
 }
 
+extension NSToolbar.Identifier {
+    /// Every browser window carries this toolbar, which is how other windows
+    /// (like History) find one.
+    static let browserWindow = NSToolbar.Identifier("CoveWindowToolbar")
+}
+
+extension NSApplication {
+    var frontmostBrowserWindow: NSWindow? {
+        orderedWindows.first { $0.toolbar?.identifier == .browserWindow }
+    }
+}
+
 extension EnvironmentValues {
     /// Distance from the window's leading edge to just past the zoom button.
     /// Zero in full screen, where macOS hides the traffic lights.
@@ -128,7 +140,7 @@ private struct WindowChromeAccessor: NSViewRepresentable {
             // An empty toolbar is what makes the titlebar compact-height, which is
             // what puts the traffic lights on the tab row's centerline.
             if window.toolbar == nil {
-                let toolbar = NSToolbar(identifier: "CoveWindowToolbar")
+                let toolbar = NSToolbar(identifier: .browserWindow)
                 toolbar.allowsUserCustomization = false
                 toolbar.autosavesConfiguration = false
                 window.toolbar = toolbar

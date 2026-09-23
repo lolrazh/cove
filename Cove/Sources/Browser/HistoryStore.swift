@@ -128,6 +128,14 @@ final class HistoryStore: ObservableObject {
         }
     }
 
+    func delete(_ ids: some Collection<Int64>) {
+        guard let db else { return }
+        for id in ids {
+            try? db.run("DELETE FROM history WHERE id = ?", params: [id])
+        }
+        refreshRecentlyVisited()
+    }
+
     func clearAll() {
         db?.execute("DELETE FROM history")
         db?.execute("INSERT INTO history_fts(history_fts) VALUES ('rebuild')")

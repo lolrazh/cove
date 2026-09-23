@@ -2,24 +2,17 @@ import SwiftUI
 
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
-    @ObservedObject private var settingsStore: BrowserSettingsStore
-    private let historyStore: HistoryStore
     @ObservedObject private var downloadManager: DownloadManager
 
     @State private var addressText: String
-    @State private var showHistory: Bool = false
     @State private var isAddressFocused: Bool = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         session: TabSession,
-        settingsStore: BrowserSettingsStore,
-        historyStore: HistoryStore,
         downloadManager: DownloadManager
     ) {
         self._session = ObservedObject(wrappedValue: session)
-        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
-        self.historyStore = historyStore
         self._downloadManager = ObservedObject(wrappedValue: downloadManager)
         _addressText = State(initialValue: session.currentURL)
     }
@@ -28,7 +21,7 @@ struct NavigationBar: View {
         HStack(spacing: 8) {
             navCluster
             addressBar
-            utilityCluster
+            DownloadsStatusButton(downloadManager: downloadManager)
         }
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.navigationBarHeight)
@@ -75,27 +68,6 @@ struct NavigationBar: View {
         }
         .frame(maxWidth: .infinity)
         .chromeFieldStyle(focused: isAddressFocused)
-    }
-
-    private var utilityCluster: some View {
-        HStack(spacing: 4) {
-            DownloadsStatusButton(downloadManager: downloadManager)
-
-            toolbarButton(action: { showHistory.toggle() }) {
-                Image(systemName: ChromeSymbols.Navigation.history)
-                    .foregroundStyle(.primary)
-            }
-            .popover(isPresented: $showHistory, arrowEdge: .bottom) {
-                HistoryView(
-                    settingsStore: settingsStore,
-                    historyStore: historyStore,
-                    onNavigate: { url in
-                        session.navigate(url)
-                    },
-                    onDismiss: { showHistory = false }
-                )
-            }
-        }
     }
 
     private var reloadIcon: some View {

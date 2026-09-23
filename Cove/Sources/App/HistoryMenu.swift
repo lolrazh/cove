@@ -8,6 +8,7 @@ struct HistoryMenu: View {
     @ObservedObject var historyStore: HistoryStore
     @ObservedObject var recentlyClosed: RecentlyClosedTabs
     let faviconStore: FaviconStore
+    let onShowAllHistory: () -> Void
 
     var body: some View {
         Button("Back") {
@@ -55,6 +56,15 @@ struct HistoryMenu: View {
             }
             .disabled(tabManager == nil)
         }
+
+        Divider()
+
+        Button {
+            onShowAllHistory()
+        } label: {
+            Label("Show All History…", systemImage: ChromeSymbols.Navigation.history)
+        }
+        .keyboardShortcut("y", modifiers: .command)
     }
 
     private func pageLabel(title: String, url: String) -> some View {

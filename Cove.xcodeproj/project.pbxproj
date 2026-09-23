@@ -30,7 +30,6 @@
 		7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4E68B430D945E3968A4B9 /* TabStripView.swift */; };
 		8A6EAA0FF636EE4434A7298C /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */; };
 		90007D43BCC7E8C6B486D5AA /* ContentBlockerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */; };
-		95E065A602CE1221E1BE4659 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B0EAF91613F28C5F78E5FE /* HistoryView.swift */; };
 		977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E34BC62111CB1B5E23952B /* SettingsView.swift */; };
 		A6F72F86291BADAAF2715573 /* WindowChromeHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4EDC71019502B637450CF1 /* WindowChromeHost.swift */; };
 		AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24428BD2191574360191520 /* BrowserView.swift */; };
@@ -41,6 +40,7 @@
 		CD0A025EF47EBB1B1BC6648A /* BrowserSettingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */; };
 		D519092A4FEACCF45CC054BB /* AddressTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD0B20D4C0FDF9EFFC420F5 /* AddressTextField.swift */; };
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
+		DACA7BB4F240D74D6D4F75BC /* HistoryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AC76D6D2302673F260F494 /* HistoryWindow.swift */; };
 		E15406F2815B902D35964435 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D21B5AF6E6C746851FAC00 /* DownloadManager.swift */; };
 		EB7B231AB77C67C6AE6517DB /* DownloadsStatusButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */; };
 		ED79ED199F3E000E428EB3E1 /* ExternalURLRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D074D3DB89A2FB59BE6F5D /* ExternalURLRouter.swift */; };
@@ -67,13 +67,13 @@
 		74DE51D644E19087E579BD8A /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
 		752524CBC59FC53BFE4BFB71 /* ChromeSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeSymbols.swift; sourceTree = "<group>"; };
 		76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeButtonStyle.swift; sourceTree = "<group>"; };
-		77B0EAF91613F28C5F78E5FE /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
 		8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedTabShape.swift; sourceTree = "<group>"; };
 		8FE6C74D8892131AED706785 /* TabSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSession.swift; sourceTree = "<group>"; };
 		A24428BD2191574360191520 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		A8D6DD540D3F965FE8764184 /* BrowserSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSettingsStore.swift; sourceTree = "<group>"; };
+		A9AC76D6D2302673F260F494 /* HistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWindow.swift; sourceTree = "<group>"; };
 		AAAD4F48AAADD750585F40AB /* NavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBar.swift; sourceTree = "<group>"; };
 		AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 		AB6526AAC426FA4B5DB1CA72 /* easylist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = easylist.json; sourceTree = "<group>"; };
@@ -102,7 +102,7 @@
 				B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */,
 				5B622C93B5C35437B4789ED5 /* DownloadsStatusButton.swift */,
 				3C182C3B5A43907E9CB570F4 /* FaviconView.swift */,
-				77B0EAF91613F28C5F78E5FE /* HistoryView.swift */,
+				A9AC76D6D2302673F260F494 /* HistoryWindow.swift */,
 				AAAD4F48AAADD750585F40AB /* NavigationBar.swift */,
 				7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */,
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
@@ -300,7 +300,7 @@
 				5350F90E36F81C6891E29243 /* FaviconView.swift in Sources */,
 				C6604A20A5CA841030AC56A9 /* HistoryMenu.swift in Sources */,
 				13A478C8F1B541403151A2EA /* HistoryStore.swift in Sources */,
-				95E065A602CE1221E1BE4659 /* HistoryView.swift in Sources */,
+				DACA7BB4F240D74D6D4F75BC /* HistoryWindow.swift in Sources */,
 				288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */,
 				27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */,
 				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,

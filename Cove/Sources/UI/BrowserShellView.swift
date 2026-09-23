@@ -136,8 +136,6 @@ struct BrowserShellView<Content: View>: View {
         VStack(spacing: 0) {
             NavigationBar(
                 session: activeTab,
-                settingsStore: appServices.settingsStore,
-                historyStore: appServices.historyStore,
                 downloadManager: appServices.downloadManager
             )
             .id(activeTab.id)
