@@ -6,17 +6,16 @@ struct TabStripView: View {
 
     private enum Metrics {
         static let tabSpacing: CGFloat = 4
-        static let horizontalPadding: CGFloat = 0
-        static let minTabWidth: CGFloat = 112
-        static let maxTabWidth: CGFloat = 200
+        static let minTabWidth: CGFloat = 100
+        static let maxTabWidth: CGFloat = 160
     }
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
     }
 
-    private var tabReorderAnimation: Animation? {
-        reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
+    private var tabAnimation: Animation? {
+        reduceMotion ? nil : .smooth(duration: 0.24)
     }
 
     var body: some View {
@@ -50,29 +49,50 @@ struct TabStripView: View {
                     canClose: tabManager.tabs.count > 1,
                     width: sharedTabWidth
                 )
+                .transition(.tabSlot)
             }
             Button(action: { tabManager.addTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(ChromeButtonStyle())
-            .help("New tab")
+            .help("New Tab")
         }
-        .padding(.horizontal, Metrics.horizontalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(tabReorderAnimation, value: tabOrder)
+        .animation(tabAnimation, value: tabOrder)
     }
 
     private func resolvedSharedTabWidth(for availableWidth: CGFloat) -> CGFloat {
         let tabCount = max(tabManager.tabs.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
-        let nonTabReservation =
-            (Metrics.horizontalPadding * 2) +
-            Metrics.tabSpacing +
-            ChromeMetrics.iconButtonSize
+        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.iconButtonSize
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 
         return min(max(proposedWidth, Metrics.minTabWidth), Metrics.maxTabWidth)
+    }
+}
+
+/// Opening a tab grows its slot from nothing, revealing the tab from its leading
+/// edge while its neighbors slide aside. Closing runs the same in reverse.
+private struct TabSlot: ViewModifier {
+    let isCollapsed: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .frame(width: isCollapsed ? 0 : nil, alignment: .leading)
+            // Larger than the slot, so the active tab's flares aren't cut off.
+            .mask {
+                Rectangle()
+                    .padding(.horizontal, -ChromeRadius.flare)
+                    .padding(.bottom, -ChromeMetrics.gutter)
+            }
+            .opacity(isCollapsed ? 0 : 1)
+    }
+}
+
+private extension AnyTransition {
+    static var tabSlot: AnyTransition {
+        .modifier(active: TabSlot(isCollapsed: true), identity: TabSlot(isCollapsed: false))
     }
 }
