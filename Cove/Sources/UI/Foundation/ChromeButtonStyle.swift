@@ -55,7 +55,7 @@ private struct ChromeButtonBody: View {
     private var side: CGFloat? {
         switch size {
         case .icon: ChromeMetrics.iconButtonSize
-        case .accessory: 18
+        case .accessory: 20
         case .row: nil
         }
     }

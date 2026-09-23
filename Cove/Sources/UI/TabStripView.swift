@@ -46,7 +46,7 @@ struct TabStripView: View {
                     onSelect: { tabManager.selectTab(tab.id) },
                     onClose: { tabManager.closeTab(tab.id) },
                     canClose: tabManager.tabs.count > 1,
-                    horizontalWidth: sharedTabWidth
+                    width: sharedTabWidth
                 )
             }
             Button(action: { tabManager.addTab() }) {

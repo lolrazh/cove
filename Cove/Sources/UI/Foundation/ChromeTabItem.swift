@@ -5,6 +5,9 @@ enum ChromeTabPresentation {
     case sidebar
 }
 
+/// One tab, in the top strip or in the sidebar. Everything about a tab is shared
+/// between the two; a presentation only decides the tab's height and how the
+/// active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
     let presentation: ChromeTabPresentation
@@ -12,71 +15,54 @@ struct ChromeTabItem: View {
     let onSelect: () -> Void
     let onClose: () -> Void
     let canClose: Bool
-    var horizontalWidth: CGFloat? = nil
+    /// Fixed width for top tabs, which share the strip evenly. Sidebar tabs fill.
+    var width: CGFloat? = nil
 
     @State private var isHovered = false
-
-    private var showClose: Bool {
-        canClose && (isActive || isHovered)
-    }
 
     var body: some View {
         HStack(spacing: 8) {
             FaviconView(image: tab.favicon, size: 16)
 
-            Text(tabTitle)
-                .font(.system(size: 12, weight: titleWeight))
-                .foregroundStyle(presentation == .horizontal && !isActive ? .secondary : .primary)
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
                 .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(
-                    maxWidth: titleMaxWidth,
-                    alignment: .leading
-                )
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             closeButton
         }
-        .padding(.leading, 10)
-        .padding(.trailing, 5)
-        .frame(height: presentation == .horizontal ? ChromeMetrics.tabHeight : ChromeMetrics.sidebarRowHeight)
-        .frame(width: presentation == .horizontal ? horizontalWidth : nil, alignment: .leading)
-        .frame(maxWidth: presentation == .sidebar ? .infinity : nil, alignment: .leading)
-        .chromeHoverSurface(isSelected: isActive)
+        .padding(.leading, 8)
+        .padding(.trailing, 4)
+        .frame(width: width, height: height)
+        .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
+        .chromeHoverSurface(isSelected: isActive, minimumRadius: ChromeRadius.tab)
         .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)
     }
 
     private var closeButton: some View {
-        Button(action: onClose) {
+        let isVisible = canClose && isHovered
+
+        return Button(action: onClose) {
             Image(systemName: ChromeSymbols.Tabs.close)
-                .font(.system(size: 8, weight: .semibold))
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(ChromeButtonStyle(size: .accessory))
-        .opacity(showClose ? 1 : 0)
-        .allowsHitTesting(showClose)
+        .help("Close Tab")
+        .opacity(isVisible ? 1 : 0)
+        .allowsHitTesting(isVisible)
+        .animation(ChromeMotion.hover, value: isVisible)
     }
 
-    private var tabTitle: String {
-        let title = tab.pageTitle
-        return title.isEmpty ? "New Tab" : title
-    }
-
-    private var titleWeight: Font.Weight {
+    private var height: CGFloat {
         switch presentation {
-        case .horizontal:
-            return .regular
-        case .sidebar:
-            return isActive ? .medium : .regular
+        case .horizontal: ChromeMetrics.tabHeight
+        case .sidebar: ChromeMetrics.sidebarRowHeight
         }
     }
 
-    private var titleMaxWidth: CGFloat? {
-        switch presentation {
-        case .horizontal:
-            return horizontalWidth == nil ? 170 : .infinity
-        case .sidebar:
-            return .infinity
-        }
+    private var title: String {
+        tab.pageTitle.isEmpty ? "New Tab" : tab.pageTitle
     }
 }
