@@ -7,7 +7,10 @@ struct TabStripView: View {
     private enum Metrics {
         static let tabSpacing: CGFloat = 4
         static let minTabWidth: CGFloat = 100
-        static let maxTabWidth: CGFloat = 160
+        /// Tabs widen with the window: up to an eighth of the strip, within
+        /// these bounds.
+        static let maxTabWidthFraction: CGFloat = 1 / 8
+        static let maxTabWidthRange: ClosedRange<CGFloat> = 120...220
     }
 
     private var tabOrder: [UUID] {
@@ -15,7 +18,7 @@ struct TabStripView: View {
     }
 
     private var tabAnimation: Animation? {
-        reduceMotion ? nil : .smooth(duration: 0.24)
+        reduceMotion ? nil : .smooth(duration: 0.18)
     }
 
     var body: some View {
@@ -69,7 +72,11 @@ struct TabStripView: View {
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 
-        return min(max(proposedWidth, Metrics.minTabWidth), Metrics.maxTabWidth)
+        let maxTabWidth = min(
+            max(availableWidth * Metrics.maxTabWidthFraction, Metrics.maxTabWidthRange.lowerBound),
+            Metrics.maxTabWidthRange.upperBound
+        )
+        return min(max(proposedWidth, Metrics.minTabWidth), maxTabWidth)
     }
 }
 
