@@ -153,20 +153,20 @@ private struct DownloadItemRow: View {
                 Image(systemName: ChromeSymbols.Tabs.close)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(size: .accessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
         case .completed:
             Button { manager.revealInFinder(item) } label: {
                 Image(systemName: ChromeSymbols.Navigation.search)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(size: .accessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
             .help("Show in Finder")
         case .failed, .cancelled:
             Button { manager.remove(item) } label: {
                 Image(systemName: ChromeSymbols.Tabs.close)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(size: .accessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
         }
     }
 

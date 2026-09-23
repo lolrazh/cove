@@ -79,7 +79,8 @@ struct BrowserShellView<Content: View>: View {
         TabStripView(tabManager: tabManager)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
-            .frame(height: ChromeMetrics.titlebarHeight)
+            .padding(.bottom, ChromeMetrics.tabBottomInset)
+            .frame(height: ChromeMetrics.titlebarHeight, alignment: .bottom)
             .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.gutter, alignment: .bottom)
             .opacity(showsTopRow ? 1 : 0)
             .clipped()
@@ -112,8 +113,7 @@ struct BrowserShellView<Content: View>: View {
     private var floatingSidebar: some View {
         SidebarTabView(
             tabManager: tabManager,
-            // Starts a gutter down, so this keeps the header on the traffic lights' centerline.
-            headerHeight: ChromeMetrics.tabHeight,
+            headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             onToggleDocked: toggleDocked
         )
         .frame(width: ChromeMetrics.sidebarWidth)

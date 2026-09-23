@@ -2,11 +2,15 @@ import SwiftUI
 
 /// A borderless chrome button: nothing at rest, a system fill on hover and press.
 struct ChromeButtonStyle: ButtonStyle {
-    enum Size {
-        /// A square icon button, sized for the navigation bar and tab row.
+    enum Size: Equatable {
+        /// A square icon button in the navigation bar.
         case icon
-        /// A small accessory inside a row, like a tab's close button.
-        case accessory
+        /// A square icon button in the titlebar band, beside tabs: the same
+        /// height and corners as a tab.
+        case titlebar
+        /// A small button inside a row or tab, like a close button. Its corners
+        /// are concentric with the container shape it sits in.
+        case accessory(side: CGFloat = 20)
         /// A full-width list row.
         case row
     }
@@ -40,14 +44,18 @@ private struct ChromeButtonBody: View {
     }
 
     private var shape: ConcentricRectangle {
-        .chrome(minimum: size == .accessory ? ChromeRadius.accessory : ChromeRadius.control)
+        switch size {
+        case .icon, .row: .chrome(minimum: ChromeRadius.control)
+        case .titlebar: .chrome(minimum: ChromeRadius.tab)
+        case .accessory: .chrome(minimum: ChromeRadius.accessory)
+        }
     }
 
     /// Icons size themselves from this; call sites don't set fonts.
     private var font: Font? {
         switch size {
-        case .icon: .body.weight(.medium)
-        case .accessory: .subheadline.weight(.semibold)
+        case .icon, .titlebar: .body.weight(.medium)
+        case .accessory: .callout.weight(.medium)
         case .row: nil
         }
     }
@@ -55,7 +63,8 @@ private struct ChromeButtonBody: View {
     private var side: CGFloat? {
         switch size {
         case .icon: ChromeMetrics.iconButtonSize
-        case .accessory: 20
+        case .titlebar: ChromeMetrics.tabHeight
+        case .accessory(let side): side
         case .row: nil
         }
     }

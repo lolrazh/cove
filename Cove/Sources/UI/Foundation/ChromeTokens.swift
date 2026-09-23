@@ -3,15 +3,22 @@ import AppKit
 
 /// Layout for the browser frame. Everything hangs off two numbers macOS gives us:
 /// the compact titlebar height and the traffic-light cluster, which is vertically
-/// centered in it. Tabs share that centerline, so `gutter` is both the gap around
-/// the content card and the gap above and below the tabs.
+/// centered in it. `gutter` is the gap between the window edge and everything
+/// inside it: above the tabs, and around the content card.
 enum ChromeMetrics {
     /// Height of the `.unifiedCompact` titlebar. The traffic lights center on it.
     static let titlebarHeight: CGFloat = 40
     /// Gap between the window edge, the tab row and the content card.
     static let gutter: CGFloat = 6
-    /// Tabs fill the titlebar minus a gutter above and below.
-    static let tabHeight: CGFloat = titlebarHeight - gutter * 2
+    /// Tabs sit closer to the page than to the window edge, so they read as
+    /// belonging to it. This leaves them a point below the traffic lights'
+    /// centerline, which looks centered next to the lights' larger glyph.
+    static let tabBottomInset: CGFloat = 4
+    /// Tabs, and buttons beside them, fill the titlebar between those insets.
+    static let tabHeight: CGFloat = titlebarHeight - gutter - tabBottomInset
+    /// Header height for the floating sidebar, which starts a gutter below the
+    /// window's top: it keeps the header on the traffic lights' centerline.
+    static let floatingSidebarHeaderHeight: CGFloat = titlebarHeight - gutter * 2
     /// Space between the zoom button and the first tab.
     static let trafficLightTrailingGap: CGFloat = 10
 
@@ -60,7 +67,9 @@ enum ChromeRadius {
     static let accessory: CGFloat = 5
     /// Icon buttons and text fields.
     static let control: CGFloat = 8
-    /// Tabs and sidebar rows.
+    /// Tabs, sidebar rows, and buttons in the tab row. Everything in the
+    /// titlebar sits a gutter in from the window's edge, so this is the
+    /// window's own radius (about 16) less the gutter.
     static let tab: CGFloat = 10
     /// The outward curve where the active top tab meets the content card.
     static let flare: CGFloat = 8

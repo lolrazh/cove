@@ -50,7 +50,7 @@ struct ChromeTabItem: View {
             Image(systemName: ChromeSymbols.Tabs.close)
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(ChromeButtonStyle(size: .accessory))
+        .buttonStyle(ChromeButtonStyle(size: .accessory()))
         .help("Close Tab")
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
@@ -72,7 +72,7 @@ struct ChromeTabItem: View {
                 AttachedTabShape()
                     .fill(ChromePalette.content)
                     .padding(.horizontal, -ChromeRadius.flare)
-                    .padding(.bottom, -ChromeMetrics.gutter)
+                    .padding(.bottom, -ChromeMetrics.tabBottomInset)
             }
         } else if isHovered {
             shape.fill(ChromePalette.hover)

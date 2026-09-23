@@ -55,7 +55,7 @@ struct TabStripView: View {
                 Image(systemName: ChromeSymbols.Tabs.add)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle())
+            .buttonStyle(ChromeButtonStyle(size: .titlebar))
             .help("New Tab")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,7 +65,7 @@ struct TabStripView: View {
     private func resolvedSharedTabWidth(for availableWidth: CGFloat) -> CGFloat {
         let tabCount = max(tabManager.tabs.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
-        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.iconButtonSize
+        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 
@@ -85,7 +85,7 @@ private struct TabSlot: ViewModifier {
             .mask {
                 Rectangle()
                     .padding(.horizontal, -ChromeRadius.flare)
-                    .padding(.bottom, -ChromeMetrics.gutter)
+                    .padding(.bottom, -ChromeMetrics.tabBottomInset)
             }
             .opacity(isCollapsed ? 0 : 1)
     }

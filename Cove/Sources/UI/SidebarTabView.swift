@@ -39,7 +39,7 @@ struct SidebarTabView: View {
                 Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle())
+            .buttonStyle(ChromeButtonStyle(size: .titlebar))
             .help(tabManager.hideTabs ? "Keep sidebar open" : "Hide sidebar")
         }
         .padding(.horizontal, ChromeMetrics.gutter)
