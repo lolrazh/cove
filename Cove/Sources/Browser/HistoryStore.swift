@@ -8,9 +8,13 @@ struct HistoryEntry: Identifiable {
 }
 
 @MainActor
-final class HistoryStore {
+final class HistoryStore: ObservableObject {
+    /// The most recent distinct pages, newest first, for the History menu.
+    @Published private(set) var recentlyVisited: [HistoryEntry] = []
+
     private let settings: BrowserSettingsStore
     private let db: Database?
+    private let recentlyVisitedLimit = 8
 
     init(settings: BrowserSettingsStore) {
         self.settings = settings
@@ -24,6 +28,7 @@ final class HistoryStore {
             print("Failed to open history database: \(error)")
             db = nil
         }
+        refreshRecentlyVisited()
     }
 
     private func createTables() {
@@ -78,6 +83,7 @@ final class HistoryStore {
             "INSERT INTO history (url, title, visited_at) VALUES (?, ?, ?)",
             params: [url, title, timestamp]
         )
+        refreshRecentlyVisited()
     }
 
     func search(query: String, limit: Int = 50) -> [HistoryEntry] {
@@ -125,5 +131,16 @@ final class HistoryStore {
     func clearAll() {
         db?.execute("DELETE FROM history")
         db?.execute("INSERT INTO history_fts(history_fts) VALUES ('rebuild')")
+        refreshRecentlyVisited()
+    }
+
+    /// Visits repeat (reloads, back and forth), so keep one entry per page.
+    private func refreshRecentlyVisited() {
+        var seen = Set<String>()
+        recentlyVisited = Array(
+            search(query: "", limit: 100)
+                .filter { seen.insert($0.url).inserted }
+                .prefix(recentlyVisitedLimit)
+        )
     }
 }

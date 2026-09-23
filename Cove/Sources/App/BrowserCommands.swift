@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BrowserViewCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
-    @ObservedObject var recentlyClosed: RecentlyClosedTabs
+    let appServices: AppServices
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -29,11 +29,12 @@ struct BrowserViewCommands: Commands {
         }
 
         CommandMenu("History") {
-            Button("Reopen Last Closed Tab") {
-                tabManager?.reopenClosedTab()
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-            .disabled(tabManager == nil || recentlyClosed.entries.isEmpty)
+            HistoryMenu(
+                tabManager: tabManager,
+                historyStore: appServices.historyStore,
+                recentlyClosed: appServices.recentlyClosedTabs,
+                faviconStore: appServices.faviconStore
+            )
         }
 
         CommandMenu("Browser") {
@@ -41,20 +42,6 @@ struct BrowserViewCommands: Commands {
                 tabManager?.focusAddressBar()
             }
             .keyboardShortcut("l", modifiers: .command)
-            .disabled(tabManager == nil)
-
-            Divider()
-
-            Button("Back") {
-                tabManager?.goBack()
-            }
-            .keyboardShortcut("[", modifiers: .command)
-            .disabled(tabManager == nil)
-
-            Button("Forward") {
-                tabManager?.goForward()
-            }
-            .keyboardShortcut("]", modifiers: .command)
             .disabled(tabManager == nil)
 
             Button("Reload Page") {

@@ -47,6 +47,13 @@ final class FaviconStore {
         return image
     }
 
+    /// The cached favicon for a page's site, if one has been fetched.
+    func image(forPage urlString: String) -> NSImage? {
+        guard let url = URL(string: urlString),
+              let siteKey = FaviconFetcher.siteKey(for: url) else { return nil }
+        return get(domain: siteKey)
+    }
+
     func store(domain: String, imageData: Data) {
         guard let image = NSImage(data: imageData), image.isValid else { return }
         memoryCache[domain] = image
