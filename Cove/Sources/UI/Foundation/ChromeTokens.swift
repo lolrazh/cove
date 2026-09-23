@@ -16,6 +16,9 @@ enum ChromeMetrics {
     static let tabBottomInset: CGFloat = 4
     /// Tabs, and buttons beside them, fill the titlebar between those insets.
     static let tabHeight: CGFloat = titlebarHeight - gutter - tabBottomInset
+    /// Inset of a tab's close button from the tab's edges. The button fills the
+    /// tab's height less this on each side.
+    static let tabAccessoryInset: CGFloat = 4
     /// Header height for the floating sidebar, which starts a gutter below the
     /// window's top: it keeps the header on the traffic lights' centerline.
     static let floatingSidebarHeaderHeight: CGFloat = titlebarHeight - gutter * 2

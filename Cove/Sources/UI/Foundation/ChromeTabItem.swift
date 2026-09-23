@@ -33,9 +33,11 @@ struct ChromeTabItem: View {
             closeButton
         }
         .padding(.leading, 8)
-        .padding(.trailing, 4)
+        .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         .frame(width: width, height: height)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
+        // Makes the close button's ConcentricRectangle follow this tab's corners.
+        .containerShape(RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous))
         .background { background }
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
@@ -50,7 +52,7 @@ struct ChromeTabItem: View {
             Image(systemName: ChromeSymbols.Tabs.close)
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(ChromeButtonStyle(size: .accessory()))
+        .buttonStyle(ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2)))
         .help("Close Tab")
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
