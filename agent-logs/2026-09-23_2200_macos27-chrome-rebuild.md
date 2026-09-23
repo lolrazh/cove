@@ -1,89 +1,150 @@
 # macOS 27 Chrome Rebuild
 
-**Date:** 2026-09-23
+**Date:** 2026-09-23 → 2026-09-24
 **Agent:** Claude Opus 5.5 (1M context)
-**Status:** ✅ First pass complete, awaiting user testing
+**Branch:** `chrome-redesign`: 22 commits, not pushed
+**Status:** ✅ Complete; the user is testing
 
 ## User Intention
-The window chrome was broken on macOS 27: the sidebar didn't fit anywhere, switching between sidebar and top tabs was glitchy, tabs touched the top of the window, the traffic lights overlapped the first tab and still used the old pre-macOS 26 style, and the design system had drifted into a pile of one-off constants. The user wanted all of it fixed, with macOS 27 traffic lights and the concentric-corner API.
+The window chrome was falling apart on macOS 27:
+- The sidebar didn't fit anywhere, and switching between sidebar and top tabs was broken.
+- Tabs touched the top of the window, and the traffic lights overlapped the first tab in the old pre-Tahoe style.
+- The design system had turned into a pile of one-off constants.
+
+The user wanted it rebuilt properly: native macOS 27 traffic lights, Apple's concentric-corner API, squircles everywhere, quiet surfaces without heavy outlines, and much less code. Over four rounds of feedback, with Dia screenshots as reference, this grew into:
+- a real tab system (a shared definition, a close button that appears on hover, the active tab in the page's color and attached to the page)
+- a History menu and window
+- favicons that adapt to light and dark mode
+- a set of input bugs found along the way
+
+The user also asked for small, frequent commits and careful engineering.
 
 ## What We Accomplished
-- ✅ **Deployment target raised to macOS 26**, and `UIDesignRequiresCompatibility` removed from Info.plist. The traffic lights now use the macOS 26+ style.
-- ✅ **The traffic lights are never moved.** An empty `.unifiedCompact` toolbar makes the titlebar 40pt tall, and macOS centers the lights at y=20. The shell reads the zoom button's `maxX` and lays out around it.
-- ✅ **The titlebar accessory is gone.** The tab strip is plain SwiftUI inside the shell. Clicks under a transparent titlebar with an empty toolbar reach the content (checked with `hitTest` and a real click on the + button).
-- ✅ **One layout for all four modes.** The docked sidebar and the tab row always stay in the view tree and animate their size. The floating sidebar is an always-present overlay that slides by offset. Nothing is inserted into an HStack/VStack, so there's no identity crash (a March regression that commit `16df22a` reintroduced).
-- ✅ **The hidden sidebar no longer gets stuck open.** Revealing now schedules a hide right away, and moving onto the chrome cancels it.
-- ✅ **Hidden traffic lights are `isHidden` after fading out.** At alpha 0 they were still clickable, right on top of the card's back button.
-- ✅ **Design tokens rebuilt** around `titlebarHeight = 40`, `gutter = 6` and `tabHeight = 28`, plus a `ChromeRadius` scale. The `shellControls*` constants were removed.
-- ✅ **Concentric corners.** The content card and the floating sidebar use `ConcentricRectangle` (with an 8pt minimum), so they follow the window's corner radius automatically.
-- ✅ The sidebar header now holds the traffic lights and a dock/undock toggle. The duplicate downloads button was removed; it's still in the navigation bar.
 
-## Measured on macOS 27 (no compatibility key)
+### Window chrome
+- ✅ **macOS 26 minimum.** `UIDesignRequiresCompatibility` was removed, which is what gives the system macOS 27 traffic lights.
+- ✅ **The traffic lights are never moved.** An empty `.unifiedCompact` toolbar makes the titlebar 40pt and macOS centers the lights at y=20. `WindowChromeHost` only *reads* where the zoom button ended up and publishes `trafficLightInset` to SwiftUI. When tabs are hidden, the lights fade out and are then set `isHidden`, because at alpha 0 they were still clickable on top of the back button.
+- ✅ **The titlebar-accessory tab strip is gone.** The whole shell is one SwiftUI layout under a transparent titlebar.
+- ✅ **One layout, four modes:** top tabs, top hidden, sidebar, sidebar hidden. The docked sidebar and the tab row are always in the view tree and animate their size; the floating sidebar is an always-present overlay that slides by offset. Nothing is inserted into or removed from a stack, which fixes the mid-animation identity crash that `16df22a` had reintroduced.
+- ✅ **The hidden sidebar and top strip no longer stick open.** Revealing schedules a hide right away, and moving onto the chrome cancels it.
+
+### Design system (`ChromeTokens.swift`)
+- ✅ **Corners:** one shape, `ConcentricRectangle` via `.chrome(minimum:)`, which is continuous and concentric with its container (ultimately the window). `ChromeRadius` holds only the *minimum* radius per component size: accessory 5, control 8, tab 10, tile 14, plus the 8pt flare where the active tab meets the page.
+- ✅ **Text and icons:** system text styles (`.body` 13, `.callout` 12, `.subheadline` 11, `.caption` 10). SF Symbols size from the text style, and each button style sets its own icon font, so call sites don't.
+- ✅ **Colors:**
+  - The frame is `underPageBackgroundColor` and the page card is `textBackgroundColor`.
+  - Interaction fills are palette tokens from the system fill hierarchy: `resting` = `.fill.quaternary`, `hover` = `.fill.secondary`, `pressed` = `.fill`.
+  - The forced dark chrome is gone, so light mode is a real light mode.
+- ✅ **No outlines on surfaces.** The card has none, the floating sidebar only has a shadow, and interactive states are fills. `Divider()` is the one separator.
+- ✅ **Styles:**
+  - `ChromeButtonStyle` sizes: `.icon` (navigation bar), `.titlebar` (tab height and tab radius, for anything in the tab row), `.accessory(side:)` (concentric with its container), and `.row`.
+  - `chromeHoverSurface` handles hover on rows and tiles; `chromeFieldStyle` handles text fields.
+  - `ChromePanelSurface.swift` was deleted.
+- ✅ **Popovers are native.** History and Downloads no longer draw a panel, border and shadow inside the system popover.
+
+### Tabs
+- ✅ **One definition:** `ChromeTabItem` is shared by top and sidebar tabs. A presentation only sets the height (30 top, 32 sidebar) and how the active tab is drawn.
+- ✅ **Active tab in the page's color, like Dia.** In the sidebar it's a raised card. In the top strip, `AttachedTabShape` extends it into the content card, with continuous top corners and flared bottom corners.
+- ✅ **Close button:**
+  - Appears only on hover, including on the active tab.
+  - Dia's size and placement: it fills the tab's height less a 4pt inset.
+  - Its corners are truly concentric: each tab sets `containerShape(RoundedRectangle(10))`, so the button's `ConcentricRectangle` comes out at a radius of about 6.
+- ✅ **Tab row:** tabs are 30pt tall, with 6pt above and 4pt below. The **+** button and the sidebar toggle use `.titlebar`, so every shape in the row shares one radius: window (~16) less the gutter = 10.
+- ✅ **Motion:** opening a tab grows its slot from zero width and reveals the tab from its leading edge, and closing reverses it, in 0.18s. The mask is oversized so the active tab's flares aren't clipped mid-animation.
+- ✅ **Width:** a tab's maximum width is an eighth of the strip, clamped to 120–220pt, so tabs widen with the window.
+
+### History
+- ✅ **History menu:**
+  - Back and Forward, moved there from the Browser menu, as in Safari.
+  - Reopen Last Closed Tab (⇧⌘T).
+  - Dia-style **Recently Visited** and **Recently Closed** sections with favicons.
+  - Show All History… (⌘Y).
+- ✅ **`RecentlyClosedTabs`** is app-wide and keeps the last 20 closed tabs that had a page. `HistoryStore` is now an `ObservableObject` publishing the last 8 distinct pages.
+- ✅ **History window:**
+  - Its own `Window` scene: grouped by day ("Today – Wednesday, September 23"), native toolbar search, rows with time, favicon, title and site, and no row dividers.
+  - Double-click or Return opens the page in the frontmost browser window and brings it forward; the context menu has Copy Link and Delete.
+  - The history popover and its button are gone from the navigation bar.
+
+### Favicons
+- ✅ **One decoder:** `FaviconImage.make(from:)` renders every favicon into a 64×64px bitmap. Icons whose visible pixels are almost all one neutral tone (near-black or near-white, no color) become template images, tinted like text. GitHub's black cat turns white in dark mode and follows appearance changes without refetching. Icons with color or their own background are untouched.
+- ✅ The address bar no longer shows a favicon.
+
+## Bugs Fixed (and Their Root Causes)
+1. **⌘T, ⌘W, ⌘R and the other commands went dead after loading a page from the address bar.** `BrowserView` used `.focusedObject`, which is only published while a view in the window has keyboard focus. After Enter, nothing does. Fixed with `.focusedSceneObject`. *(Came from May commit `e6698d5`.)*
+2. **⌘W closed the whole window.** File › Close also claimed ⌘W and, sitting earlier in the menu bar, won. `CommandGroup(replacing: .saveItem)` now provides Close Tab ⌘W and Close Window ⇧⌘W. *(From `e6698d5`.)*
+3. **Top tabs ignored hover and clicks.** The content card was `.clipShape(.chrome())`, and a clip also sets the hit area. `ConcentricRectangle` resolves that hit area in the wrong place, over the tab strip. Hit areas are now always `.contentShape(Rectangle())`. *(Introduced by this rewrite.)*
+4. **The sidebar's header button ignored input.** macOS 26 extends a scroll view up under the titlebar (the "scroll pocket"), so the tab list's `NSScrollView` covered the header row above it. The header now floats over the scroll view as an overlay, with `.contentMargins(.top, headerHeight)` for the list.
+5. **Links from other apps (and later from History) waited for the next link before opening.** `BrowserView` drained the URL queue from `$queuedURLs`, but `@Published` emits *before* the value is stored, so the queue looked empty. It now receives on `DispatchQueue.main`. *(From `e6698d5`.)*
+6. **The hidden sidebar stuck open** when the pointer left through the window edge (see Window chrome).
+
+## Technical Implementation
+
+**New files:**
+- `UI/WindowChromeHost.swift` (rewritten): window configuration, measuring the traffic lights, their visibility, and `NSApplication.frontmostBrowserWindow`, found via `NSToolbar.Identifier.browserWindow`.
+- `UI/Foundation/AttachedTabShape.swift`: the active top tab's shape, with top corners and bottom flares.
+- `UI/HistoryWindow.swift`: the Show All History window.
+- `App/HistoryMenu.swift`: the History menu content, in its own view so only it re-renders on history changes.
+- `Browser/RecentlyClosedTabs.swift`: the closed-tab list.
+- `Browser/FaviconImage.swift`: the favicon decoder and single-tone detection.
+
+**Deleted:** `UI/Foundation/WindowChromeAccessor.swift`, `UI/Foundation/ChromePanelSurface.swift`, `UI/HistoryView.swift`.
+
+**Rewritten:** `BrowserShellView`, `ChromeTokens`, `ChromeButtonStyle`, `ChromeFieldStyle`, `ChromeTabItem`, `SidebarTabView`, `TabStripView`.
+
+Net: 31 source files, +1172 / −1226.
+
+## Measured on macOS 27
+
+Traffic lights, with no compatibility key (the toolbar style sets the titlebar height):
+
 | Toolbar style | Titlebar | Close button x | Button top | Size |
 |---|---|---|---|---|
 | none | 32 | 9 | 9 | 14 |
 | unifiedCompact | 40 | 12 | 13 | 14 |
 | unified | 52 | 19 | 19 | 14 |
 
-The buttons are 23pt apart. With the compact style the cluster ends at x=72.
+The buttons are 23pt apart; with the compact style the cluster ends at x=72. The window corner radius is about 16.
+
+System colors:
+- `windowBackgroundColor` and `textBackgroundColor` are **identical** (white / 0.118 gray).
+- `underPageBackgroundColor` is 0.965 in light and 0.157 in dark.
 
 ## Key Learnings
-- `ConcentricRectangle` is only a `Shape`: it isn't `InsettableShape`, so there's no `strokeBorder`, and it can't be used with `containerShape`. Draw the border as a centered stroke at 2× width, then clip.
-- On macOS 26+, the window itself is a container shape. A `ConcentricRectangle` inset 6pt gets a radius of about 10pt (the window radius is about 16). Inset 20pt, it falls to 0 unless a minimum is given.
-- `defaults write com.cove.browser …` reaches the sandboxed app's preferences. Use `true`/`false`, not `0`/`1`.
+- **`ConcentricRectangle` is for drawing only.**
+  - As a `clipShape` or `contentShape`, its hit area lands in the wrong place.
+  - It's a plain `Shape`: not `InsettableShape` (so no `strokeBorder`) and not `RoundedRectangularShape` (so it can't be a `containerShape`).
+  - For nested concentric corners, give the parent `containerShape(RoundedRectangle(...))` and draw the child with `ConcentricRectangle`.
+- **On macOS 26+ the window is itself a container shape.** A shape inset 6pt gets radius ≈10. Inset 20pt, it falls to 0 unless it has a minimum. `isUniform: true` keeps all four corners equal.
+- **Don't stroke-then-clip for borders.** The clip eats the stroke on the curves, so borders look thinner at the corners. Prefer no border.
+- **Scroll views on macOS 26 extend under the titlebar**, covering anything stacked above them. `safeAreaBar` fixes input but draws its own bar background and divider, so an overlay plus `contentMargins` is cleaner. `scrollEdgeEffectHidden` alone doesn't shrink the frame.
+- **`@Published` emits in `willSet`.** A subscriber that reads the property instead of the emitted value sees the old value.
+- **`NSBitmapImageRep.colorAt` returns straight (not premultiplied) components.** Checked empirically.
+- **Bisecting input bugs:** a bare `onHover` + `onTapGesture` probe placed at successive levels of the tree finds the blocking layer in a few builds. An `NSView.hitTest` dump only shows which AppKit view got the event, not SwiftUI's internal routing.
+- **Wrong turn:** the browser windows were briefly moved to AppKit `NSWindow` + `NSHostingView`, blaming SwiftUI's toolbar region. The real cause was the clip-shape hit area (bug 3). The rewrite was dropped before it was committed, and `WindowGroup` is fine.
+
+## Architecture Decisions
+- **Read the traffic lights, never move them.** Every earlier attempt to position them fought AppKit's titlebar layout (see the March logs). Layout adapts to where macOS puts them.
+- **Adopt Apple's tokens rather than invent them.** Text styles, SF Symbol scaling, system fills and colors, and concentric shapes. Cove only defines layout metrics and minimum radii.
+- **History in a window, not a tab.** An in-tab `cove://history` like Dia's needs internal-page support in `TabSession`, where the New Tab page is currently a special case tied into back/forward. The window is the smaller, decoupled step.
+- **Tint single-tone favicons rather than follow the page.** Chromium shows the page's current favicon, and GitHub swaps its own for dark mode, but Cove caches one icon per site. Template tinting works for any site with a one-color icon and follows appearance changes for free.
+
+## Testing Notes
+- Verified by screenshots of the running app in light and dark mode, all four tab modes, hover states, a frame burst of the tab-open animation, and the History menu and window.
+- Test harness (in the session scratchpad, not the repo):
+  - `defaults write com.cove.browser browser.showTabsInSidebar/hideTabs -bool true|false` switches modes; this reaches the sandboxed app.
+  - `-NSRequiresAquaSystemAppearance YES` forces light mode for Cove alone.
+  - CGEvent mouse moves and clicks in window-relative coordinates.
+- ⚠️ **System Events `keystroke` goes to the frontmost app, whatever the `tell` target.** Scripts must check that Cove is frontmost first. Early in the session some keystrokes may have gone to the user's Dia.
+- Cove's history DB now holds many github.com and example.com visits from testing.
 
 ## Ready for Next Session
-- 🔧 Only checked in dark mode. Light mode keeps the dark shell with a light card, which hasn't been checked on screen.
-- 🔧 The sidebar rows' leading inset (10pt) is about 2pt off the traffic lights when docked, and 4pt off the other way when floating.
-- 🔧 The top-tabs hidden mode still pushes the content down on reveal. The sidebar floats over it instead, so the two could be made consistent.
-- 🔧 Settings, history and download popovers only got token renames. They weren't redesigned.
+- 🔧 **Unverified:** the tab animation's feel at 0.18s, and tab widths on small windows. Waiting on the user.
+- 🔧 **History in a tab:** add internal pages to `TabSession` (and fold the New Tab page into the same mechanism), then show `cove://history` in a tab like Dia and Safari.
+- 🔧 The History window opens pages in the frontmost browser window, even with several windows open.
+- 🔧 Sidebar tabs appear and disappear without the top strip's grow/shrink animation.
+- 🔧 When top tabs are hidden, revealing them pushes the page down, while the hidden sidebar floats over it.
+- 🔧 The Settings window hasn't been restyled.
+- 🔧 `example.com` pages record an empty title in history: the title isn't set yet when `didFinish` fires.
 
-## Second Pass: Native Simplification
-The user asked for less complexity, native corner rounding, consistent squircles, and quieter borders. They also noticed that borders got thinner toward the corners.
-
-- ✅ **One shape everywhere:** `.chrome(minimum:)` wraps `ConcentricRectangle`, which is continuous and concentric with the window. `RoundedRectangle` and the `ChromeRadius` scale are gone.
-- ✅ **No outlines on surfaces.** The thinning at the corners came from the "stroke at 2× width, then clip" trick. The card has no border now, the floating sidebar only has a shadow on its background shape, and tabs, tiles and buttons use fills only. `Divider()` is used for the one separator.
-- ✅ **System colors:**
-  - The frame is `underPageBackgroundColor` and the card is `textBackgroundColor`.
-  - On macOS 27, `windowBackgroundColor` equals `textBackgroundColor` in both appearances (white in light, 0.118 gray in dark), so using it makes the card disappear.
-  - Hover, press and selection use `.fill.tertiary` and `.fill.secondary`.
-  - The forced `.colorScheme(.dark)` on the chrome is gone, so light mode is real.
-- ✅ **Popovers are native.** History and Downloads no longer draw their own panel, border and shadow inside the system popover. History lost its redundant close button and uses a `.roundedBorder` search field. "Clear" is `.borderless`.
-- ✅ **Styles merged:** three style files became two. `ChromeButtonStyle` has three sizes (icon, accessory, row), `chromeHoverSurface` handles hover and selection, and `chromeFieldStyle` shows the system focus-ring color only while focused. The press scale is 0.96.
-- UI code went from 2219 lines (at HEAD) to 1757.
-- Checked in light and dark mode: top tabs, docked sidebar, floating sidebar, and the history popover.
-
-## Third Pass: Tabs, History, and Input Bugs
-Commits `9b14087..9b0b50d` on branch `chrome-redesign`.
-
-- ✅ **Design tokens:** `ChromeRadius` holds per-component minimum radii for `ConcentricRectangle`. Text uses the system text styles (`.body`, `.callout`, `.subheadline`, `.caption`), and button styles set their own icon font.
-- ✅ **One tab definition:** top and sidebar tabs share `ChromeTabItem`. A presentation only sets the height and how the active tab is drawn. The close button is bigger and only shows on hover.
-- ✅ **Active tab = page color** (Dia-style). In the sidebar it's a raised card. In the top strip, `AttachedTabShape` flares its bottom corners into the content card.
-- ✅ **Tab animation:** top tabs grow and shrink from zero width when opened and closed (the mask is oversized so the flares aren't clipped). The maximum width is 160.
-- ✅ **History menu:** Back, Forward, Reopen Last Closed Tab (⇧⌘T), Recently Visited, Recently Closed, and Show All History (⌘Y). There's a separate History window with day groups, search, Copy Link and Delete. The history button is gone from the navigation bar.
-- ✅ **Bugs fixed, all existing or introduced by the chrome rewrite:**
-  - Commands used `focusedObject` and went disabled whenever nothing had focus. `focusedSceneObject` fixes it.
-  - File › Close claimed ⌘W, so ⌘W closed the window. It's now Close Tab ⌘W and Close Window ⇧⌘W.
-  - A `ConcentricRectangle` clip or `contentShape` puts the hit area in the wrong place: the content card swallowed every click and hover on the top tabs. Hit areas are now always `Rectangle()`.
-  - The sidebar's `ScrollView` is extended by macOS up under the titlebar and covered the header button. The header now floats over the scroll view, with `contentMargins` insetting the list below it.
-  - The URL queue was drained from a `@Published` publisher, which emits before the value is stored, so links waited for the next one. It now receives on the main queue.
-
-## Key Learnings (Third Pass)
-- **Hit testing:** don't use `ConcentricRectangle` for `clipShape` or `contentShape` on anything that must receive input. Draw with it; hit-test with `Rectangle`.
-- **Bisecting input problems:** a bare `onHover` + `onTapGesture` probe placed at different levels of the tree found the blocking layer in a few builds. An `NSView.hitTest` dump only shows AppKit's view, not SwiftUI's internal routing.
-- **Scroll views on macOS 26:** they extend under the titlebar (the scroll pocket). A view stacked *above* a scroll view can end up behind it for input. `safeAreaBar` fixes input but draws its own bar background and divider.
-- **Wrong turn:** browser windows were briefly rewritten as AppKit `NSWindow` + `NSHostingView`, based on a wrong diagnosis (SwiftUI's toolbar region). That was dropped once the real cause was found; `WindowGroup` is fine.
-- **Test scripts:** System Events `keystroke` goes to the frontmost app whatever the `tell` target is. Check that Cove is frontmost first.
-
-## Ready for Next Session
-- 🔧 The History window opens pages in whichever browser window is frontmost. Once internal pages exist in `TabSession`, an in-tab `cove://history` would match Safari and Dia.
-- 🔧 The history includes many test visits (github.com, example.com) from this session.
-- 🔧 Sidebar tabs still appear and disappear without the top strip's grow/shrink animation.
-
-## Fourth Pass: Tab Row Polish
-- ✅ **Taller tabs:** 30pt, with 6pt above and 4pt below (was 28pt with 6/6), measured against Dia. They sit 1pt below the traffic lights' centerline, which is intentional.
-- ✅ **One radius in the tab row:** buttons in the titlebar band use `ChromeButtonStyle(size: .titlebar)`, which gives the tab height and the tab radius (10 = window radius of about 16, less the gutter).
-- ✅ **Concentric close button:** each tab sets `containerShape(RoundedRectangle(10))`, and the close button is `.accessory(side: tabHeight - 8)` drawn with `ConcentricRectangle`, which comes out at a radius of about 6.
-- ✅ **Tab width:** the widest a tab gets is an eighth of the strip, clamped to 120–220pt. Open/close motion is 0.18s.
-- ✅ **Favicons:** `FaviconImage.make` is now the only decoder. Icons that are a single neutral tone become template images and are tinted like text (GitHub turns white in dark mode). Note that `NSBitmapImageRep.colorAt` returns straight (not premultiplied) components.
-- ✅ The address bar no longer shows a favicon.
+## Context for Future
+The shell is now small and declarative. Everything positions itself from two facts macOS provides (the 40pt compact titlebar and the traffic-light cluster), and every corner is `ConcentricRectangle`, drawn only. When a control in the top 40pt stops responding, check two things first: a concentric shape used as a clip or hit area, and a scroll view extending under the titlebar. The user cares about native feel, correct concentric rounding, and quiet surfaces, and compares closely against Dia. Expect pixel-level feedback, and measure the reference screenshots rather than guessing.
