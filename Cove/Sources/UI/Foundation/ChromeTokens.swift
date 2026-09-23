@@ -62,6 +62,8 @@ enum ChromeRadius {
     static let control: CGFloat = 8
     /// Tabs and sidebar rows.
     static let tab: CGFloat = 10
+    /// The outward curve where the active top tab meets the content card.
+    static let flare: CGFloat = 8
     /// Large surfaces inside the page, like new tab tiles.
     static let tile: CGFloat = 14
 }

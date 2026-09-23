@@ -30,6 +30,8 @@ struct TabStripView: View {
                         alignment: .leading
                     )
             }
+            // The active tab reaches below the strip into the content card.
+            .scrollClipDisabled()
         }
         .frame(height: ChromeMetrics.tabHeight)
     }

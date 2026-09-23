@@ -58,13 +58,22 @@ struct ChromeTabItem: View {
     }
 
     /// The active tab is drawn in the page's color: it *is* the page you're
-    /// looking at. Others only show a fill while hovered.
+    /// looking at. In the top strip it also reaches down into the content card,
+    /// so tab and page read as one surface. Others only show a fill on hover.
     @ViewBuilder
     private var background: some View {
         if isActive {
-            shape
-                .fill(ChromePalette.content)
-                .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+            switch presentation {
+            case .sidebar:
+                shape
+                    .fill(ChromePalette.content)
+                    .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+            case .horizontal:
+                AttachedTabShape()
+                    .fill(ChromePalette.content)
+                    .padding(.horizontal, -ChromeRadius.flare)
+                    .padding(.bottom, -ChromeMetrics.gutter)
+            }
         } else if isHovered {
             shape.fill(ChromePalette.hover)
         }
