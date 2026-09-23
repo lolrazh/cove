@@ -31,7 +31,7 @@ private struct ChromeButtonBody: View {
             .frame(minWidth: side, minHeight: side)
             .frame(maxWidth: size == .row ? .infinity : nil, alignment: size == .row ? .leading : .center)
             .background(fill, in: shape)
-            .contentShape(shape)
+            .contentShape(Rectangle())
             .opacity(isEnabled ? 1 : 0.4)
             .scaleEffect(configuration.isPressed && size != .row ? 0.96 : 1)
             .animation(ChromeMotion.hover, value: isHovered)
@@ -78,7 +78,7 @@ private struct ChromeHoverSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(fill, in: .chrome(minimum: minimumRadius))
-            .contentShape(.chrome(minimum: minimumRadius))
+            .contentShape(Rectangle())
             .animation(ChromeMotion.hover, value: isHovered)
             .onHover { isHovered = $0 }
     }

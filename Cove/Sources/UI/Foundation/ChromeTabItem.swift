@@ -37,7 +37,7 @@ struct ChromeTabItem: View {
         .frame(width: width, height: height)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
         .background { background }
-        .contentShape(shape)
+        .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)

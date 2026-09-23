@@ -17,12 +17,16 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
+    /// The header floats over the top of the scroll view instead of sitting in a
+    /// row above it. macOS extends a scroll view up under the titlebar, and a row
+    /// above it would sit behind that extension and never get clicks.
     var body: some View {
-        VStack(spacing: 0) {
-            header
-            tabList
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
+        tabList
+            .contentMargins(.top, headerHeight, for: .scrollContent)
+            .scrollEdgeEffectHidden(true, for: .top)
+            .overlay(alignment: .top) {
+                header
+            }
     }
 
     /// The traffic lights sit on the leading side of this row; it only draws the

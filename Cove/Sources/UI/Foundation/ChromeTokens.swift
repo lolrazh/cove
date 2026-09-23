@@ -71,6 +71,9 @@ enum ChromeRadius {
 extension Shape where Self == ConcentricRectangle {
     /// The one corner shape in Cove: continuous corners, concentric with the
     /// enclosing container (ultimately the window), never tighter than `minimum`.
+    ///
+    /// For drawing only. As a clip or content shape its hit area lands in the
+    /// wrong place, so hit areas are plain rectangles (`.contentShape(Rectangle())`).
     static func chrome(minimum: CGFloat = ChromeRadius.control) -> ConcentricRectangle {
         ConcentricRectangle(corners: .concentric(minimum: .fixed(minimum)), isUniform: true)
     }

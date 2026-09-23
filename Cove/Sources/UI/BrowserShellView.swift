@@ -153,6 +153,9 @@ struct BrowserShellView<Content: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(ChromePalette.content)
         .clipShape(.chrome())
+        // A concentric clip also becomes the hit area, and resolves in the
+        // wrong place: without this the card swallows clicks meant for the tabs.
+        .contentShape(Rectangle())
     }
 
     @ViewBuilder
