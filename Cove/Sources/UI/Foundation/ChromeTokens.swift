@@ -16,7 +16,7 @@ enum ChromeMetrics {
     static let trafficLightTrailingGap: CGFloat = 10
 
     static let sidebarWidth: CGFloat = 240
-    static let sidebarInset: CGFloat = 10
+    static let sidebarInset: CGFloat = gutter
     static let sidebarRowHeight: CGFloat = 32
     /// Width of the invisible edge that reveals hidden tabs.
     static let revealEdge: CGFloat = 8
@@ -25,9 +25,8 @@ enum ChromeMetrics {
     static let iconButtonSize: CGFloat = 28
 }
 
-/// Surface colors come from the system, so light and dark mode, increased
-/// contrast and the accent color all work without any code of ours. Hover,
-/// pressed and selected states use the system fill hierarchy (`.fill.tertiary` …).
+/// Colors come from the system, so light and dark mode, increased contrast and
+/// the accent color all work without any code of ours.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for
     /// the area behind a page. On macOS 27 the plain window color matches the
@@ -35,6 +34,12 @@ enum ChromePalette {
     static let shell = Color(nsColor: .underPageBackgroundColor)
     /// The content card, and anything standing in for a web page.
     static let content = Color(nsColor: .textBackgroundColor)
+
+    /// Interaction fills, from the system fill hierarchy. The same everywhere, so
+    /// a hovered tab, button and tile all look alike.
+    static var resting: some ShapeStyle { .fill.quaternary }
+    static var hover: some ShapeStyle { .fill.secondary }
+    static var pressed: some ShapeStyle { .fill }
 }
 
 enum ChromeMotion {

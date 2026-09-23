@@ -36,7 +36,9 @@ struct ChromeTabItem: View {
         .padding(.trailing, 4)
         .frame(width: width, height: height)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
-        .chromeHoverSurface(isSelected: isActive, minimumRadius: ChromeRadius.tab)
+        .background { background }
+        .contentShape(shape)
+        .animation(ChromeMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)
     }
@@ -53,6 +55,23 @@ struct ChromeTabItem: View {
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
         .animation(ChromeMotion.hover, value: isVisible)
+    }
+
+    /// The active tab is drawn in the page's color: it *is* the page you're
+    /// looking at. Others only show a fill while hovered.
+    @ViewBuilder
+    private var background: some View {
+        if isActive {
+            shape
+                .fill(ChromePalette.content)
+                .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+        } else if isHovered {
+            shape.fill(ChromePalette.hover)
+        }
+    }
+
+    private var shape: ConcentricRectangle {
+        .chrome(minimum: ChromeRadius.tab)
     }
 
     private var height: CGFloat {

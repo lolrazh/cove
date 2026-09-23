@@ -82,10 +82,10 @@ private struct SidebarNewTabItem: View {
         }
         .font(.callout)
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.sidebarRowHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .chromeHoverSurface()
+        .chromeHoverSurface(minimumRadius: ChromeRadius.tab)
         .onTapGesture(perform: action)
     }
 }

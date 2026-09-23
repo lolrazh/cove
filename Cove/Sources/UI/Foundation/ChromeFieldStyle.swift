@@ -12,7 +12,7 @@ private struct ChromeFieldStyle: ViewModifier {
         content
             .padding(.horizontal, isLarge ? 16 : 10)
             .padding(.vertical, isLarge ? 11 : 5)
-            .background(.fill.quaternary, in: shape)
+            .background(ChromePalette.resting, in: shape)
             .overlay {
                 shape
                     .stroke(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 3)

@@ -61,16 +61,15 @@ private struct ChromeButtonBody: View {
     }
 
     private var fill: AnyShapeStyle {
-        if configuration.isPressed { return AnyShapeStyle(.fill.secondary) }
-        if isHovered && isEnabled { return AnyShapeStyle(.fill.tertiary) }
+        if configuration.isPressed { return AnyShapeStyle(ChromePalette.pressed) }
+        if isHovered && isEnabled { return AnyShapeStyle(ChromePalette.hover) }
         return AnyShapeStyle(.clear)
     }
 }
 
-/// Hover and selection for things that behave like buttons but hold their own
-/// controls, such as tabs with a close button.
+/// Hover for things that act like buttons but hold their own controls, such as
+/// rows with an action button.
 private struct ChromeHoverSurface: ViewModifier {
-    let isSelected: Bool
     let restingFill: Bool
     let minimumRadius: CGFloat
 
@@ -85,19 +84,17 @@ private struct ChromeHoverSurface: ViewModifier {
     }
 
     private var fill: AnyShapeStyle {
-        if isSelected { return AnyShapeStyle(.fill.secondary) }
-        if isHovered { return AnyShapeStyle(.fill.tertiary) }
-        if restingFill { return AnyShapeStyle(.fill.quaternary) }
+        if isHovered { return AnyShapeStyle(ChromePalette.hover) }
+        if restingFill { return AnyShapeStyle(ChromePalette.resting) }
         return AnyShapeStyle(.clear)
     }
 }
 
 extension View {
     func chromeHoverSurface(
-        isSelected: Bool = false,
         restingFill: Bool = false,
         minimumRadius: CGFloat = ChromeRadius.control
     ) -> some View {
-        modifier(ChromeHoverSurface(isSelected: isSelected, restingFill: restingFill, minimumRadius: minimumRadius))
+        modifier(ChromeHoverSurface(restingFill: restingFill, minimumRadius: minimumRadius))
     }
 }
