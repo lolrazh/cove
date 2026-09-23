@@ -13,6 +13,21 @@ struct BrowserViewCommands: Commands {
             .disabled(tabManager == nil)
         }
 
+        // Replaces File > Close, which also claimed Command-W and, coming
+        // first in the menu bar, closed the whole window instead of the tab.
+        CommandGroup(replacing: .saveItem) {
+            Button("Close Tab") {
+                tabManager?.closeActiveTab()
+            }
+            .keyboardShortcut("w", modifiers: .command)
+            .disabled(tabManager == nil)
+
+            Button("Close Window") {
+                NSApp.keyWindow?.performClose(nil)
+            }
+            .keyboardShortcut("w", modifiers: [.command, .shift])
+        }
+
         CommandMenu("History") {
             Button("Reopen Last Closed Tab") {
                 tabManager?.reopenClosedTab()
@@ -26,12 +41,6 @@ struct BrowserViewCommands: Commands {
                 tabManager?.focusAddressBar()
             }
             .keyboardShortcut("l", modifiers: .command)
-            .disabled(tabManager == nil)
-
-            Button("Close Tab") {
-                tabManager?.closeActiveTab()
-            }
-            .keyboardShortcut("w", modifiers: .command)
             .disabled(tabManager == nil)
 
             Divider()
