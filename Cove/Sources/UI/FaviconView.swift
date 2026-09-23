@@ -11,7 +11,7 @@ struct FaviconView: View {
                     .resizable()
                     .interpolation(.high)
                     .frame(width: size, height: size)
-                    .clipShape(ChromeMetrics.roundedShape(radius: size * 0.12))
+                    .clipShape(.rect(cornerRadius: size * 0.2))
             } else {
                 Image(systemName: ChromeSymbols.Navigation.globe)
                     .font(.system(size: size * 0.75, weight: .light))

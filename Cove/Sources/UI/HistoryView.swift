@@ -24,26 +24,10 @@ struct HistoryView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("History")
-                    .font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Button(action: onDismiss) {
-                    Image(systemName: ChromeSymbols.Tabs.close)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(ChromeButtonStyle(kind: .toolbar))
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-
-            TextField("Search history", text: $searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 12))
+            TextField("Search History", text: $searchText)
+                .textFieldStyle(.roundedBorder)
                 .focused($isSearchFocused)
-                .chromeFieldStyle(focused: isSearchFocused, prominence: .compact)
-                .padding(.horizontal, 14)
+                .padding([.horizontal, .top], 12)
                 .onChange(of: searchText) { _, query in
                     loadHistory(query: query)
                 }
@@ -73,7 +57,7 @@ struct HistoryView: View {
                             } label: {
                                 HistoryRow(entry: entry)
                             }
-                            .buttonStyle(ChromeButtonStyle(kind: .row))
+                            .buttonStyle(ChromeButtonStyle(size: .row))
                         }
                     }
                     .padding(.vertical, 4)
@@ -82,8 +66,10 @@ struct HistoryView: View {
             }
         }
         .frame(width: 340, height: 420)
-        .chromePanelSurface(.panel, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
-        .onAppear { loadHistory(query: "") }
+        .onAppear {
+            isSearchFocused = true
+            loadHistory(query: "")
+        }
     }
 
     private func loadHistory(query: String) {

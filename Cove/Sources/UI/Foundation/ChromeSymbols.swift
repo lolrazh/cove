@@ -5,9 +5,7 @@ enum ChromeSymbols {
         static let reload = "arrow.clockwise"
         static let stop = "xmark"
         static let downloads = "arrow.down.circle"
-        static let downloadsActive = "arrow.down.circle.fill"
         static let history = "clock"
-        static let sidebar = "sidebar.left"
         static let search = "magnifyingglass"
         static let globe = "globe"
     }
@@ -16,7 +14,6 @@ enum ChromeSymbols {
         static let add = "plus"
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
-        static let topLayout = "rectangle.topthird.inset.filled"
     }
 
     enum Settings {

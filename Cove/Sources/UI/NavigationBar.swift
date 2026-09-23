@@ -30,6 +30,8 @@ struct NavigationBar: View {
             addressBar
             utilityCluster
         }
+        .padding(.horizontal, 8)
+        .frame(height: ChromeMetrics.navigationBarHeight)
         .onChange(of: session.currentURL) { _, newURL in
             if !isAddressFocused {
                 addressText = newURL
@@ -74,7 +76,7 @@ struct NavigationBar: View {
             .frame(height: 18)
         }
         .frame(maxWidth: .infinity)
-        .chromeFieldStyle(focused: isAddressFocused, prominence: .regular)
+        .chromeFieldStyle(focused: isAddressFocused)
     }
 
     private var utilityCluster: some View {
@@ -114,7 +116,6 @@ struct NavigationBar: View {
 
     private func toolbarButton<Label: View>(
         enabled: Bool = true,
-        isSelected: Bool = false,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> Label
     ) -> some View {
@@ -122,7 +123,7 @@ struct NavigationBar: View {
             label()
         }
         .disabled(!enabled)
-        .buttonStyle(ChromeButtonStyle(kind: .toolbar, isSelected: isSelected))
+        .buttonStyle(ChromeButtonStyle())
     }
 
     private func submitAddress() {

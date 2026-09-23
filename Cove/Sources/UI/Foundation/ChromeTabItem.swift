@@ -21,11 +21,11 @@ struct ChromeTabItem: View {
     }
 
     var body: some View {
-        HStack(spacing: presentation == .horizontal ? 8 : 10) {
-            FaviconView(image: tab.favicon, size: 14)
+        HStack(spacing: 8) {
+            FaviconView(image: tab.favicon, size: 16)
 
             Text(tabTitle)
-                .font(.system(size: presentation == .horizontal ? 11.5 : 12, weight: titleWeight))
+                .font(.system(size: 12, weight: titleWeight))
                 .foregroundStyle(presentation == .horizontal && !isActive ? .secondary : .primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -36,11 +36,12 @@ struct ChromeTabItem: View {
 
             closeButton
         }
-        .padding(.horizontal, presentation == .horizontal ? 10 : 12)
-        .padding(.vertical, presentation == .horizontal ? 7 : 8)
+        .padding(.leading, 10)
+        .padding(.trailing, 5)
+        .frame(height: presentation == .horizontal ? ChromeMetrics.tabHeight : ChromeMetrics.sidebarRowHeight)
         .frame(width: presentation == .horizontal ? horizontalWidth : nil, alignment: .leading)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil, alignment: .leading)
-        .chromeInteractiveSurface(isSelected: isActive, cornerRadius: ChromeMetrics.tabCornerRadius, showsBorder: isActive)
+        .chromeHoverSurface(isSelected: isActive)
         .onHover { isHovered = $0 }
         .onTapGesture(perform: onSelect)
     }
@@ -51,7 +52,7 @@ struct ChromeTabItem: View {
                 .font(.system(size: 8, weight: .semibold))
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+        .buttonStyle(ChromeButtonStyle(size: .accessory))
         .opacity(showClose ? 1 : 0)
         .allowsHitTesting(showClose)
     }

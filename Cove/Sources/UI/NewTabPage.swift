@@ -49,7 +49,7 @@ struct NewTabPage: View {
                         onNavigate(searchText)
                     }
             }
-            .chromeFieldStyle(focused: isSearchFocused, prominence: .hero)
+            .chromeFieldStyle(focused: isSearchFocused, large: true)
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
 
@@ -81,7 +81,7 @@ struct NewTabPage: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(ChromePalette.content)
         .onAppear {
             isSearchFocused = true
             loadRecent()
@@ -130,19 +130,11 @@ struct RecentSiteCard: View {
             if let favicon {
                 FaviconView(image: favicon, size: 28)
                     .frame(width: 36, height: 36)
-                    .background(
-                        ChromeMetrics.roundedShape(radius: 10)
-                            .fill(ChromePalette.tertiaryFill)
-                    )
             } else {
                 Text(domainInitial)
                     .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
-                    .background(
-                        ChromeMetrics.roundedShape(radius: 10)
-                            .fill(ChromePalette.tertiaryFill)
-                    )
             }
 
             Text(domainName)
@@ -152,7 +144,7 @@ struct RecentSiteCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .chromeInteractiveSurface(cornerRadius: 14, showsBorder: true)
+        .chromeHoverSurface(restingFill: true, minimumRadius: 14)
     }
 
     private var domainName: String {

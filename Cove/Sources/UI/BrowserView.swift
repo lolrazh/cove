@@ -18,7 +18,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(tabManager: tabManager, isVisible: stripVisible) {
+                WindowChromeHost(showsTrafficLights: stripVisible) {
                     BrowserShellView(
                         appServices: appServices,
                         tabManager: tabManager,
@@ -30,7 +30,7 @@ struct BrowserView: View {
                 }
             }
         }
-        .background(ChromePalette.window)
+        .background(ChromePalette.shell)
         .frame(minWidth: 900, minHeight: 640)
         .focusedObject(tabManager)
         .onAppear {

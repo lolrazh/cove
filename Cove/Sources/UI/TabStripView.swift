@@ -2,12 +2,11 @@ import SwiftUI
 
 struct TabStripView: View {
     @ObservedObject var tabManager: TabManager
-    var laneHeight: CGFloat = ChromeMetrics.topStripLaneHeight
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Metrics {
         static let tabSpacing: CGFloat = 4
-        static let horizontalPadding: CGFloat = 2
+        static let horizontalPadding: CGFloat = 0
         static let minTabWidth: CGFloat = 112
         static let maxTabWidth: CGFloat = 200
     }
@@ -26,13 +25,13 @@ struct TabStripView: View {
                 tabRow(availableWidth: geometry.size.width)
                     .frame(
                         minWidth: geometry.size.width,
-                        minHeight: laneHeight,
-                        maxHeight: laneHeight,
+                        minHeight: ChromeMetrics.tabHeight,
+                        maxHeight: ChromeMetrics.tabHeight,
                         alignment: .leading
                     )
             }
         }
-        .frame(height: laneHeight)
+        .frame(height: ChromeMetrics.tabHeight)
     }
 
     private func tabRow(availableWidth: CGFloat) -> some View {
@@ -55,7 +54,7 @@ struct TabStripView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .toolbar))
+            .buttonStyle(ChromeButtonStyle())
             .help("New tab")
         }
         .padding(.horizontal, Metrics.horizontalPadding)
@@ -69,7 +68,7 @@ struct TabStripView: View {
         let nonTabReservation =
             (Metrics.horizontalPadding * 2) +
             Metrics.tabSpacing +
-            ChromeMetrics.iconButtonSize.width
+            ChromeMetrics.iconButtonSize
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 

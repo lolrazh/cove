@@ -10,7 +10,6 @@ struct DownloadPopover: View {
             downloadList
         }
         .frame(width: 300, height: min(CGFloat(max(manager.items.count, 1)) * 60 + 40, 360))
-        .chromePanelSurface(.panel, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
     }
 
     private var header: some View {
@@ -20,9 +19,7 @@ struct DownloadPopover: View {
             Spacer()
             if manager.items.contains(where: { $0.state != .downloading }) {
                 Button("Clear") { manager.clearCompleted() }
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .buttonStyle(ChromeButtonStyle(kind: .panelAction))
+                    .buttonStyle(.borderless)
             }
         }
         .padding(.horizontal, 12)
@@ -80,7 +77,7 @@ private struct DownloadItemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .chromeInteractiveSurface(cornerRadius: ChromeMetrics.controlCornerRadius)
+        .chromeHoverSurface()
         .contentShape(Rectangle())
         .onTapGesture { openFile() }
     }
@@ -92,7 +89,7 @@ private struct DownloadItemRow: View {
             switch item.state {
             case .downloading:
                 Circle()
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 2)
+                    .stroke(.fill.tertiary, lineWidth: 2)
                 Circle()
                     .trim(from: 0, to: item.progress)
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
@@ -103,7 +100,7 @@ private struct DownloadItemRow: View {
                     .stroke(Color.red.opacity(0.3), lineWidth: 2)
             case .cancelled:
                 Circle()
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 2)
+                    .stroke(.fill.quaternary, lineWidth: 2)
             case .completed:
                 EmptyView()
             }
@@ -157,14 +154,14 @@ private struct DownloadItemRow: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory))
         case .completed:
             Button { manager.revealInFinder(item) } label: {
                 Image(systemName: ChromeSymbols.Navigation.search)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory))
             .help("Show in Finder")
         case .failed, .cancelled:
             Button { manager.remove(item) } label: {
@@ -172,7 +169,7 @@ private struct DownloadItemRow: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory))
         }
     }
 
