@@ -51,7 +51,10 @@ struct BrowserView: View {
         .onOpenURL { url in
             appServices.externalURLRouter.enqueue([url])
         }
-        .onReceive(appServices.externalURLRouter.$queuedURLs) { queuedURLs in
+        // @Published emits before the new value is stored, so draining the
+        // queue right away would find it still empty. Receiving on the main
+        // queue runs the drain once the append has landed.
+        .onReceive(appServices.externalURLRouter.$queuedURLs.receive(on: DispatchQueue.main)) { queuedURLs in
             guard !queuedURLs.isEmpty else { return }
             consumeQueuedExternalURLs()
         }
