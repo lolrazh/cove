@@ -10,19 +10,16 @@ struct DownloadPopover: View {
             downloadList
         }
         .frame(width: 300, height: min(CGFloat(max(manager.items.count, 1)) * 60 + 40, 360))
-        .chromePanelSurface(.panel, cornerRadius: ChromeMetrics.panelCornerRadius, showsShadow: true)
     }
 
     private var header: some View {
         HStack {
             Text("Downloads")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.headline)
             Spacer()
             if manager.items.contains(where: { $0.state != .downloading }) {
                 Button("Clear") { manager.clearCompleted() }
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .buttonStyle(ChromeButtonStyle(kind: .panelAction))
+                    .buttonStyle(.borderless)
             }
         }
         .padding(.horizontal, 12)
@@ -34,7 +31,7 @@ struct DownloadPopover: View {
             LazyVStack(spacing: 0) {
                 if manager.items.isEmpty {
                     Text("No downloads")
-                        .font(.system(size: 12))
+                        .font(.callout)
                         .foregroundStyle(.tertiary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -59,14 +56,14 @@ private struct DownloadItemRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.filename)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.callout.weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
 
                 HStack(spacing: 4) {
                     if !item.fileExtension.isEmpty {
                         Text(item.fileExtension)
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
                     }
 
@@ -80,7 +77,7 @@ private struct DownloadItemRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .chromeInteractiveSurface(cornerRadius: ChromeMetrics.controlCornerRadius)
+        .chromeHoverSurface()
         .contentShape(Rectangle())
         .onTapGesture { openFile() }
     }
@@ -92,7 +89,7 @@ private struct DownloadItemRow: View {
             switch item.state {
             case .downloading:
                 Circle()
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 2)
+                    .stroke(.fill.tertiary, lineWidth: 2)
                 Circle()
                     .trim(from: 0, to: item.progress)
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
@@ -103,7 +100,7 @@ private struct DownloadItemRow: View {
                     .stroke(Color.red.opacity(0.3), lineWidth: 2)
             case .cancelled:
                 Circle()
-                    .stroke(Color.primary.opacity(0.06), lineWidth: 2)
+                    .stroke(.fill.quaternary, lineWidth: 2)
             case .completed:
                 EmptyView()
             }
@@ -122,19 +119,19 @@ private struct DownloadItemRow: View {
         switch item.state {
         case .downloading:
             Text(downloadSizeText)
-                .font(.system(size: 10).monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.tertiary)
         case .completed:
             Text(item.totalBytes > 0 ? formatBytes(item.totalBytes) : "")
-                .font(.system(size: 10).monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.tertiary)
         case .failed:
             Text("Failed")
-                .font(.system(size: 10))
+                .font(.caption)
                 .foregroundStyle(.red)
         case .cancelled:
             Text("Cancelled")
-                .font(.system(size: 10))
+                .font(.caption)
                 .foregroundStyle(.quaternary)
         }
     }
@@ -154,25 +151,22 @@ private struct DownloadItemRow: View {
         case .downloading:
             Button { manager.cancelDownload(item) } label: {
                 Image(systemName: ChromeSymbols.Tabs.close)
-                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
         case .completed:
             Button { manager.revealInFinder(item) } label: {
                 Image(systemName: ChromeSymbols.Navigation.search)
-                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
             .help("Show in Finder")
         case .failed, .cancelled:
             Button { manager.remove(item) } label: {
                 Image(systemName: ChromeSymbols.Tabs.close)
-                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(kind: .tabAccessory))
+            .buttonStyle(ChromeButtonStyle(size: .accessory()))
         }
     }
 

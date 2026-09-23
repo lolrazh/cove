@@ -98,8 +98,8 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 - **Selective AppKit materials** — `NSVisualEffectView` is acceptable for transient surfaces like sidebar overlays or panels when it improves macOS fit and finish.
 
 ### Platform
-- **macOS 26 (Tahoe)** — minimum deployment target is macOS 15.0 for broader compat, but developed/tested on Tahoe.
-- `UIDesignRequiresCompatibility = YES` in Info.plist to disable Liquid Glass.
+- **macOS 26+** — minimum deployment target is macOS 26.0 (needed for `ConcentricRectangle`); developed and tested on macOS 27.
+- Native macOS 26+ window chrome: system traffic lights and window corners. The browser chrome itself is still custom-drawn, not Liquid Glass.
 
 ### Dependencies
 - **Zero.** Pure Swift + Apple frameworks (SwiftUI, AppKit, WebKit, SQLite via C API or Swift wrappers).

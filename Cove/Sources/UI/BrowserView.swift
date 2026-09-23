@@ -10,7 +10,8 @@ struct BrowserView: View {
         self._tabManager = StateObject(
             wrappedValue: TabManager(
                 settings: appServices.settingsStore,
-                services: appServices.tabSessionServices
+                services: appServices.tabSessionServices,
+                recentlyClosed: appServices.recentlyClosedTabs
             )
         )
     }
@@ -18,7 +19,7 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(tabManager: tabManager, isVisible: stripVisible) {
+                WindowChromeHost(showsTrafficLights: stripVisible) {
                     BrowserShellView(
                         appServices: appServices,
                         tabManager: tabManager,
@@ -30,9 +31,9 @@ struct BrowserView: View {
                 }
             }
         }
-        .background(ChromePalette.window)
+        .background(ChromePalette.shell)
         .frame(minWidth: 900, minHeight: 640)
-        .focusedObject(tabManager)
+        .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
             consumeQueuedExternalURLs()
@@ -50,7 +51,10 @@ struct BrowserView: View {
         .onOpenURL { url in
             appServices.externalURLRouter.enqueue([url])
         }
-        .onReceive(appServices.externalURLRouter.$queuedURLs) { queuedURLs in
+        // @Published emits before the new value is stored, so draining the
+        // queue right away would find it still empty. Receiving on the main
+        // queue runs the drain once the append has landed.
+        .onReceive(appServices.externalURLRouter.$queuedURLs.receive(on: DispatchQueue.main)) { queuedURLs in
             guard !queuedURLs.isEmpty else { return }
             consumeQueuedExternalURLs()
         }

@@ -16,6 +16,7 @@ final class TabManager: ObservableObject {
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
+    private let recentlyClosed: RecentlyClosedTabs
     private var cancellables: Set<AnyCancellable> = []
 
     var activeTab: TabSession? {
@@ -24,10 +25,12 @@ final class TabManager: ObservableObject {
 
     init(
         settings: BrowserSettingsStore,
-        services: TabSessionServices
+        services: TabSessionServices,
+        recentlyClosed: RecentlyClosedTabs
     ) {
         self.settings = settings
         self.services = services
+        self.recentlyClosed = recentlyClosed
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
@@ -150,12 +153,19 @@ final class TabManager: ObservableObject {
                 nil
             }
 
-            tabs.remove(at: index)
+            let closed = tabs.remove(at: index)
+            recentlyClosed.record(url: closed.currentURL, title: closed.pageTitle)
 
             if let replacementID {
                 activeTabID = replacementID
             }
         }
+    }
+
+    /// Reopens a recently closed tab, or the most recently closed one.
+    func reopenClosedTab(_ id: UUID? = nil) {
+        guard let entry = recentlyClosed.take(id) else { return }
+        addTab(url: entry.url)
     }
 
     func selectTab(_ id: UUID) {

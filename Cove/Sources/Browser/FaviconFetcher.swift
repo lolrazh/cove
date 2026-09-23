@@ -52,7 +52,7 @@ final class FaviconFetcher {
         task = Task(priority: .userInitiated) { [weak self] in
             guard let data = await Self.fetchData(from: faviconURL),
                   !Task.isCancelled,
-                  let image = Self.render(from: data) else {
+                  let image = FaviconImage.make(from: data) else {
                 await MainActor.run { [weak self] in
                     self?.completeRequest(ifMatches: rid)
                 }
@@ -85,7 +85,7 @@ final class FaviconFetcher {
             let candidates = await Self.documentCandidates(from: webView, pageURL: pageURL, fallback: fallbackURL)
             guard let data = await Self.fetchFirstData(from: candidates),
                   !Task.isCancelled,
-                  let image = Self.render(from: data) else {
+                  let image = FaviconImage.make(from: data) else {
                 await MainActor.run { [weak self] in
                     self?.completeRequest(ifMatches: rid)
                 }
@@ -207,17 +207,5 @@ final class FaviconFetcher {
             }
         }
         return ordered
-    }
-
-    nonisolated static func render(from data: Data) -> NSImage? {
-        guard let image = NSImage(data: data), image.isValid else { return nil }
-        let size = NSSize(width: 32, height: 32)
-        let rendered = NSImage(size: size, flipped: false) { rect in
-            NSGraphicsContext.current?.imageInterpolation = .high
-            image.draw(in: rect, from: NSRect(origin: .zero, size: image.size), operation: .copy, fraction: 1.0)
-            return true
-        }
-        rendered.isTemplate = false
-        return rendered
     }
 }

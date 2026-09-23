@@ -1,100 +1,92 @@
 import SwiftUI
 import AppKit
 
+/// Layout for the browser frame. Everything hangs off two numbers macOS gives us:
+/// the compact titlebar height and the traffic-light cluster, which is vertically
+/// centered in it. `gutter` is the gap between the window edge and everything
+/// inside it: above the tabs, and around the content card.
 enum ChromeMetrics {
-    static let cornerStyle: RoundedCornerStyle = .continuous
-    static let windowCornerRadius: CGFloat = 14
-    static let shellGutter: CGFloat = 6
-    static let windowInset: CGFloat = shellGutter
-    static let windowBorderWidth: CGFloat = 0.75
-    static let surfaceBorderWidth: CGFloat = 1
-    static let topChromeSpacing: CGFloat = 6
-    static let topChromePadding: CGFloat = 8
-    static let panelCornerRadius: CGFloat = 14
-    static let controlCornerRadius: CGFloat = 10.5
-    static let fieldCornerRadius: CGFloat = 10.5
-    static let tabCornerRadius: CGFloat = 10.5
-    static let shellStripHeight: CGFloat = 36
-    static let shellStripBottomSpacing: CGFloat = shellGutter
-    static let shellControlsInterButtonSpacing: CGFloat = 8
-    static let shellControlsInsetWithinShell: CGFloat = 6
-    static let shellControlsEdgeBalanceInset: CGFloat = 8
-    static let shellControlsButtonSize: CGFloat = 16
-    static let shellControlsGapToTabs: CGFloat = 2
-    static let shellControlsLeadingInset: CGFloat = shellGutter + shellControlsInsetWithinShell + shellControlsEdgeBalanceInset
-    static var shellControlsClusterWidth: CGFloat {
-        (shellControlsButtonSize * 3) + (shellControlsInterButtonSpacing * 2)
-    }
-    static var shellControlsReservedWidth: CGFloat {
-        shellControlsClusterWidth + shellControlsInsetWithinShell + shellControlsGapToTabs + shellControlsEdgeBalanceInset
-    }
-    static let shellControlsVerticalOffset: CGFloat = 0
-    static let mainPanelInnerPadding: CGFloat = 8
-    static let topNavigationHorizontalPadding: CGFloat = 10
-    static let topNavigationVerticalPadding: CGFloat = 6
-    static let mainPanelSectionSpacing: CGFloat = 0
-    static let mainPanelSeparatorHeight: CGFloat = 1
-    static let topBarMinHeight: CGFloat = 44
-    static let topStripLaneHeight: CGFloat = 32
-    static let tabStripHeight: CGFloat = topStripLaneHeight
-    static let topBandHeight: CGFloat = topStripLaneHeight + (shellGutter * 2)
-    static let iconButtonSize = CGSize(width: 30, height: 30)
+    /// Height of the `.unifiedCompact` titlebar. The traffic lights center on it.
+    static let titlebarHeight: CGFloat = 40
+    /// Gap between the window edge, the tab row and the content card.
+    static let gutter: CGFloat = 6
+    /// Tabs sit closer to the page than to the window edge, so they read as
+    /// belonging to it. This leaves them a point below the traffic lights'
+    /// centerline, which looks centered next to the lights' larger glyph.
+    static let tabBottomInset: CGFloat = 4
+    /// Tabs, and buttons beside them, fill the titlebar between those insets.
+    static let tabHeight: CGFloat = titlebarHeight - gutter - tabBottomInset
+    /// Inset of a tab's close button from the tab's edges. The button fills the
+    /// tab's height less this on each side.
+    static let tabAccessoryInset: CGFloat = 4
+    /// Header height for the floating sidebar, which starts a gutter below the
+    /// window's top: it keeps the header on the traffic lights' centerline.
+    static let floatingSidebarHeaderHeight: CGFloat = titlebarHeight - gutter * 2
+    /// Space between the zoom button and the first tab.
+    static let trafficLightTrailingGap: CGFloat = 10
+
     static let sidebarWidth: CGFloat = 240
-    static let sidebarRevealHandleWidth: CGFloat = 12
+    static let sidebarInset: CGFloat = gutter
+    static let sidebarRowHeight: CGFloat = 32
+    /// Width of the invisible edge that reveals hidden tabs.
+    static let revealEdge: CGFloat = 8
 
-    static func roundedShape(radius: CGFloat) -> RoundedRectangle {
-        RoundedRectangle(cornerRadius: radius, style: cornerStyle)
-    }
-
-    private static func nestedCornerRadius(
-        inside outerRadius: CGFloat,
-        inset: CGFloat,
-        minimum: CGFloat = 4
-    ) -> CGFloat {
-        max(outerRadius - inset, minimum)
-    }
+    static let navigationBarHeight: CGFloat = 44
+    static let iconButtonSize: CGFloat = 28
 }
 
+/// Colors come from the system, so light and dark mode, increased contrast and
+/// the accent color all work without any code of ours.
 enum ChromePalette {
-    static let window = Color(nsColor: .windowBackgroundColor)
-    static let shellFill = Color(nsColor: NSColor(calibratedWhite: 0.12, alpha: 1))
-    static let topStripDivider = Color.white.opacity(0.08)
-    static let chromeFill = Color.primary.opacity(0.035)
-    static let chromeStroke = Color.primary.opacity(0.08)
-    static let chromeStrokeStrong = Color.primary.opacity(0.12)
-    static let hoverFill = Color.primary.opacity(0.05)
-    static let pressedFill = Color.primary.opacity(0.08)
-    static let selectedFill = Color.primary.opacity(0.11)
-    static let fieldFill = Color.primary.opacity(0.055)
-    static let fieldStroke = Color.primary.opacity(0.08)
-    static let fieldFocusStroke = Color.accentColor.opacity(0.45)
-    static let subtleCardFill = Color.primary.opacity(0.025)
-    static let tertiaryFill = Color.primary.opacity(0.018)
-    static let handleFill = Color.primary.opacity(0.14)
-    static let shadow = Color.black.opacity(0.12)
+    /// The frame behind the tabs and the content card: the system's color for
+    /// the area behind a page. On macOS 27 the plain window color matches the
+    /// page color exactly, which would make the card vanish.
+    static let shell = Color(nsColor: .underPageBackgroundColor)
+    /// The content card, and anything standing in for a web page.
+    static let content = Color(nsColor: .textBackgroundColor)
+
+    /// Interaction fills, from the system fill hierarchy. The same everywhere, so
+    /// a hovered tab, button and tile all look alike.
+    static var resting: some ShapeStyle { .fill.quaternary }
+    static var hover: some ShapeStyle { .fill.secondary }
+    static var pressed: some ShapeStyle { .fill }
 }
 
 enum ChromeMotion {
     static let hover = Animation.easeOut(duration: 0.12)
     static let press = Animation.easeOut(duration: 0.08)
-    static let shell = Animation.easeInOut(duration: 0.22)
-    static let spring = Animation.snappy(duration: 0.18, extraBounce: 0.02)
-    static let loading = Animation.linear(duration: 0.24)
+    static let shell = Animation.smooth(duration: 0.26)
 }
 
-enum ChromeOpacity {
-    static let disabled: Double = 0.42
+/// Minimum corner radii, one per component size. Actual radii come from
+/// `ConcentricRectangle`: near the window's corners a shape follows them, and
+/// further in it falls back to its minimum.
+///
+/// Text and icon sizes need no tokens of our own: views use the system text
+/// styles (`.body` 13pt, `.callout` 12pt, `.subheadline` 11pt, `.caption` 10pt
+/// on macOS), and SF Symbols size themselves from the surrounding text style.
+enum ChromeRadius {
+    /// Small accessories inside a row, like a tab's close button.
+    static let accessory: CGFloat = 5
+    /// Icon buttons and text fields.
+    static let control: CGFloat = 8
+    /// Tabs, sidebar rows, and buttons in the tab row. Everything in the
+    /// titlebar sits a gutter in from the window's edge, so this is the
+    /// window's own radius (about 16) less the gutter.
+    static let tab: CGFloat = 10
+    /// The outward curve where the active top tab meets the content card.
+    static let flare: CGFloat = 8
+    /// Large surfaces inside the page, like new tab tiles.
+    static let tile: CGFloat = 14
 }
 
-// MARK: - Titlebar Height Environment
-
-private struct TitlebarHeightKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 28
-}
-
-extension EnvironmentValues {
-    var titlebarHeight: CGFloat {
-        get { self[TitlebarHeightKey.self] }
-        set { self[TitlebarHeightKey.self] = newValue }
+extension Shape where Self == ConcentricRectangle {
+    /// The one corner shape in Cove: continuous corners, concentric with the
+    /// enclosing container (ultimately the window), never tighter than `minimum`.
+    ///
+    /// For drawing only. As a clip or content shape its hit area lands in the
+    /// wrong place, so hit areas are plain rectangles (`.contentShape(Rectangle())`).
+    static func chrome(minimum: CGFloat = ChromeRadius.control) -> ConcentricRectangle {
+        ConcentricRectangle(corners: .concentric(minimum: .fixed(minimum)), isUniform: true)
     }
 }

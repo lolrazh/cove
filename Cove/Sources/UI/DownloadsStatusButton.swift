@@ -20,11 +20,11 @@ struct DownloadsStatusButton: View {
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
                             Capsule()
-                                .fill(ChromePalette.fieldStroke)
+                                .fill(.fill.tertiary)
                             Capsule()
                                 .fill(Color.accentColor)
                                 .frame(width: geometry.size.width * downloadManager.overallProgress)
-                                .animation(ChromeMotion.loading, value: downloadManager.overallProgress)
+                                .animation(.linear(duration: 0.24), value: downloadManager.overallProgress)
                         }
                     }
                     .frame(width: 18, height: 4)
@@ -32,11 +32,11 @@ struct DownloadsStatusButton: View {
                 }
             }
             .frame(
-                width: ChromeMetrics.iconButtonSize.width,
-                height: ChromeMetrics.iconButtonSize.height
+                width: ChromeMetrics.iconButtonSize,
+                height: ChromeMetrics.iconButtonSize
             )
         }
-        .buttonStyle(ChromeButtonStyle(kind: .toolbar))
+        .buttonStyle(ChromeButtonStyle())
         .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
             DownloadPopover(manager: downloadManager)
         }
@@ -44,7 +44,6 @@ struct DownloadsStatusButton: View {
 
     private var downloadsIcon: some View {
         let icon = Image(systemName: ChromeSymbols.Navigation.downloads)
-            .font(.system(size: 13, weight: .medium))
 
         return Group {
             if reduceMotion {

@@ -2,13 +2,12 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
-    @ObservedObject private var downloadManager: DownloadManager
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Height of the row that holds the traffic lights. Set so the row's center
+    /// lands on the traffic lights' centerline wherever the sidebar is placed.
+    let headerHeight: CGFloat
+    let onToggleDocked: () -> Void
 
-    init(tabManager: TabManager, downloadManager: DownloadManager) {
-        self._tabManager = ObservedObject(wrappedValue: tabManager)
-        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
-    }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
@@ -18,30 +17,38 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
+    /// The header floats over the top of the scroll view instead of sitting in a
+    /// row above it. macOS extends a scroll view up under the titlebar, and a row
+    /// above it would sit behind that extension and never get clicks.
     var body: some View {
-        VStack(spacing: 0) {
-            sidebarHeader
-            sidebarTabList
-            Spacer(minLength: 0)
-        }
-        .frame(width: ChromeMetrics.sidebarWidth)
-        .frame(maxHeight: .infinity, alignment: .top)
+        tabList
+            .contentMargins(.top, headerHeight, for: .scrollContent)
+            .scrollEdgeEffectHidden(true, for: .top)
+            .overlay(alignment: .top) {
+                header
+            }
     }
 
-    private var sidebarHeader: some View {
+    /// The traffic lights sit on the leading side of this row; it only draws the
+    /// dock toggle on the trailing side.
+    private var header: some View {
         HStack {
             Spacer()
 
-            DownloadsStatusButton(downloadManager: downloadManager)
+            Button(action: onToggleDocked) {
+                Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(ChromeButtonStyle(size: .titlebar))
+            .help(tabManager.hideTabs ? "Keep sidebar open" : "Hide sidebar")
         }
-        .padding(.horizontal, 12)
-        .frame(height: ChromeMetrics.shellStripHeight + 18, alignment: .bottom)
-        .padding(.bottom, 8)
+        .padding(.horizontal, ChromeMetrics.gutter)
+        .frame(height: headerHeight)
     }
 
-    private var sidebarTabList: some View {
+    private var tabList: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 ForEach(tabManager.tabs) { tab in
                     ChromeTabItem(
                         tab: tab,
@@ -57,8 +64,9 @@ struct SidebarTabView: View {
                     tabManager.addTab()
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 10)
+            .padding(.horizontal, ChromeMetrics.sidebarInset)
+            .padding(.top, ChromeMetrics.gutter)
+            .padding(.bottom, ChromeMetrics.sidebarInset)
             .animation(tabReorderAnimation, value: tabOrder)
         }
     }
@@ -66,26 +74,22 @@ struct SidebarTabView: View {
 
 private struct SidebarNewTabItem: View {
     let action: () -> Void
-    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: ChromeSymbols.Tabs.add)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-                .frame(width: 14, height: 14)
+                .frame(width: 16, height: 16)
 
             Text("New Tab")
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 8)
+        .frame(height: ChromeMetrics.sidebarRowHeight)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .chromeInteractiveSurface(cornerRadius: ChromeMetrics.tabCornerRadius, showsBorder: isHovered)
-        .onHover { isHovered = $0 }
+        .chromeHoverSurface(minimumRadius: ChromeRadius.tab)
         .onTapGesture(perform: action)
     }
 }

@@ -1,58 +1,29 @@
 import SwiftUI
 
-enum ChromeFieldProminence {
-    case compact
-    case regular
-    case hero
-}
-
-struct ChromeFieldStyle: ViewModifier {
+/// A text field on a quiet system fill. Focus shows the system focus ring color
+/// around the outside, the way native fields do, instead of a permanent outline.
+private struct ChromeFieldStyle: ViewModifier {
     let isFocused: Bool
-    var prominence: ChromeFieldProminence = .regular
+    let isLarge: Bool
 
     func body(content: Content) -> some View {
-        let metrics = self.metrics
-        let shape = ChromeMetrics.roundedShape(radius: metrics.cornerRadius)
+        let shape = ConcentricRectangle.chrome(minimum: isLarge ? ChromeRadius.tile : ChromeRadius.control)
 
-        return content
-            .padding(.horizontal, metrics.horizontalPadding)
-            .padding(.vertical, metrics.verticalPadding)
-            .background {
-                shape.fill(ChromePalette.fieldFill)
-            }
+        content
+            .padding(.horizontal, isLarge ? 16 : 10)
+            .padding(.vertical, isLarge ? 11 : 5)
+            .background(ChromePalette.resting, in: shape)
             .overlay {
-                shape.strokeBorder(
-                    isFocused ? ChromePalette.fieldFocusStroke : ChromePalette.fieldStroke,
-                    lineWidth: ChromeMetrics.surfaceBorderWidth
-                )
+                shape
+                    .stroke(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 3)
+                    .opacity(isFocused ? 1 : 0)
             }
-            .contentShape(shape)
             .animation(ChromeMotion.hover, value: isFocused)
     }
-
-    private var metrics: ChromeFieldMetrics {
-        switch prominence {
-        case .compact:
-            return ChromeFieldMetrics(horizontalPadding: 10, verticalPadding: 6, cornerRadius: 10)
-        case .regular:
-            return ChromeFieldMetrics(horizontalPadding: 12, verticalPadding: 7, cornerRadius: ChromeMetrics.fieldCornerRadius)
-        case .hero:
-            return ChromeFieldMetrics(horizontalPadding: 16, verticalPadding: 11, cornerRadius: 14)
-        }
-    }
-}
-
-private struct ChromeFieldMetrics {
-    let horizontalPadding: CGFloat
-    let verticalPadding: CGFloat
-    let cornerRadius: CGFloat
 }
 
 extension View {
-    func chromeFieldStyle(
-        focused isFocused: Bool,
-        prominence: ChromeFieldProminence = .regular
-    ) -> some View {
-        modifier(ChromeFieldStyle(isFocused: isFocused, prominence: prominence))
+    func chromeFieldStyle(focused isFocused: Bool, large: Bool = false) -> some View {
+        modifier(ChromeFieldStyle(isFocused: isFocused, isLarge: large))
     }
 }

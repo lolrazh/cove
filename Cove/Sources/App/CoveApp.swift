@@ -22,8 +22,17 @@ struct CoveApp: App {
         .windowToolbarStyle(.unifiedCompact)
         .windowBackgroundDragBehavior(.enabled)
         .commands {
-            BrowserViewCommands()
+            BrowserViewCommands(appServices: appServices)
         }
+
+        Window("History", id: HistoryWindow.windowID) {
+            HistoryWindow(
+                historyStore: appServices.historyStore,
+                faviconStore: appServices.faviconStore,
+                onOpen: openInBrowser
+            )
+        }
+        .defaultSize(width: 760, height: 560)
 
         Settings {
             SettingsView(
@@ -31,5 +40,13 @@ struct CoveApp: App {
                 historyStore: appServices.historyStore
             )
         }
+    }
+
+    /// Loads a page from another window (like History) in the frontmost
+    /// browser window, and brings that window forward.
+    private func openInBrowser(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        appServices.externalURLRouter.enqueue([url])
+        NSApp.frontmostBrowserWindow?.makeKeyAndOrderFront(nil)
     }
 }

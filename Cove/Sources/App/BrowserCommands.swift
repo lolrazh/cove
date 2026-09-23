@@ -2,6 +2,8 @@ import SwiftUI
 
 struct BrowserViewCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
+    @Environment(\.openWindow) private var openWindow
+    let appServices: AppServices
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -12,31 +14,36 @@ struct BrowserViewCommands: Commands {
             .disabled(tabManager == nil)
         }
 
-        CommandMenu("Browser") {
-            Button("Open Location") {
-                tabManager?.focusAddressBar()
-            }
-            .keyboardShortcut("l", modifiers: .command)
-            .disabled(tabManager == nil)
-
+        // Replaces File > Close, which also claimed Command-W and, coming
+        // first in the menu bar, closed the whole window instead of the tab.
+        CommandGroup(replacing: .saveItem) {
             Button("Close Tab") {
                 tabManager?.closeActiveTab()
             }
             .keyboardShortcut("w", modifiers: .command)
             .disabled(tabManager == nil)
 
-            Divider()
-
-            Button("Back") {
-                tabManager?.goBack()
+            Button("Close Window") {
+                NSApp.keyWindow?.performClose(nil)
             }
-            .keyboardShortcut("[", modifiers: .command)
-            .disabled(tabManager == nil)
+            .keyboardShortcut("w", modifiers: [.command, .shift])
+        }
 
-            Button("Forward") {
-                tabManager?.goForward()
+        CommandMenu("History") {
+            HistoryMenu(
+                tabManager: tabManager,
+                historyStore: appServices.historyStore,
+                recentlyClosed: appServices.recentlyClosedTabs,
+                faviconStore: appServices.faviconStore,
+                onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
+            )
+        }
+
+        CommandMenu("Browser") {
+            Button("Open Location") {
+                tabManager?.focusAddressBar()
             }
-            .keyboardShortcut("]", modifiers: .command)
+            .keyboardShortcut("l", modifiers: .command)
             .disabled(tabManager == nil)
 
             Button("Reload Page") {
