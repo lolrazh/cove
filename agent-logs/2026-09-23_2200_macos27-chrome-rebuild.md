@@ -52,3 +52,30 @@ The user asked for less complexity, native corner rounding, consistent squircles
 - ✅ **Styles merged:** three style files became two. `ChromeButtonStyle` has three sizes (icon, accessory, row), `chromeHoverSurface` handles hover and selection, and `chromeFieldStyle` shows the system focus-ring color only while focused. The press scale is 0.96.
 - UI code went from 2219 lines (at HEAD) to 1757.
 - Checked in light and dark mode: top tabs, docked sidebar, floating sidebar, and the history popover.
+
+## Third Pass: Tabs, History, and Input Bugs
+Commits `9b14087..9b0b50d` on branch `chrome-redesign`.
+
+- ✅ **Design tokens:** `ChromeRadius` holds per-component minimum radii for `ConcentricRectangle`. Text uses the system text styles (`.body`, `.callout`, `.subheadline`, `.caption`), and button styles set their own icon font.
+- ✅ **One tab definition:** top and sidebar tabs share `ChromeTabItem`. A presentation only sets the height and how the active tab is drawn. The close button is bigger and only shows on hover.
+- ✅ **Active tab = page color** (Dia-style). In the sidebar it's a raised card. In the top strip, `AttachedTabShape` flares its bottom corners into the content card.
+- ✅ **Tab animation:** top tabs grow and shrink from zero width when opened and closed (the mask is oversized so the flares aren't clipped). The maximum width is 160.
+- ✅ **History menu:** Back, Forward, Reopen Last Closed Tab (⇧⌘T), Recently Visited, Recently Closed, and Show All History (⌘Y). There's a separate History window with day groups, search, Copy Link and Delete. The history button is gone from the navigation bar.
+- ✅ **Bugs fixed, all existing or introduced by the chrome rewrite:**
+  - Commands used `focusedObject` and went disabled whenever nothing had focus. `focusedSceneObject` fixes it.
+  - File › Close claimed ⌘W, so ⌘W closed the window. It's now Close Tab ⌘W and Close Window ⇧⌘W.
+  - A `ConcentricRectangle` clip or `contentShape` puts the hit area in the wrong place: the content card swallowed every click and hover on the top tabs. Hit areas are now always `Rectangle()`.
+  - The sidebar's `ScrollView` is extended by macOS up under the titlebar and covered the header button. The header now floats over the scroll view, with `contentMargins` insetting the list below it.
+  - The URL queue was drained from a `@Published` publisher, which emits before the value is stored, so links waited for the next one. It now receives on the main queue.
+
+## Key Learnings (Third Pass)
+- **Hit testing:** don't use `ConcentricRectangle` for `clipShape` or `contentShape` on anything that must receive input. Draw with it; hit-test with `Rectangle`.
+- **Bisecting input problems:** a bare `onHover` + `onTapGesture` probe placed at different levels of the tree found the blocking layer in a few builds. An `NSView.hitTest` dump only shows AppKit's view, not SwiftUI's internal routing.
+- **Scroll views on macOS 26:** they extend under the titlebar (the scroll pocket). A view stacked *above* a scroll view can end up behind it for input. `safeAreaBar` fixes input but draws its own bar background and divider.
+- **Wrong turn:** browser windows were briefly rewritten as AppKit `NSWindow` + `NSHostingView`, based on a wrong diagnosis (SwiftUI's toolbar region). That was dropped once the real cause was found; `WindowGroup` is fine.
+- **Test scripts:** System Events `keystroke` goes to the frontmost app whatever the `tell` target is. Check that Cove is frontmost first.
+
+## Ready for Next Session
+- 🔧 The History window opens pages in whichever browser window is frontmost. Once internal pages exist in `TabSession`, an in-tab `cove://history` would match Safari and Dia.
+- 🔧 The history includes many test visits (github.com, example.com) from this session.
+- 🔧 Sidebar tabs still appear and disappear without the top strip's grow/shrink animation.
