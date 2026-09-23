@@ -79,3 +79,11 @@ Commits `9b14087..9b0b50d` on branch `chrome-redesign`.
 - 🔧 The History window opens pages in whichever browser window is frontmost. Once internal pages exist in `TabSession`, an in-tab `cove://history` would match Safari and Dia.
 - 🔧 The history includes many test visits (github.com, example.com) from this session.
 - 🔧 Sidebar tabs still appear and disappear without the top strip's grow/shrink animation.
+
+## Fourth Pass: Tab Row Polish
+- ✅ **Taller tabs:** 30pt, with 6pt above and 4pt below (was 28pt with 6/6), measured against Dia. They sit 1pt below the traffic lights' centerline, which is intentional.
+- ✅ **One radius in the tab row:** buttons in the titlebar band use `ChromeButtonStyle(size: .titlebar)`, which gives the tab height and the tab radius (10 = window radius of about 16, less the gutter).
+- ✅ **Concentric close button:** each tab sets `containerShape(RoundedRectangle(10))`, and the close button is `.accessory(side: tabHeight - 8)` drawn with `ConcentricRectangle`, which comes out at a radius of about 6.
+- ✅ **Tab width:** the widest a tab gets is an eighth of the strip, clamped to 120–220pt. Open/close motion is 0.18s.
+- ✅ **Favicons:** `FaviconImage.make` is now the only decoder. Icons that are a single neutral tone become template images and are tinted like text (GitHub turns white in dark mode). Note that `NSBitmapImageRep.colorAt` returns straight (not premultiplied) components.
+- ✅ The address bar no longer shows a favicon.
