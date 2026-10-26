@@ -70,6 +70,43 @@ enum ChromeMotion {
     static let commandBar = Animation.smooth(duration: 0.18)
 }
 
+/// Elevation, in three steps. Shadows are the only thing that lifts a surface;
+/// nothing in the chrome has an outline.
+enum ChromeShadow {
+    /// Just off the frame: the active sidebar tab.
+    case raised
+    /// The page card, floating over the frame like Arc's.
+    case card
+    /// Chrome over the page: the revealed sidebar, toasts, popups.
+    case floating
+
+    var radius: CGFloat {
+        switch self {
+        case .raised: 1
+        case .card: 12
+        case .floating: 16
+        }
+    }
+
+    var y: CGFloat {
+        switch self {
+        case .raised: 1
+        case .card: 3
+        case .floating: 4
+        }
+    }
+
+    /// Dark frames swallow shadows, so they get about twice the ink.
+    func opacity(in colorScheme: ColorScheme) -> Double {
+        let light: Double = switch self {
+        case .raised: 0.08
+        case .card: 0.12
+        case .floating: 0.18
+        }
+        return colorScheme == .dark ? light * 2 : light
+    }
+}
+
 /// Minimum corner radii, one per component size. Actual radii come from
 /// `ConcentricRectangle`: near the window's corners a shape follows them, and
 /// further in it falls back to its minimum.
