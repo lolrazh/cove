@@ -10,6 +10,7 @@ struct SidebarTabView: View {
     let headerLeadingInset: CGFloat
     /// Whether this sidebar's address pill is the one Command-L reaches.
     let acceptsFocusRequests: Bool
+    @Binding var isEditingAddress: Bool
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -27,15 +28,29 @@ struct SidebarTabView: View {
     /// above it would sit behind that extension and never get clicks.
     var body: some View {
         tabList
-            .contentMargins(.top, headerHeight, for: .scrollContent)
+            .contentMargins(.top, headerHeight + ChromeMetrics.sidebarRowHeight, for: .scrollContent)
             .scrollEdgeEffectHidden(true, for: .top)
             .overlay(alignment: .top) {
                 header
             }
     }
 
-    /// Arc's header row: traffic lights, the dock toggle, then navigation.
     private var header: some View {
+        VStack(spacing: 0) {
+            navigationRow
+
+            SidebarAddressPill(
+                session: activeTab,
+                isEditing: $isEditingAddress,
+                acceptsFocusRequests: acceptsFocusRequests
+            )
+            .id(activeTab.id)
+            .padding(.horizontal, ChromeMetrics.sidebarInset)
+        }
+    }
+
+    /// Arc's header row: traffic lights, the dock toggle, then navigation.
+    private var navigationRow: some View {
         HStack(spacing: 4) {
             Button(action: onToggleDocked) {
                 Image(systemName: ChromeSymbols.Tabs.sidebarLayout)

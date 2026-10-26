@@ -2,16 +2,15 @@ import SwiftUI
 
 /// A text field on a quiet system fill. Focus shows the system focus ring color
 /// around the outside, the way native fields do, instead of a permanent outline.
+/// Callers pad their content first; the fill wraps whatever it is given.
 private struct ChromeFieldStyle: ViewModifier {
     let isFocused: Bool
-    let isLarge: Bool
+    let minimumRadius: CGFloat
 
     func body(content: Content) -> some View {
-        let shape = ConcentricRectangle.chrome(minimum: isLarge ? ChromeRadius.tile : ChromeRadius.control)
+        let shape = ConcentricRectangle.chrome(minimum: minimumRadius)
 
         content
-            .padding(.horizontal, isLarge ? 16 : 10)
-            .padding(.vertical, isLarge ? 11 : 5)
             .background(ChromePalette.resting, in: shape)
             .overlay {
                 shape
@@ -23,7 +22,7 @@ private struct ChromeFieldStyle: ViewModifier {
 }
 
 extension View {
-    func chromeFieldStyle(focused isFocused: Bool, large: Bool = false) -> some View {
-        modifier(ChromeFieldStyle(isFocused: isFocused, isLarge: large))
+    func chromeFieldStyle(focused isFocused: Bool, minimumRadius: CGFloat = ChromeRadius.control) -> some View {
+        modifier(ChromeFieldStyle(isFocused: isFocused, minimumRadius: minimumRadius))
     }
 }

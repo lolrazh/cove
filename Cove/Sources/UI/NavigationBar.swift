@@ -55,6 +55,8 @@ struct NavigationBar: View {
         )
         .frame(height: 18)
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
         .chromeFieldStyle(focused: isAddressFocused)
     }
 }

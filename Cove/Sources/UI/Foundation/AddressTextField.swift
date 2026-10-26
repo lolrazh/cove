@@ -46,12 +46,11 @@ struct AddressTextField: NSViewRepresentable {
         }
 
         defer { coordinator.lastFocusRequest = focusRequest }
-        guard let focusRequest, let last = coordinator.lastFocusRequest, last != focusRequest else { return }
+        guard let focusRequest, let last = coordinator.lastFocusRequest, last != focusRequest,
+              let textField = textField as? FocusReportingTextField else { return }
 
         DispatchQueue.main.async {
-            textField.window?.makeFirstResponder(textField)
-            textField.currentEditor()?.selectAll(nil)
-            textField.selectText(nil)
+            textField.focus()
         }
     }
 
@@ -101,15 +100,39 @@ struct AddressTextField: NSViewRepresentable {
     }
 }
 
-/// `controlTextDidBeginEditing` only fires on the first keystroke, so a field
-/// that was clicked or focused by Command-L wouldn't look focused until typed
-/// into. Becoming first responder is the moment focus actually arrives.
+/// Two things AppKit's field doesn't do on its own:
+///
+/// - `controlTextDidBeginEditing` only fires on the first keystroke, so a field
+///   that was clicked or focused by Command-L wouldn't look focused until typed
+///   into. Becoming first responder is the moment focus actually arrives.
+/// - A window hands its initial focus to the first text field it finds, and Tab
+///   walks through them. Several address fields live in the tree at once (the
+///   bar, the docked pill, the floating pill), so focus only arrives by a click
+///   on the field or an explicit `focus()`.
 private final class FocusReportingTextField: NSTextField {
     var onBecomeFirstResponder: (() -> Void)?
+    private var allowsFocus = false
+
+    override var acceptsFirstResponder: Bool {
+        allowsFocus && super.acceptsFirstResponder
+    }
 
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
         if accepted { onBecomeFirstResponder?() }
         return accepted
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        allowsFocus = true
+        defer { allowsFocus = false }
+        super.mouseDown(with: event)
+    }
+
+    func focus() {
+        allowsFocus = true
+        defer { allowsFocus = false }
+        window?.makeFirstResponder(self)
+        currentEditor()?.selectAll(nil)
     }
 }

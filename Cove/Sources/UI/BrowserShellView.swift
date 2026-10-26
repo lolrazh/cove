@@ -20,6 +20,7 @@ struct BrowserShellView<Content: View>: View {
 
     @Environment(\.trafficLightInset) private var trafficLightInset
     @State private var isHoveringChrome = false
+    @State private var isEditingAddress = false
     @State private var hideTask: Task<Void, Never>?
 
     init(
@@ -69,6 +70,13 @@ struct BrowserShellView<Content: View>: View {
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
         }
+        // Command-L with the sidebar tucked away brings it out to edit in.
+        .onChange(of: activeTab.addressFocusRequest) { _, _ in
+            if isSidebarHidden { reveal() }
+        }
+        .onChange(of: isEditingAddress) { _, editing in
+            if !editing { scheduleHide(after: .milliseconds(600)) }
+        }
     }
 
     // MARK: - Tabs
@@ -107,6 +115,7 @@ struct BrowserShellView<Content: View>: View {
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
             acceptsFocusRequests: showsDockedSidebar,
+            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
         .frame(width: ChromeMetrics.sidebarWidth)
@@ -125,7 +134,8 @@ struct BrowserShellView<Content: View>: View {
             activeTab: activeTab,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
-            acceptsFocusRequests: tabManager.tabLayout == .sidebar && tabManager.hideTabs,
+            acceptsFocusRequests: isSidebarHideable,
+            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
         .frame(width: ChromeMetrics.sidebarWidth)
@@ -210,15 +220,19 @@ struct BrowserShellView<Content: View>: View {
     }
 
     private var showsFloatingSidebar: Bool {
-        tabManager.tabLayout == .sidebar && tabManager.hideTabs && areTabsVisible
+        isSidebarHideable && areTabsVisible
     }
 
     private var isTopRowHidden: Bool {
         tabManager.tabLayout == .horizontal && tabManager.hideTabs && !areTabsVisible
     }
 
+    private var isSidebarHideable: Bool {
+        tabManager.tabLayout == .sidebar && tabManager.hideTabs
+    }
+
     private var isSidebarHidden: Bool {
-        tabManager.tabLayout == .sidebar && tabManager.hideTabs && !areTabsVisible
+        isSidebarHideable && !areTabsVisible
     }
 
     // MARK: - Hide / Reveal
@@ -254,7 +268,7 @@ struct BrowserShellView<Content: View>: View {
 
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, !isHoveringChrome, tabManager.hideTabs else { return }
+            guard !Task.isCancelled, !isHoveringChrome, !isEditingAddress, tabManager.hideTabs else { return }
             areTabsVisible = false
         }
     }
