@@ -1,25 +1,31 @@
 import SwiftUI
 
+/// The toolbar in the page card, in top-tab mode: navigation, the address
+/// field and downloads.
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
     @ObservedObject private var downloadManager: DownloadManager
+    /// Whether Command-L and the pill reach this field. Only the address UI of
+    /// the current tab mode responds, so one request can't focus two fields.
+    let acceptsFocusRequests: Bool
 
     @State private var addressText: String
     @State private var isAddressFocused: Bool = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         session: TabSession,
-        downloadManager: DownloadManager
+        downloadManager: DownloadManager,
+        acceptsFocusRequests: Bool
     ) {
         self._session = ObservedObject(wrappedValue: session)
         self._downloadManager = ObservedObject(wrappedValue: downloadManager)
+        self.acceptsFocusRequests = acceptsFocusRequests
         _addressText = State(initialValue: session.currentURL)
     }
 
     var body: some View {
         HStack(spacing: 8) {
-            navCluster
+            NavigationControls(session: session)
             addressBar
             DownloadsStatusButton(downloadManager: downloadManager)
         }
@@ -30,25 +36,11 @@ struct NavigationBar: View {
                 addressText = newURL
             }
         }
-    }
-
-    private var navCluster: some View {
-        HStack(spacing: 4) {
-            toolbarButton(enabled: session.canGoBack, action: session.goBack) {
-                Image(systemName: ChromeSymbols.Navigation.back)
-                    .foregroundStyle(session.canGoBack ? .primary : .tertiary)
-            }
-
-            toolbarButton(enabled: session.canGoForward, action: session.goForward) {
-                Image(systemName: ChromeSymbols.Navigation.forward)
-                    .foregroundStyle(session.canGoForward ? .primary : .tertiary)
-            }
-
-            toolbarButton(action: {
-                session.isLoading ? session.stopLoading() : session.reload()
-            }) {
-                reloadIcon
-                    .foregroundStyle(.primary)
+        // Leaving the field, by Return, Escape or a click elsewhere, shows the
+        // page's URL again rather than whatever was typed.
+        .onChange(of: isAddressFocused) { _, focused in
+            if !focused {
+                addressText = session.currentURL
             }
         }
     }
@@ -58,40 +50,11 @@ struct NavigationBar: View {
             text: $addressText,
             isFocused: $isAddressFocused,
             placeholder: "Search or enter URL",
-            focusRequest: session.addressFocusRequest,
-            onSubmit: submitAddress
+            focusRequest: acceptsFocusRequests ? session.addressFocusRequest : nil,
+            onSubmit: { session.navigate(addressText) }
         )
         .frame(height: 18)
         .frame(maxWidth: .infinity)
         .chromeFieldStyle(focused: isAddressFocused)
-    }
-
-    private var reloadIcon: some View {
-        let icon = Image(systemName: session.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
-
-        return Group {
-            if reduceMotion {
-                icon
-            } else {
-                icon.symbolEffect(.bounce, value: session.isLoading)
-            }
-        }
-    }
-
-    private func toolbarButton<Label: View>(
-        enabled: Bool = true,
-        action: @escaping () -> Void,
-        @ViewBuilder label: () -> Label
-    ) -> some View {
-        Button(action: action) {
-            label()
-        }
-        .disabled(!enabled)
-        .buttonStyle(ChromeButtonStyle())
-    }
-
-    private func submitAddress() {
-        session.navigate(addressText)
-        isAddressFocused = false
     }
 }

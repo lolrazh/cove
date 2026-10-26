@@ -2,9 +2,14 @@ import SwiftUI
 
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    @ObservedObject var activeTab: TabSession
     /// Height of the row that holds the traffic lights. Set so the row's center
     /// lands on the traffic lights' centerline wherever the sidebar is placed.
     let headerHeight: CGFloat
+    /// Where the header's controls start: just past the traffic lights.
+    let headerLeadingInset: CGFloat
+    /// Whether this sidebar's address pill is the one Command-L reaches.
+    let acceptsFocusRequests: Bool
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -29,20 +34,21 @@ struct SidebarTabView: View {
             }
     }
 
-    /// The traffic lights sit on the leading side of this row; it only draws the
-    /// dock toggle on the trailing side.
+    /// Arc's header row: traffic lights, the dock toggle, then navigation.
     private var header: some View {
-        HStack {
-            Spacer()
-
+        HStack(spacing: 4) {
             Button(action: onToggleDocked) {
                 Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
-                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(size: .titlebar))
+            .buttonStyle(ChromeButtonStyle())
             .help(tabManager.hideTabs ? "Keep sidebar open" : "Hide sidebar")
+
+            NavigationControls(session: activeTab)
+
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, ChromeMetrics.gutter)
+        .padding(.leading, headerLeadingInset)
+        .padding(.trailing, ChromeMetrics.sidebarInset)
         .frame(height: headerHeight)
     }
 

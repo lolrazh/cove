@@ -92,12 +92,21 @@ struct BrowserShellView<Content: View>: View {
         max(ChromeMetrics.gutter, trafficLightInset + ChromeMetrics.trafficLightTrailingGap)
     }
 
+    /// Where the sidebar header's controls start, past the traffic lights, for
+    /// a sidebar whose leading edge sits `sidebarOrigin` in from the window's.
+    private func headerLeadingInset(sidebarOrigin: CGFloat) -> CGFloat {
+        max(ChromeMetrics.sidebarInset, trafficLightInset - sidebarOrigin + ChromeMetrics.trafficLightTrailingGap)
+    }
+
     /// The sidebar in its docked position. Its width animates to zero rather than
     /// the view being removed, so the card slides instead of jumping.
     private var dockedSidebar: some View {
         SidebarTabView(
             tabManager: tabManager,
+            activeTab: activeTab,
             headerHeight: ChromeMetrics.titlebarHeight,
+            headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
+            acceptsFocusRequests: showsDockedSidebar,
             onToggleDocked: toggleDocked
         )
         .frame(width: ChromeMetrics.sidebarWidth)
@@ -113,7 +122,10 @@ struct BrowserShellView<Content: View>: View {
     private var floatingSidebar: some View {
         SidebarTabView(
             tabManager: tabManager,
+            activeTab: activeTab,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
+            headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
+            acceptsFocusRequests: tabManager.tabLayout == .sidebar && tabManager.hideTabs,
             onToggleDocked: toggleDocked
         )
         .frame(width: ChromeMetrics.sidebarWidth)
@@ -134,13 +146,7 @@ struct BrowserShellView<Content: View>: View {
 
     private var contentCard: some View {
         VStack(spacing: 0) {
-            NavigationBar(
-                session: activeTab,
-                downloadManager: appServices.downloadManager
-            )
-            .id(activeTab.id)
-
-            Divider()
+            navigationBar
 
             ZStack(alignment: .top) {
                 content
@@ -154,6 +160,26 @@ struct BrowserShellView<Content: View>: View {
         // A concentric clip also becomes the hit area, and resolves in the
         // wrong place: without this the card swallows clicks meant for the tabs.
         .contentShape(Rectangle())
+    }
+
+    /// The toolbar above the page, in top-tab mode only. In sidebar mode its
+    /// controls live in the sidebar and the card holds just the page; the bar
+    /// collapses rather than leaving, so the mode switch animates.
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            NavigationBar(
+                session: activeTab,
+                downloadManager: appServices.downloadManager,
+                acceptsFocusRequests: isTopMode
+            )
+            .id(activeTab.id)
+
+            Divider()
+        }
+        .frame(height: isTopMode ? nil : 0, alignment: .bottom)
+        .opacity(isTopMode ? 1 : 0)
+        .clipped()
+        .allowsHitTesting(isTopMode)
     }
 
     @ViewBuilder
@@ -170,6 +196,10 @@ struct BrowserShellView<Content: View>: View {
     }
 
     // MARK: - Visibility
+
+    private var isTopMode: Bool {
+        tabManager.tabLayout == .horizontal
+    }
 
     private var showsTopRow: Bool {
         tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || areTabsVisible)
