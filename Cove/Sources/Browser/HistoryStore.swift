@@ -109,14 +109,7 @@ final class HistoryStore: ObservableObject {
                 params: [limit]
             )) ?? []
         } else {
-            // FTS search — sanitize input to avoid FTS5 syntax errors.
-            // Strip special chars, split into tokens, prefix-match each.
-            let sanitized = query.unicodeScalars.filter { c in
-                CharacterSet.alphanumerics.contains(c) || c == " "
-            }
-            let tokens = String(sanitized).split(separator: " ").filter { !$0.isEmpty }
-            guard !tokens.isEmpty else { return [] }
-            let ftsQuery = tokens.map { "\($0)*" }.joined(separator: " ")
+            guard let ftsQuery = Self.ftsQuery(for: query) else { return [] }
             results = (try? db.query(
                 """
                 SELECT h.id, h.url, h.title, h.visited_at
@@ -151,6 +144,16 @@ final class HistoryStore: ObservableObject {
         db?.execute("DELETE FROM history")
         db?.execute("INSERT INTO history_fts(history_fts) VALUES ('rebuild')")
         refreshRecentlyVisited()
+    }
+
+    /// An FTS5 query that prefix-matches each typed word. Words are split the
+    /// way the tokenizer splits them, on anything that isn't a letter or digit,
+    /// so "github.com/swift" finds what "github com swift" would. That also
+    /// keeps FTS5 syntax out of the query.
+    private static func ftsQuery(for query: String) -> String? {
+        let tokens = query.split { !$0.isLetter && !$0.isNumber }
+        guard !tokens.isEmpty else { return nil }
+        return tokens.map { "\($0)*" }.joined(separator: " ")
     }
 
     /// Visits repeat (reloads, back and forth), so keep one entry per page.
