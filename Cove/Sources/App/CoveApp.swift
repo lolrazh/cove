@@ -35,6 +35,7 @@ struct CoveApp: App {
         }
         .defaultSize(width: 760, height: 560)
         .handlesExternalEvents(matching: [])
+        .restorationBehavior(.disabled)
 
         Settings {
             SettingsView(
