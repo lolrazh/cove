@@ -30,7 +30,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var estimatedProgress: Double = 0
     @Published var favicon: NSImage?
     @Published private(set) var loadFailure: LoadFailure?
-    @Published private(set) var addressFocusRequest: Int = 0
 
     private(set) var webView: WKWebView
 
@@ -182,10 +181,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// The tab closed: dialogs waiting for it are dismissed, as if cancelled.
     func close() {
         pageDidAppear(in: nil)
-    }
-
-    func requestAddressFocus() {
-        addressFocusRequest &+= 1
     }
 
     // MARK: - Observers

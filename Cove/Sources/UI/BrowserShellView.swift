@@ -21,7 +21,6 @@ struct BrowserShellView<Content: View>: View {
 
     @Environment(\.trafficLightInset) private var trafficLightInset
     @State private var isHoveringChrome = false
-    @State private var isEditingAddress = false
     @State private var hideTask: Task<Void, Never>?
 
     init(
@@ -74,13 +73,6 @@ struct BrowserShellView<Content: View>: View {
         .animation(ChromeMotion.shell, value: areTabsVisible)
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
-        }
-        // Command-L with the sidebar tucked away brings it out to edit in.
-        .onChange(of: activeTab.addressFocusRequest) { _, _ in
-            if isSidebarHidden { reveal() }
-        }
-        .onChange(of: isEditingAddress) { _, editing in
-            if !editing { scheduleHide(after: .milliseconds(600)) }
         }
     }
 
@@ -135,8 +127,6 @@ struct BrowserShellView<Content: View>: View {
             downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
-            acceptsFocusRequests: showsDockedSidebar,
-            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
         .frame(width: sidebarWidth)
@@ -180,8 +170,6 @@ struct BrowserShellView<Content: View>: View {
             downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
-            acceptsFocusRequests: isSidebarHideable,
-            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
         .frame(width: sidebarWidth)
@@ -221,9 +209,8 @@ struct BrowserShellView<Content: View>: View {
             NavigationBar(
                 session: activeTab,
                 downloadManager: appServices.downloadManager,
-                acceptsFocusRequests: isTopMode
+                onEditAddress: tabManager.editCurrentURL
             )
-            .id(activeTab.id)
 
             Divider()
         }
@@ -313,7 +300,7 @@ struct BrowserShellView<Content: View>: View {
 
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, !isHoveringChrome, !isEditingAddress, tabManager.hideTabs else { return }
+            guard !Task.isCancelled, !isHoveringChrome, tabManager.hideTabs else { return }
             areTabsVisible = false
         }
     }

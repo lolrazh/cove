@@ -1,62 +1,44 @@
 import SwiftUI
 
 /// The toolbar in the page card, in top-tab mode: navigation, the address
-/// field and downloads.
+/// field and downloads. The field only shows the URL; clicking it opens the
+/// Command Bar, where all editing happens.
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
     @ObservedObject private var downloadManager: DownloadManager
-    /// Whether Command-L and the pill reach this field. Only the address UI of
-    /// the current tab mode responds, so one request can't focus two fields.
-    let acceptsFocusRequests: Bool
-
-    @State private var addressText: String
-    @State private var isAddressFocused: Bool = false
+    private let onEditAddress: () -> Void
 
     init(
         session: TabSession,
         downloadManager: DownloadManager,
-        acceptsFocusRequests: Bool
+        onEditAddress: @escaping () -> Void
     ) {
         self._session = ObservedObject(wrappedValue: session)
         self._downloadManager = ObservedObject(wrappedValue: downloadManager)
-        self.acceptsFocusRequests = acceptsFocusRequests
-        _addressText = State(initialValue: session.currentURL)
+        self.onEditAddress = onEditAddress
     }
 
     var body: some View {
         HStack(spacing: 8) {
             NavigationControls(session: session)
-            addressBar
+            addressField
             DownloadsStatusButton(downloadManager: downloadManager)
         }
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.navigationBarHeight)
-        .onChange(of: session.currentURL) { _, newURL in
-            if !isAddressFocused {
-                addressText = newURL
-            }
-        }
-        // Leaving the field, by Return, Escape or a click elsewhere, shows the
-        // page's URL again rather than whatever was typed.
-        .onChange(of: isAddressFocused) { _, focused in
-            if !focused {
-                addressText = session.currentURL
-            }
-        }
     }
 
-    private var addressBar: some View {
-        AddressTextField(
-            text: $addressText,
-            isFocused: $isAddressFocused,
-            placeholder: "Search or enter URL",
-            focusRequest: acceptsFocusRequests ? session.addressFocusRequest : nil,
-            onSubmit: { session.navigate(addressText) }
-        )
-        .frame(height: 18)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .chromeFieldStyle(focused: isAddressFocused)
+    private var addressField: some View {
+        Text(session.currentURL.isEmpty ? "Search or enter URL" : session.currentURL)
+            .foregroundStyle(session.currentURL.isEmpty ? .secondary : .primary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(height: 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .chromeFieldStyle(focused: false)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onEditAddress)
     }
 }
