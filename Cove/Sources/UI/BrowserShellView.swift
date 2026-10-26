@@ -192,6 +192,7 @@ struct BrowserShellView<Content: View>: View {
                 contentLoadingIndicator
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipShape(.chrome())

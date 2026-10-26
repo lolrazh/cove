@@ -10,6 +10,7 @@ enum ChromeSymbols {
         static let globe = "globe"
         static let loadFailed = "exclamationmark.triangle"
         static let secure = "lock.fill"
+        static let link = "link"
     }
 
     enum Tabs {

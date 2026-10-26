@@ -19,6 +19,8 @@ final class TabManager: ObservableObject {
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
+    /// Confirmations shown over this window's page.
+    let toasts = ToastCenter()
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
@@ -236,6 +238,14 @@ final class TabManager: ObservableObject {
         for tab in closed {
             closeTab(tab.id)
         }
+    }
+
+    /// ⌘⇧C and the Command Bar: the page's address to the pasteboard.
+    func copyURL() {
+        guard let url = activeTab?.currentURL, !url.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(url, forType: .string)
+        toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)
     }
 
     func goBack() {
