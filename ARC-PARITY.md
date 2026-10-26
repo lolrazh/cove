@@ -77,23 +77,24 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 └──────────────┴───────────────────────┘
 ```
 
-- [ ] **Navigation controls move into the sidebar header**, right of the
+- [x] **Navigation controls move into the sidebar header**, right of the
       traffic lights: sidebar toggle, back, forward, reload/stop.
-- [ ] **URL pill at the top of the sidebar.** Shows the domain only (with the
+- [x] **URL pill at the top of the sidebar.** Shows the domain only (with the
       site-controls/lock glyph). Clicking it, or ⌘L, edits the full URL.
-- [ ] **No toolbar above the page in sidebar mode.** The page card holds the
+- [x] **No toolbar above the page in sidebar mode.** The page card holds the
       page only. The downloads button moves to the sidebar footer.
-- [ ] **Sections:** Favorites grid, Pinned, a divider with **Clear**, Today.
-      Layout and drop zones only here; behavior lands with the features.
-- [ ] **New Tab row at the top of Today.** New tabs appear at the top of Today.
-- [ ] **Footer:** Library/Downloads (leading), space dots (center), new space
-      (trailing).
-- [ ] **Resizable sidebar:** drag the trailing edge, about 180–400pt,
-      remembered.
-- [ ] **Page card inset about 8pt** from the window edges, like Arc (Cove: 6).
-- [ ] **Hidden sidebar shows no chrome at all.** The floating sidebar carries
+- [x] **Sections:** Favorites grid, Pinned, a divider with **Clear**, Today.
+      Layout only here, fed by empty TabManager collections; pinning lands
+      with 5d and drop zones with drag to reorder in 5a.
+- [x] **New Tab row at the top of Today.** New tabs appear at the top of Today.
+- [x] **Footer:** Library/Downloads (leading), space dots (center), new space
+      (trailing, arrives with Spaces).
+- [x] **Resizable sidebar:** drag the trailing edge, 220–400pt (the header's
+      controls need the room beside the traffic lights), remembered.
+- [x] **Page card inset about 8pt** from the window edges, like Arc (Cove: 6).
+- [x] **Hidden sidebar shows no chrome at all.** The floating sidebar carries
       the controls and the URL pill when revealed.
-- [ ] **Top tabs stay.** Keep the navigation bar in the card for top-tab mode
+- [x] **Top tabs stay.** Keep the navigation bar in the card for top-tab mode
       only. Revealing hidden top tabs should float over the page, like the
       hidden sidebar, instead of pushing it down.
 
