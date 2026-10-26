@@ -32,6 +32,9 @@ enum ChromeMetrics {
     /// the card keeps from the window.
     static let sidebarInset: CGFloat = cardInset
     static let sidebarRowHeight: CGFloat = 32
+    /// Space between the sidebar's sections, and above and below the Clear line.
+    static let sidebarSectionSpacing: CGFloat = 8
+    static let sidebarFooterHeight: CGFloat = 36
     /// Width of the invisible edge that reveals hidden tabs.
     static let revealEdge: CGFloat = 8
 

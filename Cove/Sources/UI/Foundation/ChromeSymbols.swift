@@ -16,6 +16,7 @@ enum ChromeSymbols {
         static let add = "plus"
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
+        static let clear = "chevron.down"
     }
 
     enum Settings {

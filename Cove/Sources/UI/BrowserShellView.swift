@@ -112,6 +112,7 @@ struct BrowserShellView<Content: View>: View {
         SidebarTabView(
             tabManager: tabManager,
             activeTab: activeTab,
+            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
             acceptsFocusRequests: showsDockedSidebar,
@@ -132,6 +133,7 @@ struct BrowserShellView<Content: View>: View {
         SidebarTabView(
             tabManager: tabManager,
             activeTab: activeTab,
+            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
             acceptsFocusRequests: isSidebarHideable,
