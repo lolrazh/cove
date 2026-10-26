@@ -225,17 +225,9 @@ struct BrowserShellView<Content: View>: View {
         .allowsHitTesting(isTopMode)
     }
 
-    @ViewBuilder
     private var contentLoadingIndicator: some View {
-        if activeTab.isLoading {
-            ProgressView(value: activeTab.estimatedProgress)
-                .progressViewStyle(.linear)
-                .tint(.accentColor)
-                .labelsHidden()
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .allowsHitTesting(false)
-        }
+        PageProgressBar(progress: activeTab.estimatedProgress, isLoading: activeTab.isLoading)
+            .id(activeTab.id)
     }
 
     // MARK: - Visibility

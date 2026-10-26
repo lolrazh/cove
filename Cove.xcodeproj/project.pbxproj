@@ -44,6 +44,7 @@
 		AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24428BD2191574360191520 /* BrowserView.swift */; };
 		B488357C746F33394AD611CF /* easylist.json in Resources */ = {isa = PBXBuildFile; fileRef = AB6526AAC426FA4B5DB1CA72 /* easylist.json */; };
 		B78E80BAF84F4E1B2E0F07FD /* DownloadPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */; };
+		B7E7A51FA241EF02329EE04A /* PageProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7593A82019BD18A2FB11A603 /* PageProgressBar.swift */; };
 		BD53739261197BBC68670588 /* AttachedTabShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */; };
 		C6604A20A5CA841030AC56A9 /* HistoryMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81018FBD0857C80DE7347A16 /* HistoryMenu.swift */; };
 		C70171EF5B56EB050B5F2BC9 /* PageDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D720CDE1DB6C60ED8637664 /* PageDialogs.swift */; };
@@ -97,6 +98,7 @@
 		6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRequestBuilder.swift; sourceTree = "<group>"; };
 		74DE51D644E19087E579BD8A /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
 		752524CBC59FC53BFE4BFB71 /* ChromeSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeSymbols.swift; sourceTree = "<group>"; };
+		7593A82019BD18A2FB11A603 /* PageProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageProgressBar.swift; sourceTree = "<group>"; };
 		76CC248EA6BD0C3B88E5877B /* ChromeButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeButtonStyle.swift; sourceTree = "<group>"; };
 		7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
 		78CAF27E26781E0DB9D293C4 /* LoadFailurePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadFailurePage.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 				AAAD4F48AAADD750585F40AB /* NavigationBar.swift */,
 				E550183114525F755B5C3B04 /* NavigationControls.swift */,
 				7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */,
+				7593A82019BD18A2FB11A603 /* PageProgressBar.swift */,
 				2C4724DA9BDE2466D45B0FBA /* SidebarAddressPill.swift */,
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
 				C8A4E68B430D945E3968A4B9 /* TabStripView.swift */,
@@ -414,6 +417,7 @@
 				27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */,
 				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,
 				C70171EF5B56EB050B5F2BC9 /* PageDialogs.swift in Sources */,
+				B7E7A51FA241EF02329EE04A /* PageProgressBar.swift in Sources */,
 				211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */,
 				14F9E6C68FB8FC3EFDBEFA65 /* SearchSuggestions.swift in Sources */,
 				CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */,
