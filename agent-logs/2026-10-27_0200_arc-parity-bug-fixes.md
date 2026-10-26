@@ -70,3 +70,26 @@ Workstream 1 of ARC-PARITY.md: fix the bugs the audit found, directly on `main`,
 
 ## Context for Future
 `TabSession` is still the WebKit delegate for everything, but the UI it shows now lives in `PageDialogs`. `ExternalURLRouter` is the one way to open a page from outside a window, so the Command Bar and the Little Arc feature can route through it.
+
+## Follow-up (same day): fixes from the problem list
+The coordinator asked for four follow-ups. These commits come after the `arc-layout` merge (`c08b828`); everything was rebuilt and rechecked on the merged code.
+
+- ✅ **File › New Window, ⌘N** (`f104177`). The `WindowGroup` now has an id (`BrowserView.windowID`) for `openWindow`. New Tab (⌘T) is unchanged.
+- ✅ **Several windows, tested in the app.**
+  - **External links:** a link goes to whichever window was clicked last. A second window made with ⌘N, then the first one clicked again, each received the next link.
+  - **History:** ⌘Y from the first window, then Return, opened the page in a new tab there, and that window became key.
+  - ⚠️ **Wrong turn:** the order `CGWindowListCopyWindowInfo` returns was misread as "the target window didn't come forward", and an async `makeKeyAndOrderFront` was added. Screenshots of the traffic lights (colored only on the key window) showed it wasn't needed, so it was reverted. Read key state from screenshots, not list order.
+- ✅ **Every saved window comes back** (`32c746b`).
+  - SwiftUI's restoration reopened only one of two windows, so the other saved window was dropped. Browser windows now use `.restorationBehavior(.disabled)`; the first window opens one more window per saved window (`SessionStore.takeWindowsToReopen()`, which answers once), and each window claims the next saved one.
+  - The final save on `willTerminate` now also clears the tracked windows. Logging showed the windows' `onDisappear` (untrack) runs after `willTerminate`, so a later save must not drop them.
+  - Verified: two windows with different tabs, ⌘Q, relaunch, both back with their tabs.
+- ✅ **Ask Every Time downloads** (`758e52b`): the entitlement is now `files.user-selected.read-write`. Verified: a save panel opened, and a 64-byte download landed in the folder chosen there.
+  - ⚠️ **Default mode is still unverified:** the system prompt "Cove would like to access files in your Downloads folder" came up again and blocks the download until it's answered. It was left for the user, as asked. It's also what stalled the earlier test, whose download never arrived. It reappears because each debug build with new entitlements is a new code identity to the system's privacy settings.
+- ✅ **Dialogs from background tabs** (`8a8dfbc`).
+  - `TabSession.dialogWindow()` selects the tab, as Safari does for `alert()`. It then waits for `WebViewRepresentable` to report the page on screen (`pageDidAppear(in:)`) and shows the sheet there.
+  - `TabManager.closeTab` calls `close()`, which dismisses waiting dialogs. Without that, WebKit's completion handler would never be called.
+  - Every page dialog goes through this: JavaScript dialogs, login, permissions, file panel.
+  - Verified: a page in a background tab called `confirm()` after 5s. Its tab was selected, the sheet showed, and Return gave `confirm=true`.
+  - ⚠️ **Edge case:** a tab whose page is hidden behind its own start page (after going Back to it) won't show the page on selection, so the dialog waits until the user goes forward or closes the tab.
+- ✅ **History window no longer reopens on launch** (`c44b32d`): `.restorationBehavior(.disabled)` on its `Window`.
+  - Side effect: browser windows reopen at default, cascaded positions rather than where they were. Saving frames in `SavedWindow` would fix that if wanted.
