@@ -176,8 +176,8 @@ private struct SidebarFavoriteTile: View {
             .background {
                 if isActive {
                     ConcentricRectangle.chrome(minimum: ChromeRadius.tile)
-                        .fill(ChromePalette.content)
-                        .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                        .fill(ChromePalette.raised)
+                        .chromeShadow(.raised)
                 }
             }
             .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)

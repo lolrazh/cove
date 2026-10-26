@@ -49,11 +49,14 @@ enum ChromeMetrics {
 /// the accent color all work without any code of ours.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for
-    /// the area behind a page. On macOS 27 the plain window color matches the
-    /// page color exactly, which would make the card vanish.
-    static let shell = Color(nsColor: .underPageBackgroundColor)
+    /// the area behind a page, tinted by the window's `ChromeTheme`. On macOS 27
+    /// the plain window color matches the page color exactly, which would make
+    /// the card vanish.
+    static var shell: some ShapeStyle { ChromeFrameStyle() }
     /// The content card, and anything standing in for a web page.
     static let content = Color(nsColor: .textBackgroundColor)
+    /// The selected thing in the sidebar, lifted off the frame.
+    static var raised: some ShapeStyle { ChromeRaisedStyle() }
 
     /// Interaction fills, from the system fill hierarchy. The same everywhere, so
     /// a hovered tab, button and tile all look alike.

@@ -4,6 +4,7 @@ struct BrowserView: View {
     static let windowID = "browser"
 
     private let appServices: AppServices
+    @ObservedObject private var settings: BrowserSettingsStore
     @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
     @Environment(\.appearsActive) private var appearsActive
@@ -11,6 +12,7 @@ struct BrowserView: View {
 
     init(appServices: AppServices) {
         self.appServices = appServices
+        self._settings = ObservedObject(wrappedValue: appServices.settingsStore)
         self._tabManager = StateObject(
             wrappedValue: TabManager(
                 settings: appServices.settingsStore,
@@ -42,6 +44,7 @@ struct BrowserView: View {
             }
         }
         .background(ChromePalette.shell)
+        .environment(\.chromeTheme, settings.theme)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
         .onAppear {
