@@ -21,6 +21,7 @@ enum ChromeSymbols {
 
     enum Settings {
         static let general = "gearshape"
+        static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
     }
