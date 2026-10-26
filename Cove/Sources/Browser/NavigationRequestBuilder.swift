@@ -1,25 +1,39 @@
 import Foundation
 
+/// What typed input resolves to: a page to load, or a query for the search engine.
+enum NavigationDestination: Equatable {
+    case url(URL)
+    case search(String)
+}
+
 struct NavigationRequestBuilder {
     func request(for input: String, searchEngine: SearchEngine) -> URLRequest? {
+        let url: URL? = switch destination(for: input) {
+        case .url(let url): url
+        case .search(let query): searchEngine.searchURL(for: query)
+        case nil: nil
+        }
+        return url.map { URLRequest(url: $0) }
+    }
+
+    /// Classifies input the way the address bar does, without choosing an
+    /// engine, so the Command Bar can show the same decision before Return.
+    func destination(for input: String) -> NavigationDestination? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        let url: URL?
         if let directURL = directURL(for: trimmed) {
-            url = directURL
-        } else if looksLikeURL(trimmed) {
-            if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
-                url = URL(string: trimmed)
-            } else {
-                url = URL(string: "https://\(trimmed)")
-            }
-        } else {
-            url = searchEngine.searchURL(for: trimmed)
+            return .url(directURL)
         }
-
-        guard let url else { return nil }
-        return URLRequest(url: url)
+        if looksLikeURL(trimmed) {
+            let withScheme = trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
+                ? trimmed
+                : "https://\(trimmed)"
+            if let url = URL(string: withScheme) {
+                return .url(url)
+            }
+        }
+        return .search(trimmed)
     }
 
     private func directURL(for input: String) -> URL? {
