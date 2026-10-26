@@ -31,7 +31,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
       four windows; the original stayed on the start page. `WindowGroup`
       creates a scene per external event. Route them to the existing window
       (`handlesExternalEvents`) and keep `ExternalURLRouter` as the one path.
-- [ ] **`<input type=file>` does nothing.** No `runOpenPanelWith` in the
+- [x] **`<input type=file>` does nothing.** No `runOpenPanelWith` in the
       `WKUIDelegate` (`TabSession.swift`).
 - [ ] **`alert`, `confirm` and `prompt` are silently dropped.** No JavaScript
       panel delegate methods.

@@ -335,4 +335,16 @@ extension TabSession: WKUIDelegate {
         onOpenInNewTab?(request)
         return nil
     }
+
+    func webView(
+        _ webView: WKWebView,
+        runOpenPanelWith parameters: WKOpenPanelParameters,
+        initiatedByFrame frame: WKFrameInfo
+    ) async -> [URL]? {
+        guard let window = webView.window else { return nil }
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.canChooseDirectories = parameters.allowsDirectories
+        return await panel.beginSheetModal(for: window) == .OK ? panel.urls : nil
+    }
 }
