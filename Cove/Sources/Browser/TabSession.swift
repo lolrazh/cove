@@ -83,6 +83,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         isNewTabPage = false
         loadRequest(request)
         refreshNavigationState()
+        // Typing a destination hands focus to the page, as in Safari, which also
+        // ends editing in the address field so it can show the new URL.
+        webView.window?.makeFirstResponder(webView)
     }
 
     func loadURL(_ input: String) {

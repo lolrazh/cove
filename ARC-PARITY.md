@@ -41,7 +41,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 - [ ] **No HTTP authentication.** No `didReceive challenge` handling, so sites
       behind basic or digest auth can't be opened.
 - [ ] **Tabs are lost on quit.** No session restore.
-- [ ] **The address field stays highlighted after navigation** (visible in
+- [x] **The address field stays highlighted after navigation** (visible in
       every screenshot): the URL is drawn selected when the field isn't being
       edited.
 - [ ] **Web Inspector is unavailable.** `isInspectable` is never set; add
