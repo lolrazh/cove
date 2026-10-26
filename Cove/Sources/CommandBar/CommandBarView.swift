@@ -73,9 +73,13 @@ private struct CommandBarPanel: View {
                 results
             }
         }
-        .background(.thickMaterial, in: .chrome(minimum: ChromeRadius.tile))
-        .compositingGroup()
-        .shadow(color: .black.opacity(0.24), radius: 28, y: 10)
+        // Opaque, like Arc's palette: a material here picks up whatever the
+        // page shows and tints the text you're reading.
+        .background {
+            ConcentricRectangle.chrome(minimum: ChromeRadius.tile)
+                .fill(ChromePalette.raised)
+                .chromeShadow(.panel)
+        }
     }
 
     private var field: some View {
