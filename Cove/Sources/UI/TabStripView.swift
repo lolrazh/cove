@@ -18,7 +18,7 @@ struct TabStripView: View {
     }
 
     private var tabAnimation: Animation? {
-        reduceMotion ? nil : .smooth(duration: 0.18)
+        reduceMotion ? nil : ChromeMotion.tab
     }
 
     var body: some View {
@@ -52,7 +52,7 @@ struct TabStripView: View {
                     canClose: tabManager.tabs.count > 1,
                     width: sharedTabWidth
                 )
-                .transition(.tabSlot)
+                .transition(.tabSlot(.horizontal))
             }
             Button(action: { tabManager.newTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
@@ -77,29 +77,5 @@ struct TabStripView: View {
             Metrics.maxTabWidthRange.upperBound
         )
         return min(max(proposedWidth, Metrics.minTabWidth), maxTabWidth)
-    }
-}
-
-/// Opening a tab grows its slot from nothing, revealing the tab from its leading
-/// edge while its neighbors slide aside. Closing runs the same in reverse.
-private struct TabSlot: ViewModifier {
-    let isCollapsed: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .frame(width: isCollapsed ? 0 : nil, alignment: .leading)
-            // Larger than the slot, so the active tab's flares aren't cut off.
-            .mask {
-                Rectangle()
-                    .padding(.horizontal, -ChromeRadius.flare)
-                    .padding(.bottom, -ChromeMetrics.tabBottomInset)
-            }
-            .opacity(isCollapsed ? 0 : 1)
-    }
-}
-
-private extension AnyTransition {
-    static var tabSlot: AnyTransition {
-        .modifier(active: TabSlot(isCollapsed: true), identity: TabSlot(isCollapsed: false))
     }
 }

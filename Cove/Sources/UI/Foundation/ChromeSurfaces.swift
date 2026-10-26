@@ -23,7 +23,28 @@ private struct ChromeHoverSurface: ViewModifier {
     }
 }
 
+/// Hidden chrome arriving from a window edge: a spring slide, or a crossfade
+/// under Reduce Motion.
+private struct ChromeSlide: ViewModifier {
+    let isShown: Bool
+    let hiddenOffset: CGSize
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .offset(isShown || reduceMotion ? .zero : hiddenOffset)
+            .opacity(isShown || !reduceMotion ? 1 : 0)
+            .allowsHitTesting(isShown)
+            .animation(reduceMotion ? ChromeMotion.fade : ChromeMotion.slide, value: isShown)
+    }
+}
+
 extension View {
+    func chromeSlide(isShown: Bool, from hiddenOffset: CGSize) -> some View {
+        modifier(ChromeSlide(isShown: isShown, hiddenOffset: hiddenOffset))
+    }
+
     func chromeHoverSurface(
         restingFill: Bool = false,
         minimumRadius: CGFloat = ChromeRadius.control

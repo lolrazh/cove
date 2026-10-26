@@ -70,7 +70,6 @@ struct BrowserShellView<Content: View>: View {
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .animation(ChromeMotion.shell, value: tabManager.hideTabs)
-        .animation(ChromeMotion.shell, value: areTabsVisible)
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
         }
@@ -104,8 +103,10 @@ struct BrowserShellView<Content: View>: View {
         tabStrip
             .chromeFloatingSurface(minimumRadius: ChromeRadius.tab)
             .onHover(perform: chromeHover)
-            .offset(y: showsFloatingTopRow ? 0 : -(ChromeMetrics.titlebarHeight + ChromeMetrics.gutter * 4))
-            .allowsHitTesting(showsFloatingTopRow)
+            .chromeSlide(
+                isShown: showsFloatingTopRow,
+                from: CGSize(width: 0, height: -(ChromeMetrics.titlebarHeight + ChromeMetrics.gutter * 4))
+            )
     }
 
     private var tabRowLeadingInset: CGFloat {
@@ -177,8 +178,10 @@ struct BrowserShellView<Content: View>: View {
         .chromeFloatingSurface()
         .padding(ChromeMetrics.gutter)
         .onHover(perform: chromeHover)
-        .offset(x: showsFloatingSidebar ? 0 : -(sidebarWidth + ChromeMetrics.gutter * 4))
-        .allowsHitTesting(showsFloatingSidebar)
+        .chromeSlide(
+            isShown: showsFloatingSidebar,
+            from: CGSize(width: -(sidebarWidth + ChromeMetrics.gutter * 4), height: 0)
+        )
     }
 
     // MARK: - Content Card

@@ -19,8 +19,8 @@ struct SidebarTabView: View {
         tabManager.tabs.map(\.id)
     }
 
-    private var tabReorderAnimation: Animation? {
-        reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
+    private var tabAnimation: Animation? {
+        reduceMotion ? nil : ChromeMotion.tab
     }
 
     var body: some View {
@@ -94,7 +94,7 @@ struct SidebarTabView: View {
             }
             .padding(.horizontal, ChromeMetrics.sidebarInset)
             .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
-            .animation(tabReorderAnimation, value: tabOrder)
+            .animation(tabAnimation, value: tabOrder)
         }
     }
 
@@ -121,6 +121,7 @@ struct SidebarTabView: View {
                     onClose: { tabManager.closeTab(tab.id) },
                     canClose: tabManager.tabs.count > 1
                 )
+                .transition(.tabSlot(.vertical))
             }
         }
     }
