@@ -86,6 +86,17 @@ final class HistoryStore: ObservableObject {
         refreshRecentlyVisited()
     }
 
+    /// Fills in the title of the latest visit to `url`, for pages whose title
+    /// arrives after they finish loading.
+    func updateTitle(_ title: String, forLatestVisitTo url: String) {
+        guard let db else { return }
+        try? db.run(
+            "UPDATE history SET title = ? WHERE id = (SELECT MAX(id) FROM history WHERE url = ?)",
+            params: [title, url]
+        )
+        refreshRecentlyVisited()
+    }
+
     func search(query: String, limit: Int = 50) -> [HistoryEntry] {
         guard let db else { return [] }
         guard settings.saveBrowsingHistory else { return [] }

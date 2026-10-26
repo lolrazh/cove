@@ -36,6 +36,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var webViewCanGoForward = false
     private var hasSyntheticStartPageEntry: Bool
     private var syntheticForwardToWebContent = false
+    /// A page recorded in history before its title was known (example.com sets
+    /// it after `didFinish`). Its visit gets the title when it arrives.
+    private var visitAwaitingTitle: String?
 
     init(
         id: UUID = UUID(),
@@ -171,6 +174,11 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private func handleTitleChange(_ title: String?) {
         guard !isShowingSyntheticStartPage else { return }
         pageTitle = title ?? ""
+
+        if let url = visitAwaitingTitle, url == currentURL, !pageTitle.isEmpty {
+            services.historyStore.updateTitle(pageTitle, forLatestVisitTo: url)
+            visitAwaitingTitle = nil
+        }
     }
 
     private func handleLoadingChange(_ isLoading: Bool) {
@@ -272,6 +280,7 @@ extension TabSession: WKNavigationDelegate {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
         services.historyStore.recordVisit(url: url, title: title)
+        visitAwaitingTitle = title.isEmpty ? url : nil
         faviconFetcher.upgradeFromPage(webView, currentImage: favicon) { [weak self] image in
             self?.favicon = image
         }

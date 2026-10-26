@@ -48,7 +48,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
       Develop › Show Web Inspector.
 - [ ] **Site permissions fall back to WebKit defaults.** Camera, microphone and
       geolocation need explicit, per-site prompts.
-- [ ] **`example.com` pages record an empty title in history.** The title isn't
+- [x] **`example.com` pages record an empty title in history.** The title isn't
       known at `didFinish`; update the visit when the title arrives.
 - [x] **History opens pages in the frontmost browser window** even when
       History was opened from another window.
