@@ -13,6 +13,7 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var homePageURL: String
     @Published private(set) var showsTabsInSidebar: Bool
     @Published private(set) var hideTabs: Bool
+    @Published private(set) var sidebarWidth: Double
     @Published private(set) var contentBlockingEnabled: Bool
     @Published private(set) var saveBrowsingHistory: Bool
     @Published private(set) var showRecentSites: Bool
@@ -29,6 +30,7 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.homePageURL: "https://www.google.com",
             BrowserSettingKeys.showTabsInSidebar: false,
             BrowserSettingKeys.hideTabs: false,
+            BrowserSettingKeys.sidebarWidth: ChromeMetrics.sidebarDefaultWidth,
             BrowserSettingKeys.contentBlockingEnabled: true,
             BrowserSettingKeys.saveBrowsingHistory: true,
             BrowserSettingKeys.showRecentSites: true,
@@ -40,6 +42,7 @@ final class BrowserSettingsStore: ObservableObject {
         self.homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
         self.showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
         self.hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
+        self.sidebarWidth = defaults.double(forKey: BrowserSettingKeys.sidebarWidth)
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
@@ -82,6 +85,7 @@ final class BrowserSettingsStore: ObservableObject {
     func setHomePageURL(_ v: String) { set(\.homePageURL, to: v, key: BrowserSettingKeys.homePageURL) }
     func setShowsTabsInSidebar(_ v: Bool) { set(\.showsTabsInSidebar, to: v, key: BrowserSettingKeys.showTabsInSidebar) }
     func setHideTabs(_ v: Bool) { set(\.hideTabs, to: v, key: BrowserSettingKeys.hideTabs) }
+    func setSidebarWidth(_ v: Double) { set(\.sidebarWidth, to: v, key: BrowserSettingKeys.sidebarWidth) }
     func setContentBlockingEnabled(_ v: Bool) { set(\.contentBlockingEnabled, to: v, key: BrowserSettingKeys.contentBlockingEnabled) }
     func setSaveBrowsingHistory(_ v: Bool) { set(\.saveBrowsingHistory, to: v, key: BrowserSettingKeys.saveBrowsingHistory) }
     func setShowRecentSites(_ v: Bool) { set(\.showRecentSites, to: v, key: BrowserSettingKeys.showRecentSites) }

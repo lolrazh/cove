@@ -13,6 +13,7 @@ import SwiftUI
 ///   sidebar, hidden  the docked sidebar collapses; hovering the left edge floats it over the page
 struct BrowserShellView<Content: View>: View {
     private let appServices: AppServices
+    @ObservedObject private var settings: BrowserSettingsStore
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: TabSession
     @Binding var areTabsVisible: Bool
@@ -31,6 +32,7 @@ struct BrowserShellView<Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.appServices = appServices
+        self._settings = ObservedObject(wrappedValue: appServices.settingsStore)
         self._tabManager = ObservedObject(wrappedValue: tabManager)
         self._activeTab = ObservedObject(wrappedValue: activeTab)
         self._areTabsVisible = areTabsVisible
@@ -119,12 +121,36 @@ struct BrowserShellView<Content: View>: View {
             isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
-        .frame(width: ChromeMetrics.sidebarWidth)
-        .frame(width: showsDockedSidebar ? ChromeMetrics.sidebarWidth : 0, alignment: .trailing)
+        .frame(width: sidebarWidth)
+        .overlay(alignment: .trailing) {
+            resizeHandle
+        }
+        .frame(width: showsDockedSidebar ? sidebarWidth : 0, alignment: .trailing)
         .opacity(showsDockedSidebar ? 1 : 0)
         .clipped()
         .allowsHitTesting(showsDockedSidebar)
         .onHover(perform: chromeHover)
+    }
+
+    private var sidebarWidth: CGFloat {
+        CGFloat(settings.sidebarWidth).clamped(to: ChromeMetrics.sidebarWidthRange)
+    }
+
+    /// Drag the sidebar's trailing edge to resize it. The handle covers the
+    /// gap between the sidebar's rows and the card, so it never sits over
+    /// either.
+    private var resizeHandle: some View {
+        Color.clear
+            .frame(width: ChromeMetrics.sidebarInset)
+            .contentShape(Rectangle())
+            .pointerStyle(.columnResize)
+            .gesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    .onChanged { drag in
+                        let width = drag.location.x + ChromeMetrics.sidebarInset / 2
+                        settings.setSidebarWidth(width.clamped(to: ChromeMetrics.sidebarWidthRange))
+                    }
+            )
     }
 
     /// The sidebar floating over the page while hidden-tabs mode is revealed.
@@ -140,7 +166,7 @@ struct BrowserShellView<Content: View>: View {
             isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
-        .frame(width: ChromeMetrics.sidebarWidth)
+        .frame(width: sidebarWidth)
         .frame(maxHeight: .infinity)
         // Elevation comes from the shadow alone; no outline.
         .background {
@@ -150,7 +176,7 @@ struct BrowserShellView<Content: View>: View {
         }
         .padding(ChromeMetrics.gutter)
         .onHover(perform: chromeHover)
-        .offset(x: showsFloatingSidebar ? 0 : -(ChromeMetrics.sidebarWidth + ChromeMetrics.gutter * 4))
+        .offset(x: showsFloatingSidebar ? 0 : -(sidebarWidth + ChromeMetrics.gutter * 4))
         .allowsHitTesting(showsFloatingSidebar)
     }
 
@@ -277,5 +303,11 @@ struct BrowserShellView<Content: View>: View {
 
     private func toggleDocked() {
         tabManager.setHideTabs(!tabManager.hideTabs)
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

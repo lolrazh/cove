@@ -27,7 +27,10 @@ enum ChromeMetrics {
     /// Space between the zoom button and the first tab.
     static let trafficLightTrailingGap: CGFloat = 10
 
-    static let sidebarWidth: CGFloat = 240
+    /// The sidebar is resized by dragging its trailing edge; the lower bound
+    /// keeps the header's four controls clear of the traffic lights.
+    static let sidebarWidthRange: ClosedRange<CGFloat> = 220...400
+    static let sidebarDefaultWidth: CGFloat = 240
     /// Horizontal inset of the sidebar's rows: the same gap to the page card as
     /// the card keeps from the window.
     static let sidebarInset: CGFloat = cardInset
