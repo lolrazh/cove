@@ -139,7 +139,7 @@ struct SidebarTabView: View {
     /// space button arrives with Spaces.
     private var footer: some View {
         HStack {
-            DownloadsStatusButton(downloadManager: downloadManager)
+            DownloadsStatusButton(downloadManager: downloadManager, popoverEdge: .top)
             Spacer()
         }
         .overlay {
