@@ -160,6 +160,15 @@ private struct PrivacySettingsPane: View {
         )
     }
 
+    private var showSearchSuggestionsBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.showSearchSuggestions },
+            set: { showSearchSuggestions in
+                settingsStore.setShowSearchSuggestions(showSearchSuggestions)
+            }
+        )
+    }
+
     var body: some View {
         Form {
             Section("Privacy") {
@@ -167,6 +176,7 @@ private struct PrivacySettingsPane: View {
                 Toggle("Save browsing history", isOn: saveBrowsingHistoryBinding)
                 Toggle("Show recent sites on the start page", isOn: showRecentSitesBinding)
                     .disabled(!settingsStore.saveBrowsingHistory)
+                Toggle("Show search suggestions in the Command Bar", isOn: showSearchSuggestionsBinding)
             }
 
             Section("History") {

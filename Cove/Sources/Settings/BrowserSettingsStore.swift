@@ -17,6 +17,7 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var contentBlockingEnabled: Bool
     @Published private(set) var saveBrowsingHistory: Bool
     @Published private(set) var showRecentSites: Bool
+    @Published private(set) var showSearchSuggestions: Bool
     @Published private(set) var downloadDestinationMode: DownloadDestinationMode
 
     private let defaults: UserDefaults
@@ -34,6 +35,7 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.contentBlockingEnabled: true,
             BrowserSettingKeys.saveBrowsingHistory: true,
             BrowserSettingKeys.showRecentSites: true,
+            BrowserSettingKeys.showSearchSuggestions: true,
             BrowserSettingKeys.downloadDestinationMode: DownloadDestinationMode.downloadsFolder.rawValue,
         ])
 
@@ -46,6 +48,7 @@ final class BrowserSettingsStore: ObservableObject {
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
+        self.showSearchSuggestions = defaults.bool(forKey: BrowserSettingKeys.showSearchSuggestions)
         self.downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
     }
 
@@ -89,6 +92,7 @@ final class BrowserSettingsStore: ObservableObject {
     func setContentBlockingEnabled(_ v: Bool) { set(\.contentBlockingEnabled, to: v, key: BrowserSettingKeys.contentBlockingEnabled) }
     func setSaveBrowsingHistory(_ v: Bool) { set(\.saveBrowsingHistory, to: v, key: BrowserSettingKeys.saveBrowsingHistory) }
     func setShowRecentSites(_ v: Bool) { set(\.showRecentSites, to: v, key: BrowserSettingKeys.showRecentSites) }
+    func setShowSearchSuggestions(_ v: Bool) { set(\.showSearchSuggestions, to: v, key: BrowserSettingKeys.showSearchSuggestions) }
     func setDownloadDestinationMode(_ v: DownloadDestinationMode) { set(\.downloadDestinationMode, to: v, key: BrowserSettingKeys.downloadDestinationMode) }
 
     // MARK: - Private

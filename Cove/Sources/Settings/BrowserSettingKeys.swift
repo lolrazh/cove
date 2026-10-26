@@ -10,6 +10,7 @@ enum BrowserSettingKeys {
     static let contentBlockingEnabled = "browser.contentBlockingEnabled"
     static let saveBrowsingHistory = "browser.saveBrowsingHistory"
     static let showRecentSites = "browser.showRecentSites"
+    static let showSearchSuggestions = "browser.showSearchSuggestions"
     static let downloadDestinationMode = "browser.downloadDestinationMode"
     static let legacyPreferredTabLayout = "browser.preferredTabLayout"
 }
@@ -42,6 +43,21 @@ enum SearchEngine: String, CaseIterable, Identifiable {
             return URL(string: "https://duckduckgo.com/?q=\(encoded)")
         case .kagi:
             return URL(string: "https://kagi.com/search?q=\(encoded)")
+        }
+    }
+
+    /// The engine's autocomplete endpoint. All three answer in the OpenSearch
+    /// form Firefox uses: `["query", ["completion", …]]`.
+    func suggestionsURL(for query: String) -> URL? {
+        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+
+        switch self {
+        case .google:
+            return URL(string: "https://suggestqueries.google.com/complete/search?client=firefox&q=\(encoded)")
+        case .duckDuckGo:
+            return URL(string: "https://duckduckgo.com/ac/?type=list&q=\(encoded)")
+        case .kagi:
+            return URL(string: "https://kagi.com/api/autosuggest?q=\(encoded)")
         }
     }
 }
