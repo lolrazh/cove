@@ -8,7 +8,7 @@ struct BrowserViewCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button("New Tab") {
-                tabManager?.addTab()
+                tabManager?.newTab()
             }
             .keyboardShortcut("t", modifiers: .command)
             .disabled(tabManager == nil)
@@ -46,7 +46,7 @@ struct BrowserViewCommands: Commands {
 
         CommandMenu("Browser") {
             Button("Open Location") {
-                tabManager?.focusAddressBar()
+                tabManager?.editCurrentURL()
             }
             .keyboardShortcut("l", modifiers: .command)
             .disabled(tabManager == nil)

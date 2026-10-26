@@ -111,7 +111,7 @@ struct SidebarTabView: View {
     private var today: some View {
         VStack(spacing: 2) {
             SidebarNewTabItem {
-                tabManager.addTab()
+                tabManager.newTab()
             }
 
             tabRows(tabManager.tabs.reversed())

@@ -66,6 +66,8 @@ enum ChromeMotion {
     static let hover = Animation.easeOut(duration: 0.12)
     static let press = Animation.easeOut(duration: 0.08)
     static let shell = Animation.smooth(duration: 0.26)
+    /// The Command Bar scaling and fading in. Quick: it answers a keystroke.
+    static let commandBar = Animation.smooth(duration: 0.18)
 }
 
 /// Minimum corner radii, one per component size. Actual radii come from

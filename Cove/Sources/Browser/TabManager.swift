@@ -25,6 +25,15 @@ final class TabManager: ObservableObject {
     private let recentlyClosed: RecentlyClosedTabs
     private var cancellables: Set<AnyCancellable> = []
 
+    /// This window's Command Bar. Lazy only because it needs `self`.
+    private(set) lazy var commandBar = CommandBarModel(
+        tabManager: self,
+        settings: settings,
+        historyStore: services.historyStore,
+        faviconStore: services.faviconStore,
+        recentlyClosed: recentlyClosed
+    )
+
     var activeTab: TabSession? {
         tabs.first { $0.id == activeTabID }
     }
@@ -73,6 +82,21 @@ final class TabManager: ObservableObject {
         guard hideTabs != hide else { return }
         hideTabs = hide
         settings.setHideTabs(hide)
+    }
+
+    /// What ⌘T and the New Tab buttons do: ask where to go first, or open a
+    /// tab holding the start page, as Settings says.
+    func newTab() {
+        if settings.newTabPreference == .commandBar {
+            commandBar.present(.newTab)
+        } else {
+            addTab()
+        }
+    }
+
+    /// ⌘L and the URL pill: the current address, ready to be changed.
+    func editCurrentURL() {
+        commandBar.present(.editURL)
     }
 
     /// Opens a tab at the end of the strip, which is the top of Today. Tabs
@@ -212,10 +236,6 @@ final class TabManager: ObservableObject {
         for tab in closed {
             closeTab(tab.id)
         }
-    }
-
-    func focusAddressBar() {
-        activeTab?.requestAddressFocus()
     }
 
     func goBack() {
