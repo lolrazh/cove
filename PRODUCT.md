@@ -20,7 +20,7 @@ Cove is the browser that should exist: **Dia's skin, Safari's soul, zero bullshi
 
 ## Core Philosophy
 
-1. **A browser browses.** No AI copilots, no summaries, no suggestions, no "smart" anything. The browser renders web pages. That's it.
+1. **A browser browses.** No AI copilots, no chatbots, nothing shoved in your face. Any AI stays quiet and out of the way (see ARC-PARITY.md, end of the roadmap).
 2. **No full-window Liquid Glass.** The primary chrome stays custom-drawn so Cove keeps full design control. We still use native macOS materials selectively when they improve transient surfaces like sidebars, panels, and settings.
 3. **Safari's engine.** WKWebView gives us WebKit — same renderer, same JS engine, same battery efficiency. 2-4x less memory than Chromium.
 4. **Dia's aesthetic.** Super clean and minimal. The chrome disappears, but still feels unmistakably Mac-native. Sites feel like apps. Address bar and nav buttons on top keep the essentials. Professional, not tacky.
@@ -77,7 +77,7 @@ Content/ad blocking is **not** in the MVP — tabled for post-MVP.
 
 ### Anti-Goals
 - No full-window Liquid Glass takeover. The browser should not look like a sheet of glass floating over every page.
-- No AI features. No copilot. No summaries. No suggestions.
+- No chatbots, no copilot panels, no AI in the Command Bar.
 - No tacky design (no Zen, no Brave shields, no crypto).
 - No bloated sidebar with "spaces" or "profiles" in MVP.
 
@@ -198,8 +198,8 @@ The big lift. A compatibility layer that lets Chrome/Firefox extensions run in C
 ## What Cove Is NOT
 
 - Not a Chromium wrapper (no Electron, no CEF, no WebView2 on macOS)
-- Not an "AI browser" — no copilot, no summaries, no suggestions, no LLM anything
-- Not a "productivity browser" — no built-in todos, notes, or calendar
+- Not an "AI browser" — no copilot, no chat; only quiet, background AI, if any
+- Not a "productivity browser" — no todos or calendar (Arc-style Notes, Easels and Capture are on the roadmap)
 - Not a crypto browser — no wallet, no Web3, no tokens
 - Not a social browser — no built-in messaging, no feed reader
 - It's a browser. It browses. Fast, private, beautiful, done.

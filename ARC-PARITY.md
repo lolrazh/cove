@@ -212,9 +212,25 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
 ### 5k. Extensions ⭑
 - [ ] WebExtensions per PRODUCT.md Phase 3. Large; scheduled last.
 
+### 5l. Easels, Notes, Capture ⭑
+Big, self-contained builds; scheduled after the core features.
+- [ ] Capture (⌘⇧2): select a region or element of the page; copy, save, or
+      send it to a Note or an Easel.
+- [ ] Notes: rich-text notes that live in the sidebar like tabs, pinnable.
+- [ ] Easels: a freeform canvas of text, images, drawings and live web
+      clippings (a selected page region that stays live).
+
+### Later: AI that stays out of the way
+At the very end of the roadmap, and only the kind that works quietly in the
+background. The model is undecided (Apple's on-device models are an option but
+weak); pick one before starting.
+- [ ] Link previews: hold Shift over a link for a short summary.
+- [ ] Tidy tab titles: shorten long page titles.
+- [ ] Tidy downloads: rename downloaded files sensibly.
+- [ ] Ask on Page: ask a question about the current page.
+
 ### Not replicated
-These conflict with PRODUCT.md ("a browser browses"): Arc Max (AI),
-Easels, Notes, and the screenshot/Capture tool. Confirm before building them.
+- Chatbots: no ChatGPT in the Command Bar, no chat panels.
 
 ---
 
