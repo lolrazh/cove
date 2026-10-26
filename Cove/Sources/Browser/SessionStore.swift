@@ -15,7 +15,9 @@ struct SavedWindow: Codable {
 }
 
 /// Saves every browser window's tabs shortly after they change, and hands them
-/// back on the next launch, one saved window to each window that opens.
+/// back on the next launch, one saved window to each window that opens. Cove
+/// reopens the windows itself (SwiftUI's window restoration is off for them),
+/// so all of them come back however macOS is set to treat windows on quit.
 @MainActor
 final class SessionStore {
     private struct TrackedWindow {
@@ -25,6 +27,7 @@ final class SessionStore {
 
     private let fileURL: URL
     private var restorableWindows: [SavedWindow]
+    private var didReopenWindows = false
     private var trackedWindows: [TrackedWindow] = []
     private var pendingSave: Task<Void, Never>?
     private var terminationObserver: NSObjectProtocol?
@@ -41,13 +44,25 @@ final class SessionStore {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.save() }
+            MainActor.assumeIsolated {
+                self?.save()
+                // Windows close after this, and the saved session must keep them.
+                self?.trackedWindows.removeAll()
+            }
         }
     }
 
     /// The next window saved last session, if any are left to restore.
     func takeRestorableWindow() -> SavedWindow? {
         restorableWindows.isEmpty ? nil : restorableWindows.removeFirst()
+    }
+
+    /// How many more windows to open for the rest of the saved session: nonzero
+    /// only for the first window to ask, so reopened windows don't reopen more.
+    func takeWindowsToReopen() -> Int {
+        guard !didReopenWindows else { return 0 }
+        didReopenWindows = true
+        return restorableWindows.count
     }
 
     /// Saves the window whenever its tabs, active tab or any tab's page change.

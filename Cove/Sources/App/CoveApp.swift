@@ -20,6 +20,8 @@ struct CoveApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
         .windowBackgroundDragBehavior(.enabled)
+        // `SessionStore` reopens browser windows, with their tabs.
+        .restorationBehavior(.disabled)
         .commands {
             BrowserViewCommands(appServices: appServices)
         }

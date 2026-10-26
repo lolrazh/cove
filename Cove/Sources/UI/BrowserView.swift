@@ -7,6 +7,7 @@ struct BrowserView: View {
     @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
     @Environment(\.appearsActive) private var appearsActive
+    @Environment(\.openWindow) private var openWindow
 
     init(appServices: AppServices) {
         self.appServices = appServices
@@ -40,6 +41,9 @@ struct BrowserView: View {
         .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
+            for _ in 0..<appServices.sessionStore.takeWindowsToReopen() {
+                openWindow(id: Self.windowID)
+            }
         }
         .onDisappear {
             appServices.sessionStore.untrack(tabManager)
