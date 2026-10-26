@@ -45,8 +45,8 @@ struct BrowserShellView<Content: View>: View {
             VStack(spacing: 0) {
                 tabRow
                 contentCard
-                    .padding(.leading, showsDockedSidebar ? 0 : ChromeMetrics.gutter)
-                    .padding([.trailing, .bottom], ChromeMetrics.gutter)
+                    .padding(.leading, showsDockedSidebar ? 0 : ChromeMetrics.cardInset)
+                    .padding([.trailing, .bottom], ChromeMetrics.cardInset)
             }
         }
         .background(ChromePalette.shell)
@@ -73,15 +73,15 @@ struct BrowserShellView<Content: View>: View {
 
     // MARK: - Tabs
 
-    /// Top tabs, beside the traffic lights. Collapses to a gutter in sidebar mode
-    /// and when top tabs are hidden.
+    /// Top tabs, beside the traffic lights. Collapses to the card inset in
+    /// sidebar mode and when top tabs are hidden.
     private var tabRow: some View {
         TabStripView(tabManager: tabManager)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
             .padding(.bottom, ChromeMetrics.tabBottomInset)
             .frame(height: ChromeMetrics.titlebarHeight, alignment: .bottom)
-            .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.gutter, alignment: .bottom)
+            .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.cardInset, alignment: .bottom)
             .opacity(showsTopRow ? 1 : 0)
             .clipped()
             .allowsHitTesting(showsTopRow)
