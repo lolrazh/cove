@@ -104,19 +104,19 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 
 Arc's signature: ⌘T and ⌘L open one floating palette instead of a new-tab page.
 
-- [ ] Centered floating panel over the page, with a large search field and a
+- [x] Centered floating panel over the page, with a large search field and a
       results list. Escape or a click outside dismisses it.
-- [ ] **⌘T** opens it empty; Return opens the result in a new tab.
-- [ ] **⌘L** (and clicking the URL pill) opens it prefilled with the current
+- [x] **⌘T** opens it empty; Return opens the result in a new tab.
+- [x] **⌘L** (and clicking the URL pill) opens it prefilled with the current
       URL, selected; Return navigates the current tab.
-- [ ] Results, ranked and grouped: switch to an open tab, history (FTS5),
+- [x] Results, ranked and grouped: switch to an open tab, history (FTS5),
       search suggestions from the selected engine, a direct URL, and commands
       (e.g. "Copy URL", "Toggle Sidebar", "Reopen Closed Tab", "Settings").
-- [ ] Keyboard: ↑/↓ moves, Return opens, Tab completes the top match,
+- [x] Keyboard: ↑/↓ moves, Return opens, Tab completes the top match,
       ⌘Return opens in a new tab.
-- [ ] Inline autocomplete of the top history match in the field.
-- [ ] Favicons for tabs and history; SF Symbols for commands.
-- [ ] Replaces the start page in sidebar mode; the start page stays an option
+- [x] Inline autocomplete of the top history match in the field.
+- [x] Favicons for tabs and history; SF Symbols for commands.
+- [x] Replaces the start page in sidebar mode; the start page stays an option
       in Settings.
 
 ---

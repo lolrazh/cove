@@ -11,9 +11,6 @@ struct SidebarTabView: View {
     let headerHeight: CGFloat
     /// Where the header's controls start: just past the traffic lights.
     let headerLeadingInset: CGFloat
-    /// Whether this sidebar's address pill is the one Command-L reaches.
-    let acceptsFocusRequests: Bool
-    @Binding var isEditingAddress: Bool
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -51,13 +48,8 @@ struct SidebarTabView: View {
         VStack(spacing: 0) {
             navigationRow
 
-            SidebarAddressPill(
-                session: activeTab,
-                isEditing: $isEditingAddress,
-                acceptsFocusRequests: acceptsFocusRequests
-            )
-            .id(activeTab.id)
-            .padding(.horizontal, ChromeMetrics.sidebarInset)
+            SidebarAddressPill(session: activeTab, onEdit: tabManager.editCurrentURL)
+                .padding(.horizontal, ChromeMetrics.sidebarInset)
         }
     }
 
@@ -111,7 +103,7 @@ struct SidebarTabView: View {
     private var today: some View {
         VStack(spacing: 2) {
             SidebarNewTabItem {
-                tabManager.addTab()
+                tabManager.newTab()
             }
 
             tabRows(tabManager.tabs.reversed())

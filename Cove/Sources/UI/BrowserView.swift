@@ -35,6 +35,9 @@ struct BrowserView: View {
                     ) {
                         activeTabContent(activeTab)
                     }
+                    .overlay {
+                        CommandBarOverlay(model: tabManager.commandBar)
+                    }
                 }
             }
         }

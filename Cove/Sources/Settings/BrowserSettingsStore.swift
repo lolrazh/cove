@@ -17,6 +17,7 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var contentBlockingEnabled: Bool
     @Published private(set) var saveBrowsingHistory: Bool
     @Published private(set) var showRecentSites: Bool
+    @Published private(set) var showSearchSuggestions: Bool
     @Published private(set) var downloadDestinationMode: DownloadDestinationMode
 
     private let defaults: UserDefaults
@@ -26,7 +27,7 @@ final class BrowserSettingsStore: ObservableObject {
 
         defaults.register(defaults: [
             BrowserSettingKeys.searchEngine: SearchEngine.google.rawValue,
-            BrowserSettingKeys.newTabPreference: NewTabPreference.startPage.rawValue,
+            BrowserSettingKeys.newTabPreference: NewTabPreference.commandBar.rawValue,
             BrowserSettingKeys.homePageURL: "https://www.google.com",
             BrowserSettingKeys.showTabsInSidebar: false,
             BrowserSettingKeys.hideTabs: false,
@@ -34,11 +35,12 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.contentBlockingEnabled: true,
             BrowserSettingKeys.saveBrowsingHistory: true,
             BrowserSettingKeys.showRecentSites: true,
+            BrowserSettingKeys.showSearchSuggestions: true,
             BrowserSettingKeys.downloadDestinationMode: DownloadDestinationMode.downloadsFolder.rawValue,
         ])
 
         self.searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
-        self.newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .startPage
+        self.newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .commandBar
         self.homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
         self.showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
         self.hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
@@ -46,6 +48,7 @@ final class BrowserSettingsStore: ObservableObject {
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
+        self.showSearchSuggestions = defaults.bool(forKey: BrowserSettingKeys.showSearchSuggestions)
         self.downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
     }
 
@@ -64,9 +67,12 @@ final class BrowserSettingsStore: ObservableObject {
         return URL(string: "https://\(trimmed)")?.absoluteString
     }
 
+    /// Where a tab that must exist (the first one, a reopened one) starts. The
+    /// Command Bar preference has nothing to show in a tab, so it falls back to
+    /// the start page.
     func destinationForNewTab() -> NewTabDestination {
         switch newTabPreference {
-        case .startPage:
+        case .commandBar, .startPage:
             return .startPage
         case .blankPage:
             return .url("about:blank")
@@ -89,6 +95,7 @@ final class BrowserSettingsStore: ObservableObject {
     func setContentBlockingEnabled(_ v: Bool) { set(\.contentBlockingEnabled, to: v, key: BrowserSettingKeys.contentBlockingEnabled) }
     func setSaveBrowsingHistory(_ v: Bool) { set(\.saveBrowsingHistory, to: v, key: BrowserSettingKeys.saveBrowsingHistory) }
     func setShowRecentSites(_ v: Bool) { set(\.showRecentSites, to: v, key: BrowserSettingKeys.showRecentSites) }
+    func setShowSearchSuggestions(_ v: Bool) { set(\.showSearchSuggestions, to: v, key: BrowserSettingKeys.showSearchSuggestions) }
     func setDownloadDestinationMode(_ v: DownloadDestinationMode) { set(\.downloadDestinationMode, to: v, key: BrowserSettingKeys.downloadDestinationMode) }
 
     // MARK: - Private

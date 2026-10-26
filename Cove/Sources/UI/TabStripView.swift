@@ -54,7 +54,7 @@ struct TabStripView: View {
                 )
                 .transition(.tabSlot)
             }
-            Button(action: { tabManager.addTab() }) {
+            Button(action: { tabManager.newTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
                     .foregroundStyle(.secondary)
             }

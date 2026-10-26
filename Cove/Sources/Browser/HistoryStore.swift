@@ -7,6 +7,15 @@ struct HistoryEntry: Identifiable {
     let visitedAt: Date
 }
 
+/// A distinct page across all its visits, scored for the Command Bar.
+struct HistoryPage: Hashable {
+    let url: String
+    let title: String
+    /// Frecency: every visit counts 1 / (1 + its age in days), so a page seen
+    /// often and recently rises above one seen once long ago.
+    let frecency: Double
+}
+
 @MainActor
 final class HistoryStore: ObservableObject {
     /// The most recent distinct pages, newest first, for the History menu.
@@ -109,14 +118,7 @@ final class HistoryStore: ObservableObject {
                 params: [limit]
             )) ?? []
         } else {
-            // FTS search — sanitize input to avoid FTS5 syntax errors.
-            // Strip special chars, split into tokens, prefix-match each.
-            let sanitized = query.unicodeScalars.filter { c in
-                CharacterSet.alphanumerics.contains(c) || c == " "
-            }
-            let tokens = String(sanitized).split(separator: " ").filter { !$0.isEmpty }
-            guard !tokens.isEmpty else { return [] }
-            let ftsQuery = tokens.map { "\($0)*" }.joined(separator: " ")
+            guard let ftsQuery = Self.ftsQuery(for: query) else { return [] }
             results = (try? db.query(
                 """
                 SELECT h.id, h.url, h.title, h.visited_at
@@ -139,6 +141,33 @@ final class HistoryStore: ObservableObject {
         }
     }
 
+    /// Distinct pages matching the query, best first. Each typed word is
+    /// prefix-matched against the URL and title, so "git" finds GitHub.
+    func pages(matching query: String, limit: Int = 20) -> [HistoryPage] {
+        guard let db, settings.saveBrowsingHistory,
+              let ftsQuery = Self.ftsQuery(for: query) else { return [] }
+
+        // MAX() makes the bare title column come from the latest visit.
+        let rows = (try? db.query(
+            """
+            SELECT url, title, MAX(visited_at) AS last_visit,
+                   SUM(1.0 / (1.0 + (? - visited_at) / 86400.0)) AS frecency
+            FROM history
+            WHERE id IN (SELECT rowid FROM history_fts WHERE history_fts MATCH ?)
+            GROUP BY url
+            ORDER BY frecency DESC
+            LIMIT ?
+            """,
+            params: [Date().timeIntervalSince1970, ftsQuery, limit]
+        )) ?? []
+
+        return rows.compactMap { row in
+            guard let url = row["url"] as? String,
+                  let frecency = row["frecency"] as? Double else { return nil }
+            return HistoryPage(url: url, title: row["title"] as? String ?? "", frecency: frecency)
+        }
+    }
+
     func delete(_ ids: some Collection<Int64>) {
         guard let db else { return }
         for id in ids {
@@ -151,6 +180,16 @@ final class HistoryStore: ObservableObject {
         db?.execute("DELETE FROM history")
         db?.execute("INSERT INTO history_fts(history_fts) VALUES ('rebuild')")
         refreshRecentlyVisited()
+    }
+
+    /// An FTS5 query that prefix-matches each typed word. Words are split the
+    /// way the tokenizer splits them, on anything that isn't a letter or digit,
+    /// so "github.com/swift" finds what "github com swift" would. That also
+    /// keeps FTS5 syntax out of the query.
+    private static func ftsQuery(for query: String) -> String? {
+        let tokens = query.split { !$0.isLetter && !$0.isNumber }
+        guard !tokens.isEmpty else { return nil }
+        return tokens.map { "\($0)*" }.joined(separator: " ")
     }
 
     /// Visits repeat (reloads, back and forth), so keep one entry per page.
