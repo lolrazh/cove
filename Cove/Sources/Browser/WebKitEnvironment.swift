@@ -15,6 +15,10 @@ final class WebKitEnvironment {
         let configuration = WKWebViewConfiguration()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
+        // Inspect Element in the page's context menu. WebKit has no public switch
+        // for it (`isInspectable` only allows remote inspection from Safari), and
+        // no public way to open Web Inspector at all, so there's no Develop menu.
+        configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         contentBlockerManager.attach(to: configuration.userContentController)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -31,6 +35,7 @@ final class WebKitEnvironment {
     private func configure(_ webView: WKWebView) {
         applyBrowserUserAgent(to: webView)
         webView.allowsBackForwardNavigationGestures = true
+        webView.isInspectable = true
     }
 
     private static func makeBrowserUserAgent() -> String {

@@ -44,8 +44,10 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 - [x] **The address field stays highlighted after navigation** (visible in
       every screenshot): the URL is drawn selected when the field isn't being
       edited.
-- [ ] **Web Inspector is unavailable.** `isInspectable` is never set; add
-      Develop › Show Web Inspector.
+- [x] **Web Inspector is unavailable.** `isInspectable` is never set; add
+      Develop › Show Web Inspector. *(Done as Inspect Element in the page's
+      context menu; WebKit has no public API to open the inspector from a
+      menu.)*
 - [ ] **Site permissions fall back to WebKit defaults.** Camera, microphone and
       geolocation need explicit, per-site prompts.
 - [x] **`example.com` pages record an empty title in history.** The title isn't
