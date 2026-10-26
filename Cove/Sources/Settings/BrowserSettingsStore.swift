@@ -27,7 +27,7 @@ final class BrowserSettingsStore: ObservableObject {
 
         defaults.register(defaults: [
             BrowserSettingKeys.searchEngine: SearchEngine.google.rawValue,
-            BrowserSettingKeys.newTabPreference: NewTabPreference.startPage.rawValue,
+            BrowserSettingKeys.newTabPreference: NewTabPreference.commandBar.rawValue,
             BrowserSettingKeys.homePageURL: "https://www.google.com",
             BrowserSettingKeys.showTabsInSidebar: false,
             BrowserSettingKeys.hideTabs: false,
@@ -40,7 +40,7 @@ final class BrowserSettingsStore: ObservableObject {
         ])
 
         self.searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
-        self.newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .startPage
+        self.newTabPreference = NewTabPreference(rawValue: defaults.string(forKey: BrowserSettingKeys.newTabPreference) ?? "") ?? .commandBar
         self.homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
         self.showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
         self.hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
@@ -67,9 +67,12 @@ final class BrowserSettingsStore: ObservableObject {
         return URL(string: "https://\(trimmed)")?.absoluteString
     }
 
+    /// Where a tab that must exist (the first one, a reopened one) starts. The
+    /// Command Bar preference has nothing to show in a tab, so it falls back to
+    /// the start page.
     func destinationForNewTab() -> NewTabDestination {
         switch newTabPreference {
-        case .startPage:
+        case .commandBar, .startPage:
             return .startPage
         case .blankPage:
             return .url("about:blank")

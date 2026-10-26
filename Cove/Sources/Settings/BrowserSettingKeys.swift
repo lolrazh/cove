@@ -63,6 +63,7 @@ enum SearchEngine: String, CaseIterable, Identifiable {
 }
 
 enum NewTabPreference: String, CaseIterable, Identifiable {
+    case commandBar
     case startPage
     case blankPage
     case homePage
@@ -71,6 +72,8 @@ enum NewTabPreference: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
+        case .commandBar:
+            return "Command Bar"
         case .startPage:
             return "Start Page"
         case .blankPage:
