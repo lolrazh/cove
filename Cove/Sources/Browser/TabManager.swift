@@ -146,7 +146,8 @@ final class TabManager: ObservableObject {
             restoring: saved,
             showsStartPage: saved.map { $0.url.isEmpty } ?? showsStartPage,
             settings: settings,
-            services: services
+            services: services,
+            onSelect: { [weak self] in self?.selectTab(tabID) }
         ) { [weak self] request in
             self?.addTab(request: request, nextTo: tabID)
         }
@@ -179,6 +180,7 @@ final class TabManager: ObservableObject {
             }
 
             let closed = tabs.remove(at: index)
+            closed.close()
             recentlyClosed.record(url: closed.currentURL, title: closed.pageTitle)
 
             if let replacementID {

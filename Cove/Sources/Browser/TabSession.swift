@@ -38,6 +38,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
+    private let onSelect: (@MainActor () -> Void)?
+    private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
@@ -57,6 +59,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         settings: BrowserSettingsStore,
         services: TabSessionServices,
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
+        onSelect: (@MainActor () -> Void)? = nil,
         onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
     ) {
         self.id = id
@@ -66,6 +69,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.services = services
         self.requestBuilder = requestBuilder
         self.onOpenInNewTab = onOpenInNewTab
+        self.onSelect = onSelect
         self.faviconFetcher = FaviconFetcher(store: services.faviconStore)
         self.webView = services.webKitEnvironment.makeWebView()
         super.init()
@@ -167,6 +171,17 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func stopLoading() {
         webView.stopLoading()
+    }
+
+    /// The page came on screen, so dialogs waiting for it can show.
+    func pageDidAppear(in window: NSWindow?) {
+        dialogWindowWaiters.forEach { $0.resume(returning: window) }
+        dialogWindowWaiters.removeAll()
+    }
+
+    /// The tab closed: dialogs waiting for it are dismissed, as if cancelled.
+    func close() {
+        pageDidAppear(in: nil)
     }
 
     func requestAddressFocus() {
@@ -391,7 +406,7 @@ extension TabSession: WKNavigationDelegate {
         guard loginMethods.contains(challenge.protectionSpace.authenticationMethod) else {
             return (.performDefaultHandling, nil)
         }
-        guard let window = webView.window,
+        guard let window = await dialogWindow(),
               let credential = await PageDialogs.logIn(to: challenge, in: window) else {
             return (.rejectProtectionSpace, nil)
         }
@@ -427,15 +442,21 @@ extension TabSession: WKUIDelegate {
         return nil
     }
 
-    // A page in a background tab has no window to show a dialog on, so its
-    // dialogs are dismissed, as if cancelled.
+    /// The window to show one of the page's dialogs on. A page in a background
+    /// tab has none, so its tab is selected first, as Safari does for alerts,
+    /// and the dialog waits for the page to come on screen.
+    private func dialogWindow() async -> NSWindow? {
+        if let window = webView.window { return window }
+        onSelect?()
+        return await withCheckedContinuation { dialogWindowWaiters.append($0) }
+    }
 
     func webView(
         _ webView: WKWebView,
         runJavaScriptAlertPanelWithMessage message: String,
         initiatedByFrame frame: WKFrameInfo
     ) async {
-        guard let window = webView.window else { return }
+        guard let window = await dialogWindow() else { return }
         await PageDialogs.alert(message, from: frame, in: window)
     }
 
@@ -444,7 +465,7 @@ extension TabSession: WKUIDelegate {
         runJavaScriptConfirmPanelWithMessage message: String,
         initiatedByFrame frame: WKFrameInfo
     ) async -> Bool {
-        guard let window = webView.window else { return false }
+        guard let window = await dialogWindow() else { return false }
         return await PageDialogs.confirm(message, from: frame, in: window)
     }
 
@@ -454,7 +475,7 @@ extension TabSession: WKUIDelegate {
         defaultText: String?,
         initiatedByFrame frame: WKFrameInfo
     ) async -> String? {
-        guard let window = webView.window else { return nil }
+        guard let window = await dialogWindow() else { return nil }
         return await PageDialogs.prompt(prompt, defaultText: defaultText, from: frame, in: window)
     }
 
@@ -480,7 +501,7 @@ extension TabSession: WKUIDelegate {
         for devices: [SitePermissions.Device],
         origin: WKSecurityOrigin
     ) async -> WKPermissionDecision {
-        guard let window = webView.window else { return .deny }
+        guard let window = await dialogWindow() else { return .deny }
         return await services.sitePermissions.decide(devices, for: origin) {
             await PageDialogs.allow(devices, for: origin, in: window)
         }
@@ -491,7 +512,7 @@ extension TabSession: WKUIDelegate {
         runOpenPanelWith parameters: WKOpenPanelParameters,
         initiatedByFrame frame: WKFrameInfo
     ) async -> [URL]? {
-        guard let window = webView.window else { return nil }
+        guard let window = await dialogWindow() else { return nil }
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = parameters.allowsMultipleSelection
         panel.canChooseDirectories = parameters.allowsDirectories

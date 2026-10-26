@@ -2,14 +2,16 @@ import SwiftUI
 import WebKit
 
 struct WebViewRepresentable: NSViewRepresentable {
-    let webView: WKWebView
+    let tab: TabSession
 
     /// A page that comes on screen (replacing the start page, or on switching
     /// tabs) takes keyboard focus, as in Safari. Otherwise AppKit hands it to the
     /// next key view, the address field, which then shows the URL selected.
     func makeNSView(context: Context) -> WKWebView {
-        DispatchQueue.main.async { [webView] in
+        let webView = tab.webView
+        DispatchQueue.main.async { [tab] in
             webView.window?.makeFirstResponder(webView)
+            tab.pageDidAppear(in: webView.window)
         }
         return webView
     }

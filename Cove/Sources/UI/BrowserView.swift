@@ -105,7 +105,7 @@ struct ActiveTabView: View {
                     tab.navigate(input)
                 }
             } else {
-                WebViewRepresentable(webView: tab.webView)
+                WebViewRepresentable(tab: tab)
                     .overlay {
                         if let failure = tab.loadFailure {
                             LoadFailurePage(failure: failure, onRetry: tab.retry)
