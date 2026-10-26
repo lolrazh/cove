@@ -26,7 +26,8 @@ final class TabManager: ObservableObject {
     init(
         settings: BrowserSettingsStore,
         services: TabSessionServices,
-        recentlyClosed: RecentlyClosedTabs
+        recentlyClosed: RecentlyClosedTabs,
+        session: SessionStore
     ) {
         self.settings = settings
         self.services = services
@@ -34,7 +35,21 @@ final class TabManager: ObservableObject {
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
-        addTab()
+
+        if let saved = session.takeRestorableWindow(), !saved.tabs.isEmpty {
+            tabs = saved.tabs.map { makeTab(restoring: $0) }
+            activeTabID = tabs[min(saved.activeTabIndex, tabs.count - 1)].id
+        } else {
+            addTab()
+        }
+        session.track(self)
+    }
+
+    var savedWindow: SavedWindow {
+        SavedWindow(
+            tabs: tabs.map(\.savedTab),
+            activeTabIndex: tabs.firstIndex { $0.id == activeTabID } ?? 0
+        )
     }
 
     func setLayout(_ layout: TabLayout) {
@@ -111,7 +126,8 @@ final class TabManager: ObservableObject {
     private func makeTab(
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
-        showsStartPage: Bool = false
+        showsStartPage: Bool = false,
+        restoring saved: SavedTab? = nil
     ) -> TabSession {
         let tabID = UUID()
 
@@ -119,7 +135,8 @@ final class TabManager: ObservableObject {
             id: tabID,
             initialURL: initialURL,
             initialRequest: initialRequest,
-            showsStartPage: showsStartPage,
+            restoring: saved,
+            showsStartPage: saved.map { $0.url.isEmpty } ?? showsStartPage,
             settings: settings,
             services: services
         ) { [weak self] request in

@@ -11,6 +11,7 @@ final class AppServices {
     let externalURLRouter: ExternalURLRouter
     let recentlyClosedTabs = RecentlyClosedTabs()
     let sitePermissions = SitePermissions()
+    let sessionStore = SessionStore()
 
     private var didPrepareLaunch = false
 

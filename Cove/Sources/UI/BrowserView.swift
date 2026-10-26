@@ -12,7 +12,8 @@ struct BrowserView: View {
             wrappedValue: TabManager(
                 settings: appServices.settingsStore,
                 services: appServices.tabSessionServices,
-                recentlyClosed: appServices.recentlyClosedTabs
+                recentlyClosed: appServices.recentlyClosedTabs,
+                session: appServices.sessionStore
             )
         )
     }
@@ -37,6 +38,9 @@ struct BrowserView: View {
         .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
+        }
+        .onDisappear {
+            appServices.sessionStore.untrack(tabManager)
         }
         // Tells the router which window was active last, so links from other
         // apps and from History land here only if this is it.

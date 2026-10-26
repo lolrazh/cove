@@ -39,6 +39,7 @@
 		BD53739261197BBC68670588 /* AttachedTabShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */; };
 		C6604A20A5CA841030AC56A9 /* HistoryMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81018FBD0857C80DE7347A16 /* HistoryMenu.swift */; };
 		C70171EF5B56EB050B5F2BC9 /* PageDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D720CDE1DB6C60ED8637664 /* PageDialogs.swift */; };
+		CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37D6F4076AE807F1AD51D7C /* SessionStore.swift */; };
 		CD0A025EF47EBB1B1BC6648A /* BrowserSettingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */; };
 		D519092A4FEACCF45CC054BB /* AddressTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD0B20D4C0FDF9EFFC420F5 /* AddressTextField.swift */; };
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
@@ -91,6 +92,7 @@
 		B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
 		C8A4E68B430D945E3968A4B9 /* TabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabStripView.swift; sourceTree = "<group>"; };
 		CDE393CB38957EFE4E7721D0 /* WebKitEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebKitEnvironment.swift; sourceTree = "<group>"; };
+		D37D6F4076AE807F1AD51D7C /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		D8E34BC62111CB1B5E23952B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E085EBC7AAE7AC011C39A11A /* ChromeTabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTabItem.swift; sourceTree = "<group>"; };
 		E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTokens.swift; sourceTree = "<group>"; };
@@ -162,6 +164,7 @@
 				6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */,
 				2D720CDE1DB6C60ED8637664 /* PageDialogs.swift */,
 				1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */,
+				D37D6F4076AE807F1AD51D7C /* SessionStore.swift */,
 				0C89B867AB04C6932C9E4BA5 /* SitePermissions.swift */,
 				B521F2DECB254B5E3D0FEE1E /* TabManager.swift */,
 				8FE6C74D8892131AED706785 /* TabSession.swift */,
@@ -320,6 +323,7 @@
 				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,
 				C70171EF5B56EB050B5F2BC9 /* PageDialogs.swift in Sources */,
 				211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */,
+				CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */,
 				977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */,
 				7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */,
 				FF9E865C1F37C3C6D2EA8752 /* SitePermissions.swift in Sources */,

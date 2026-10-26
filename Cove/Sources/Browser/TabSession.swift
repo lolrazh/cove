@@ -52,6 +52,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         id: UUID = UUID(),
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
+        restoring saved: SavedTab? = nil,
         showsStartPage: Bool = true,
         settings: BrowserSettingsStore,
         services: TabSessionServices,
@@ -72,10 +73,34 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         configureWebView(webView)
         setupObservers()
         refreshNavigationState()
-        if let initialRequest {
+        if let saved {
+            restore(saved)
+        } else if let initialRequest {
             loadRequest(initialRequest)
         } else if let initialURL {
             loadURL(initialURL)
+        }
+    }
+
+    /// The tab as saved for the next launch. A start page saves no URL.
+    var savedTab: SavedTab {
+        SavedTab(
+            url: isNewTabPage ? "" : currentURL,
+            title: isNewTabPage ? "" : pageTitle,
+            interactionState: isNewTabPage ? nil : webView.interactionState as? Data
+        )
+    }
+
+    /// Brings back a tab from the last session, back/forward list included. The
+    /// saved title shows until the page loads its own.
+    private func restore(_ saved: SavedTab) {
+        guard !isNewTabPage else { return }
+        currentURL = saved.url
+        pageTitle = saved.title
+        if let state = saved.interactionState {
+            webView.interactionState = state
+        } else {
+            loadURL(saved.url)
         }
     }
 
