@@ -14,6 +14,7 @@ struct TabSessionServices {
     let faviconStore: FaviconStore
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
+    let sitePermissions: SitePermissions
 }
 
 @MainActor
@@ -430,6 +431,34 @@ extension TabSession: WKUIDelegate {
     ) async -> String? {
         guard let window = webView.window else { return nil }
         return await PageDialogs.prompt(prompt, defaultText: defaultText, from: frame, in: window)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decideMediaCapturePermissionsFor origin: WKSecurityOrigin,
+        initiatedBy frame: WKFrameInfo,
+        type: WKMediaCaptureType
+    ) async -> WKPermissionDecision {
+        await decidePermission(for: SitePermissions.Device.devices(for: type), origin: origin)
+    }
+
+    @available(macOS 27.0, *)
+    func webView(
+        _ webView: WKWebView,
+        requestGeolocationPermissionFor origin: WKSecurityOrigin,
+        initiatedBy frame: WKFrameInfo
+    ) async -> WKPermissionDecision {
+        await decidePermission(for: [.location], origin: origin)
+    }
+
+    private func decidePermission(
+        for devices: [SitePermissions.Device],
+        origin: WKSecurityOrigin
+    ) async -> WKPermissionDecision {
+        guard let window = webView.window else { return .deny }
+        return await services.sitePermissions.decide(devices, for: origin) {
+            await PageDialogs.allow(devices, for: origin, in: window)
+        }
     }
 
     func webView(

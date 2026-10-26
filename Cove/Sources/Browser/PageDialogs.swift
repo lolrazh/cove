@@ -73,6 +73,27 @@ enum PageDialogs {
         return URLCredential(user: user.stringValue, password: password.stringValue, persistence: .forSession)
     }
 
+    /// Asks whether a site may use the camera, microphone or location.
+    static func allow(
+        _ devices: [SitePermissions.Device],
+        for origin: WKSecurityOrigin,
+        in window: NSWindow
+    ) async -> Bool {
+        let names = devices.map { device in
+            switch device {
+            case .camera: "camera"
+            case .microphone: "microphone"
+            case .location: "location"
+            }
+        }
+        let alert = NSAlert()
+        alert.messageText = "Allow “\(siteName(origin))” to use your \(names.joined(separator: " and "))?"
+        alert.informativeText = "Cove remembers your choice for this site until you quit."
+        alert.addButton(withTitle: "Allow")
+        alert.addButton(withTitle: "Don’t Allow")
+        return await alert.beginSheetModal(for: window) == .alertFirstButtonReturn
+    }
+
     // MARK: - Private
 
     /// Wide enough for a URL or a sentence, like the fields in system alerts.

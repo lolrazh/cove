@@ -10,6 +10,7 @@ final class AppServices {
     let webKitEnvironment: WebKitEnvironment
     let externalURLRouter: ExternalURLRouter
     let recentlyClosedTabs = RecentlyClosedTabs()
+    let sitePermissions = SitePermissions()
 
     private var didPrepareLaunch = false
 
@@ -35,7 +36,8 @@ final class AppServices {
             historyStore: historyStore,
             faviconStore: faviconStore,
             downloadManager: downloadManager,
-            webKitEnvironment: webKitEnvironment
+            webKitEnvironment: webKitEnvironment,
+            sitePermissions: sitePermissions
         )
     }
 
