@@ -29,6 +29,7 @@
 		55232522E25283C1783EA545 /* CoveApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD4F5F1B365705A427FDEC1A /* CoveApp.swift */; };
 		5B8E3220895EF655A6AE359F /* TabSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE6C74D8892131AED706785 /* TabSession.swift */; };
 		6091819DF3AD9F6E6D60D0EC /* CommandBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299C6A48C45930BD9D73E7BA /* CommandBarView.swift */; };
+		69636FCA10E4F18F5AD06236 /* CommandBarRankerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFDB5DFAD2615AAE528B985D /* CommandBarRankerTests.swift */; };
 		745719A6F44F27C9E5FA4316 /* BrowserSettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D6DD540D3F965FE8764184 /* BrowserSettingsStore.swift */; };
 		74AE5294885CABC0F81FCC53 /* LoadFailurePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78CAF27E26781E0DB9D293C4 /* LoadFailurePage.swift */; };
 		7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */; };
@@ -61,6 +62,16 @@
 		F77D7B8FCAA22EA515E6A370 /* FaviconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 408B5E8F7D3EA6B92F2907B6 /* FaviconStore.swift */; };
 		FF9E865C1F37C3C6D2EA8752 /* SitePermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C89B867AB04C6932C9E4BA5 /* SitePermissions.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7CE2E9836FD239A22A76FB9E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 374220EC1ED0A1AF9A44F953 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9B7EC35195B56723DAC648C4;
+			remoteInfo = Cove;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTabView.swift; sourceTree = "<group>"; };
@@ -100,6 +111,7 @@
 		AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 		AB6526AAC426FA4B5DB1CA72 /* easylist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = easylist.json; sourceTree = "<group>"; };
 		AD4F5F1B365705A427FDEC1A /* CoveApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoveApp.swift; sourceTree = "<group>"; };
+		AFDB5DFAD2615AAE528B985D /* CommandBarRankerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarRankerTests.swift; sourceTree = "<group>"; };
 		B095D04F4B8DA18EDE76422C /* DownloadPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadPopover.swift; sourceTree = "<group>"; };
 		B521F2DECB254B5E3D0FEE1E /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
@@ -109,6 +121,7 @@
 		D37D6F4076AE807F1AD51D7C /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
 		D8E34BC62111CB1B5E23952B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		E085EBC7AAE7AC011C39A11A /* ChromeTabItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTabItem.swift; sourceTree = "<group>"; };
+		E23D679B28152A16C36E1ECC /* CoveTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CoveTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTokens.swift; sourceTree = "<group>"; };
 		E550183114525F755B5C3B04 /* NavigationControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationControls.swift; sourceTree = "<group>"; };
 		E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
@@ -209,6 +222,7 @@
 			isa = PBXGroup;
 			children = (
 				E97C600BF67A95C4A3686BC7 /* Cove.app */,
+				E23D679B28152A16C36E1ECC /* CoveTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -229,6 +243,7 @@
 		C9FEA9CC9BB1A551032527B2 = {
 			isa = PBXGroup;
 			children = (
+				ED90BD7ECFEAA86FF89E3B34 /* CoveTests */,
 				DF17EA82E1BC6CE4589429F9 /* Resources */,
 				B0E30CB9248F3BAD525FE7B1 /* Sources */,
 				A5625A0453FA8B7A898B85EA /* Products */,
@@ -244,6 +259,14 @@
 			path = Cove/Resources;
 			sourceTree = "<group>";
 		};
+		ED90BD7ECFEAA86FF89E3B34 /* CoveTests */ = {
+			isa = PBXGroup;
+			children = (
+				AFDB5DFAD2615AAE528B985D /* CommandBarRankerTests.swift */,
+			);
+			path = CoveTests;
+			sourceTree = "<group>";
+		};
 		F10688E9DF097CA71B60F395 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -257,6 +280,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5E28A33C29355BB1B52FA420 /* CoveTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEE57CB6CA90B0259B2164A2 /* Build configuration list for PBXNativeTarget "CoveTests" */;
+			buildPhases = (
+				5336E337517FA0886966269C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8A5649494C845582D64AE563 /* PBXTargetDependency */,
+			);
+			name = CoveTests;
+			packageProductDependencies = (
+			);
+			productName = CoveTests;
+			productReference = E23D679B28152A16C36E1ECC /* CoveTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		9B7EC35195B56723DAC648C4 /* Cove */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A0FB068C382564F68C29FE6E /* Build configuration list for PBXNativeTarget "Cove" */;
@@ -301,6 +342,7 @@
 			projectRoot = "";
 			targets = (
 				9B7EC35195B56723DAC648C4 /* Cove */,
+				5E28A33C29355BB1B52FA420 /* CoveTests */,
 			);
 		};
 /* End PBXProject section */
@@ -317,6 +359,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5336E337517FA0886966269C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69636FCA10E4F18F5AD06236 /* CommandBarRankerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		811E29757053D8867EA4BDF3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -378,7 +428,33 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		8A5649494C845582D64AE563 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9B7EC35195B56723DAC648C4 /* Cove */;
+			targetProxy = 7CE2E9836FD239A22A76FB9E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		18B1EDAB1014C3F3E22D2C32 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cove.browser.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cove.app/Contents/MacOS/Cove";
+			};
+			name = Release;
+		};
 		3EAE4D1625DA9ED775D4D077 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -398,6 +474,24 @@
 				PRODUCT_NAME = Cove;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		4DED28F473D580F78E094351 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cove.browser.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Cove.app/Contents/MacOS/Cove";
 			};
 			name = Debug;
 		};
@@ -559,6 +653,15 @@
 			buildConfigurations = (
 				3EAE4D1625DA9ED775D4D077 /* Debug */,
 				84DBDB43CDE90DA83DDC90D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CEE57CB6CA90B0259B2164A2 /* Build configuration list for PBXNativeTarget "CoveTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4DED28F473D580F78E094351 /* Debug */,
+				18B1EDAB1014C3F3E22D2C32 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
