@@ -75,9 +75,9 @@ final class TabManager: ObservableObject {
         open(tab, nextTo: openerID ?? activeTabID)
     }
 
+    /// Opens a link from outside the window in a new tab, reusing the window's
+    /// only tab if it's still an untouched start page.
     func openExternalURL(_ url: URL) {
-        guard ExternalURLRouter.canOpen(url) else { return }
-
         if tabs.count == 1,
            let activeTab,
            activeTab.isNewTabPage,

@@ -27,7 +27,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 
 ## 1. Bugs
 
-- [ ] **Links from other apps open a new window each.** Opening three URLs gave
+- [x] **Links from other apps open a new window each.** Opening three URLs gave
       four windows; the original stayed on the start page. `WindowGroup`
       creates a scene per external event. Route them to the existing window
       (`handlesExternalEvents`) and keep `ExternalURLRouter` as the one path.
@@ -50,7 +50,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
       geolocation need explicit, per-site prompts.
 - [ ] **`example.com` pages record an empty title in history.** The title isn't
       known at `didFinish`; update the visit when the title arrives.
-- [ ] **History opens pages in the frontmost browser window** even when
+- [x] **History opens pages in the frontmost browser window** even when
       History was opened from another window.
 
 ---

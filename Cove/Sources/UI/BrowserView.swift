@@ -4,6 +4,7 @@ struct BrowserView: View {
     private let appServices: AppServices
     @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
+    @Environment(\.appearsActive) private var appearsActive
 
     init(appServices: AppServices) {
         self.appServices = appServices
@@ -36,7 +37,19 @@ struct BrowserView: View {
         .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
-            consumeQueuedExternalURLs()
+        }
+        // Tells the router which window was active last, so links from other
+        // apps and from History land here only if this is it.
+        .onChange(of: appearsActive, initial: true) { _, active in
+            guard active, let window = NSApp.keyWindow else { return }
+            appServices.externalURLRouter.activate(tabManager, in: window)
+        }
+        // Links from other apps come to an open window instead of each opening
+        // a new one (SwiftUI opens one only if none exists), then go through
+        // the router like everything else.
+        .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
+        .onOpenURL { url in
+            appServices.externalURLRouter.open([url])
         }
         .onChange(of: tabManager.hideTabs) { _, hide in
             withAnimation(ChromeMotion.shell) {
@@ -47,16 +60,6 @@ struct BrowserView: View {
             withAnimation(ChromeMotion.shell) {
                 areTabsVisible = !tabManager.hideTabs
             }
-        }
-        .onOpenURL { url in
-            appServices.externalURLRouter.enqueue([url])
-        }
-        // @Published emits before the new value is stored, so draining the
-        // queue right away would find it still empty. Receiving on the main
-        // queue runs the drain once the append has landed.
-        .onReceive(appServices.externalURLRouter.$queuedURLs.receive(on: DispatchQueue.main)) { queuedURLs in
-            guard !queuedURLs.isEmpty else { return }
-            consumeQueuedExternalURLs()
         }
     }
 
@@ -69,12 +72,6 @@ struct BrowserView: View {
             .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { $0.animation = nil }
-    }
-
-    private func consumeQueuedExternalURLs() {
-        appServices.externalURLRouter.consume { url in
-            tabManager.openExternalURL(url)
-        }
     }
 }
 

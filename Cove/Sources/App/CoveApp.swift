@@ -9,7 +9,6 @@ struct CoveApp: App {
     init() {
         let appServices = AppServices()
         self.appServices = appServices
-        appDelegate.externalURLRouter = appServices.externalURLRouter
         appServices.prepareForLaunch()
     }
 
@@ -33,6 +32,7 @@ struct CoveApp: App {
             )
         }
         .defaultSize(width: 760, height: 560)
+        .handlesExternalEvents(matching: [])
 
         Settings {
             SettingsView(
@@ -42,11 +42,10 @@ struct CoveApp: App {
         }
     }
 
-    /// Loads a page from another window (like History) in the frontmost
-    /// browser window, and brings that window forward.
+    /// Loads a page from another window (like History) in the browser window
+    /// that was active last.
     private func openInBrowser(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
-        appServices.externalURLRouter.enqueue([url])
-        NSApp.frontmostBrowserWindow?.makeKeyAndOrderFront(nil)
+        appServices.externalURLRouter.open([url])
     }
 }

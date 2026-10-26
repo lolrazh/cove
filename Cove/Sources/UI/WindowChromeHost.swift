@@ -33,15 +33,8 @@ struct WindowChromeHost<Content: View>: View {
 }
 
 extension NSToolbar.Identifier {
-    /// Every browser window carries this toolbar, which is how other windows
-    /// (like History) find one.
+    /// The empty toolbar every browser window carries.
     static let browserWindow = NSToolbar.Identifier("CoveWindowToolbar")
-}
-
-extension NSApplication {
-    var frontmostBrowserWindow: NSWindow? {
-        orderedWindows.first { $0.toolbar?.identifier == .browserWindow }
-    }
 }
 
 extension EnvironmentValues {
