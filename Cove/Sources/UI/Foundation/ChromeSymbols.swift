@@ -8,6 +8,7 @@ enum ChromeSymbols {
         static let history = "clock"
         static let search = "magnifyingglass"
         static let globe = "globe"
+        static let loadFailed = "exclamationmark.triangle"
     }
 
     enum Tabs {

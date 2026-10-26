@@ -3,6 +3,12 @@ import Combine
 import AppKit
 import WebKit
 
+/// A page that couldn't be loaded, shown as an error page in its place.
+struct LoadFailure: Equatable {
+    let url: URL?
+    let message: String
+}
+
 struct TabSessionServices {
     let historyStore: HistoryStore
     let faviconStore: FaviconStore
@@ -22,6 +28,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var isLoading: Bool = false
     @Published var estimatedProgress: Double = 0
     @Published var favicon: NSImage?
+    @Published private(set) var loadFailure: LoadFailure?
     @Published private(set) var addressFocusRequest: Int = 0
 
     private(set) var webView: WKWebView
@@ -126,6 +133,12 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         webView.reload()
     }
 
+    /// Tries the failed page again; it may never have become `webView.url`.
+    func retry() {
+        guard let url = loadFailure?.url else { return reload() }
+        loadRequest(URLRequest(url: url))
+    }
+
     func stopLoading() {
         webView.stopLoading()
     }
@@ -166,7 +179,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     private func handleURLChange(_ url: URL?) {
-        guard !isShowingSyntheticStartPage else { return }
+        // After a failed load the web view returns to its last page, but the
+        // address bar keeps showing the page that failed, as in Safari.
+        guard !isShowingSyntheticStartPage, loadFailure == nil else { return }
         currentURL = url?.absoluteString ?? ""
         updateFavicon(for: url)
     }
@@ -218,6 +233,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         pageTitle = ""
         isLoading = false
         estimatedProgress = 0
+        loadFailure = nil
         faviconFetcher.reset()
         favicon = nil
         setupObservers()
@@ -274,6 +290,17 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        loadFailure = nil
+        // URL changes were ignored while the failure showed.
+        handleURLChange(webView.url)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        showFailure(error)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -287,6 +314,23 @@ extension TabSession: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        showFailure(error)
+    }
+
+    /// Cancellations aren't failures: another navigation replaced this one, or
+    /// the response became a download, which WebKit reports as its "frame load
+    /// interrupted" error (the constant for it is deprecated).
+    private func showFailure(_ error: Error) {
+        let error = error as NSError
+        let isCancellation = (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled)
+            || (error.domain == "WebKitErrorDomain" && error.code == 102)
+        guard !isCancellation else { return }
+
+        let url = error.userInfo[NSURLErrorFailingURLErrorKey] as? URL
+        loadFailure = LoadFailure(url: url, message: error.localizedDescription)
+        if let url {
+            currentURL = url.absoluteString
+        }
     }
 
     func webView(

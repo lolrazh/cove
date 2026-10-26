@@ -96,6 +96,11 @@ struct ActiveTabView: View {
                 }
             } else {
                 WebViewRepresentable(webView: tab.webView)
+                    .overlay {
+                        if let failure = tab.loadFailure {
+                            LoadFailurePage(failure: failure, onRetry: tab.retry)
+                        }
+                    }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

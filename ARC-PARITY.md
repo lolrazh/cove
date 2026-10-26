@@ -35,7 +35,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
       `WKUIDelegate` (`TabSession.swift`).
 - [x] **`alert`, `confirm` and `prompt` are silently dropped.** No JavaScript
       panel delegate methods.
-- [ ] **Failed loads show a blank page.** `didFail` and
+- [x] **Failed loads show a blank page.** `didFail` and
       `didFailProvisionalNavigation` are empty. Show an error page with Retry,
       and ignore cancellations (`NSURLErrorCancelled`, frame-load-interrupted).
 - [x] **No HTTP authentication.** No `didReceive challenge` handling, so sites
