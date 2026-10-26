@@ -42,13 +42,14 @@ final class TabManager: ObservableObject {
         self.hideTabs = settings.hideTabs
         bindSettings()
 
-        if let saved = session.takeRestorableWindow(), !saved.tabs.isEmpty {
+        let saved = session.takeRestorableWindow()
+        if let saved, !saved.tabs.isEmpty {
             tabs = saved.tabs.map { makeTab(restoring: $0) }
             activeTabID = tabs[min(saved.activeTabIndex, tabs.count - 1)].id
         } else {
             addTab()
         }
-        session.track(self)
+        session.track(self, placement: saved?.placement)
     }
 
     var savedWindow: SavedWindow {

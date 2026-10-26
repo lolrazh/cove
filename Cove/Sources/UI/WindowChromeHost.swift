@@ -9,12 +9,19 @@ import AppKit
 /// titlebar layout, which re-places them on resize, activation and full screen.
 struct WindowChromeHost<Content: View>: View {
     let showsTrafficLights: Bool
+    /// Called once the content is in its window.
+    let onAttach: (NSWindow) -> Void
     let content: Content
 
     @State private var trafficLightInset: CGFloat = 0
 
-    init(showsTrafficLights: Bool, @ViewBuilder content: () -> Content) {
+    init(
+        showsTrafficLights: Bool,
+        onAttach: @escaping (NSWindow) -> Void,
+        @ViewBuilder content: () -> Content
+    ) {
         self.showsTrafficLights = showsTrafficLights
+        self.onAttach = onAttach
         self.content = content()
     }
 
@@ -25,7 +32,8 @@ struct WindowChromeHost<Content: View>: View {
             .background {
                 WindowChromeAccessor(
                     showsTrafficLights: showsTrafficLights,
-                    trafficLightInset: $trafficLightInset
+                    trafficLightInset: $trafficLightInset,
+                    onAttach: onAttach
                 )
                 .allowsHitTesting(false)
             }
@@ -46,6 +54,7 @@ extension EnvironmentValues {
 private struct WindowChromeAccessor: NSViewRepresentable {
     let showsTrafficLights: Bool
     @Binding var trafficLightInset: CGFloat
+    let onAttach: (NSWindow) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -53,8 +62,11 @@ private struct WindowChromeAccessor: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WindowTrackingView {
         let view = WindowTrackingView()
-        view.onWindowChange = { [coordinator = context.coordinator] window in
+        view.onWindowChange = { [coordinator = context.coordinator, onAttach] window in
             coordinator.attach(to: window)
+            if let window {
+                onAttach(window)
+            }
         }
         return view
     }

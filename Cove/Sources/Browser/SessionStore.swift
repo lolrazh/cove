@@ -12,6 +12,35 @@ struct SavedTab: Codable {
 struct SavedWindow: Codable {
     let tabs: [SavedTab]
     let activeTabIndex: Int
+    var placement: WindowPlacement?
+}
+
+/// Where a window was on screen. The frame is the window's size outside full
+/// screen, so leaving full screen after a restore returns to it.
+struct WindowPlacement: Codable {
+    let frame: CGRect
+    let isFullScreen: Bool
+
+    /// Puts the window back, fully on a connected screen. A window whose display
+    /// is gone is centered on the primary screen.
+    @MainActor
+    func restore(_ window: NSWindow) {
+        var frame = frame
+        let screen = NSScreen.screens.first { $0.visibleFrame.intersects(frame) }
+        if let visible = (screen ?? NSScreen.screens.first)?.visibleFrame {
+            frame.size.width = min(frame.width, visible.width)
+            frame.size.height = min(frame.height, visible.height)
+            if screen == nil {
+                frame.origin = CGPoint(x: visible.midX - frame.width / 2, y: visible.midY - frame.height / 2)
+            }
+            frame.origin.x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+            frame.origin.y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+        }
+        window.setFrame(frame, display: true)
+        if isFullScreen {
+            window.toggleFullScreen(nil)
+        }
+    }
 }
 
 /// Saves every browser window's tabs shortly after they change, and hands them
@@ -22,6 +51,10 @@ struct SavedWindow: Codable {
 final class SessionStore {
     private struct TrackedWindow {
         weak var tabManager: TabManager?
+        weak var window: NSWindow?
+        /// Where the window was, as restored or last saved: it holds the frame
+        /// outside full screen while the window is in full screen.
+        var placement: WindowPlacement?
         let changes: AnyCancellable
     }
 
@@ -66,13 +99,26 @@ final class SessionStore {
     }
 
     /// Saves the window whenever its tabs, active tab or any tab's page change.
-    func track(_ tabManager: TabManager) {
+    /// A restored window's placement applies once its window is known.
+    func track(_ tabManager: TabManager, placement: WindowPlacement?) {
         let tabsChanged = tabManager.$tabs
             .map { tabs in Publishers.MergeMany(tabs.map { $0.$currentURL.map { _ in } }) }
             .switchToLatest()
         let changes = Publishers.Merge(tabsChanged, tabManager.$activeTabID.map { _ in })
             .sink { [weak self] in self?.scheduleSave() }
-        trackedWindows.append(TrackedWindow(tabManager: tabManager, changes: changes))
+        trackedWindows.append(TrackedWindow(tabManager: tabManager, placement: placement, changes: changes))
+    }
+
+    /// Learns the window showing these tabs, and puts it back where it was.
+    func attach(_ window: NSWindow, to tabManager: TabManager) {
+        guard let index = trackedWindows.firstIndex(where: { $0.tabManager === tabManager }),
+              trackedWindows[index].window == nil else { return }
+        trackedWindows[index].window = window
+        // SwiftUI places a new window after it's attached; this runs after that.
+        guard let placement = trackedWindows[index].placement else { return }
+        DispatchQueue.main.async {
+            placement.restore(window)
+        }
     }
 
     /// A closed window's tabs are forgotten, except the last window's: closing
@@ -93,9 +139,22 @@ final class SessionStore {
         }
     }
 
+    /// Full screen fills the screen, so the frame from before it is kept.
+    private func recordPlacement(at index: Int) {
+        guard let window = trackedWindows[index].window else { return }
+        let isFullScreen = window.styleMask.contains(.fullScreen)
+        let frame = isFullScreen ? trackedWindows[index].placement?.frame : window.frame
+        trackedWindows[index].placement = frame.map { WindowPlacement(frame: $0, isFullScreen: isFullScreen) }
+    }
+
     private func save() {
         pendingSave?.cancel()
-        let windows = trackedWindows.compactMap { $0.tabManager?.savedWindow }
+        let windows = trackedWindows.indices.compactMap { index -> SavedWindow? in
+            recordPlacement(at: index)
+            guard var saved = trackedWindows[index].tabManager?.savedWindow else { return nil }
+            saved.placement = trackedWindows[index].placement
+            return saved
+        }
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         guard let data = try? encoder.encode(windows) else { return }

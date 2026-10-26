@@ -24,7 +24,9 @@ struct BrowserView: View {
     var body: some View {
         Group {
             if let activeTab = tabManager.activeTab {
-                WindowChromeHost(showsTrafficLights: stripVisible) {
+                WindowChromeHost(showsTrafficLights: stripVisible) { window in
+                    appServices.sessionStore.attach(window, to: tabManager)
+                } content: {
                     BrowserShellView(
                         appServices: appServices,
                         tabManager: tabManager,
