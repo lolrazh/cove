@@ -139,9 +139,9 @@ final class CommandBarModel: ObservableObject {
             tabManager.reopenClosedTab()
         case .settings:
             NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        case .showHistory:
-            // Opening a SwiftUI window needs the view's environment; the view
-            // handles this one before calling `open`.
+        case .newWindow, .showHistory:
+            // Opening a SwiftUI window scene needs the view's environment; the
+            // view handles these before calling `open`.
             break
         }
     }
@@ -157,7 +157,7 @@ final class CommandBarModel: ObservableObject {
             case .hideTabs: !tabManager.hideTabs
             case .showTabs: tabManager.hideTabs
             case .reopenClosedTab: !recentlyClosed.entries.isEmpty
-            case .showHistory, .settings: true
+            case .newWindow, .showHistory, .settings: true
             }
         }
     }

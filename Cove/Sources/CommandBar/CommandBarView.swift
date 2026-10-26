@@ -39,9 +39,13 @@ struct CommandBarOverlay: View {
         reduceMotion ? .opacity : .scale(scale: 0.96, anchor: .top).combined(with: .opacity)
     }
 
+    /// Window scenes can only be opened from a view's environment, so those
+    /// two commands run here; the model does the rest.
     private func open(_ result: CommandBarResult, inNewTab: Bool) {
-        if case .command(.showHistory) = result.kind {
-            openWindow(id: HistoryWindow.windowID)
+        switch result.kind {
+        case .command(.newWindow): openWindow(id: BrowserView.windowID)
+        case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
+        default: break
         }
         model.open(result, inNewTab: inNewTab)
     }
