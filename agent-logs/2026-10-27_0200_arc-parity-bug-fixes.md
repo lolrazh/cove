@@ -93,3 +93,18 @@ The coordinator asked for four follow-ups. These commits come after the `arc-lay
   - ⚠️ **Edge case:** a tab whose page is hidden behind its own start page (after going Back to it) won't show the page on selection, so the dialog waits until the user goes forward or closes the tab.
 - ✅ **History window no longer reopens on launch** (`c44b32d`): `.restorationBehavior(.disabled)` on its `Window`.
   - Side effect: browser windows reopen at default, cascaded positions rather than where they were. Saving frames in `SavedWindow` would fix that if wanted.
+
+## Follow-up: window frames (`ae20656`)
+Turning off SwiftUI's window restoration (`32c746b`) also dropped window positions, so `SessionStore` now saves them.
+
+- **What's saved:** each `SavedWindow` has an optional `WindowPlacement`: the frame outside full screen, and whether the window was in full screen.
+  - `WindowChromeHost` takes an `onAttach` callback (from its existing window tracking view). `BrowserView` uses it to hand the window to `SessionStore.attach(_:to:)`.
+  - While a window is in full screen, saves keep its last frame outside full screen, so leaving full screen after a relaunch returns to it.
+- **Restore** runs on the next main-loop turn after attach. SwiftUI places a new window after it's attached, and applying the frame synchronously was overridden: the sizes stuck, but the windows were cascaded.
+  - The frame is shrunk to fit and moved fully onto the screen it overlaps.
+  - If no screen overlaps (a disconnected display), it's centered on the primary screen (`NSScreen.screens.first`). `NSScreen.main` follows the key window, which put it on the external display.
+- **Verified:**
+  - Three windows at distinct positions and sizes, ⌘Q, relaunch: all came back exactly where they were.
+  - A frame edited in the plist to (9000, 9000): the window came back centered on the primary screen.
+  - A window in full screen, ⌘Q, relaunch: back in full screen, and leaving full screen returned it to its earlier frame.
+- ⚠️ **Testing caveat:** every Cove build shares one sandbox container, so other agents' running instances (here, the command-bar build) write the same `session.plist`, and one overwrote a test session mid-run. Quit and relaunch back to back when testing restore. My test session file was deleted at the end, so the user's next launch doesn't bring back test tabs.
