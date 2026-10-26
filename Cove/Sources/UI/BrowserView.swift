@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct BrowserView: View {
+    static let windowID = "browser"
+
     private let appServices: AppServices
     @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true

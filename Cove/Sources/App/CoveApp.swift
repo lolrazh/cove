@@ -13,7 +13,7 @@ struct CoveApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: BrowserView.windowID) {
             BrowserView(appServices: appServices)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }

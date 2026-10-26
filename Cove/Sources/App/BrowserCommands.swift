@@ -12,6 +12,11 @@ struct BrowserViewCommands: Commands {
             }
             .keyboardShortcut("t", modifiers: .command)
             .disabled(tabManager == nil)
+
+            Button("New Window") {
+                openWindow(id: BrowserView.windowID)
+            }
+            .keyboardShortcut("n", modifiers: .command)
         }
 
         // Replaces File > Close, which also claimed Command-W and, coming
