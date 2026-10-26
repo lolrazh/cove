@@ -33,7 +33,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
       (`handlesExternalEvents`) and keep `ExternalURLRouter` as the one path.
 - [x] **`<input type=file>` does nothing.** No `runOpenPanelWith` in the
       `WKUIDelegate` (`TabSession.swift`).
-- [ ] **`alert`, `confirm` and `prompt` are silently dropped.** No JavaScript
+- [x] **`alert`, `confirm` and `prompt` are silently dropped.** No JavaScript
       panel delegate methods.
 - [ ] **Failed loads show a blank page.** `didFail` and
       `didFailProvisionalNavigation` are empty. Show an error page with Retry,

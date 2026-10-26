@@ -336,6 +336,37 @@ extension TabSession: WKUIDelegate {
         return nil
     }
 
+    // A page in a background tab has no window to show a dialog on, so its
+    // dialogs are dismissed, as if cancelled.
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptAlertPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo
+    ) async {
+        guard let window = webView.window else { return }
+        await PageDialogs.alert(message, from: frame, in: window)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptConfirmPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo
+    ) async -> Bool {
+        guard let window = webView.window else { return false }
+        return await PageDialogs.confirm(message, from: frame, in: window)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptTextInputPanelWithPrompt prompt: String,
+        defaultText: String?,
+        initiatedByFrame frame: WKFrameInfo
+    ) async -> String? {
+        guard let window = webView.window else { return nil }
+        return await PageDialogs.prompt(prompt, defaultText: defaultText, from: frame, in: window)
+    }
+
     func webView(
         _ webView: WKWebView,
         runOpenPanelWith parameters: WKOpenPanelParameters,
