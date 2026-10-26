@@ -2,11 +2,15 @@ import SwiftUI
 
 struct DownloadsStatusButton: View {
     @ObservedObject private var downloadManager: DownloadManager
+    /// Which side the popover opens on: below the navigation bar, above the
+    /// sidebar footer.
+    private let popoverEdge: Edge
     @State private var showDownloads = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(downloadManager: DownloadManager) {
+    init(downloadManager: DownloadManager, popoverEdge: Edge = .bottom) {
         self._downloadManager = ObservedObject(wrappedValue: downloadManager)
+        self.popoverEdge = popoverEdge
     }
 
     var body: some View {
@@ -37,7 +41,7 @@ struct DownloadsStatusButton: View {
             )
         }
         .buttonStyle(ChromeButtonStyle())
-        .popover(isPresented: $showDownloads, arrowEdge: .bottom) {
+        .popover(isPresented: $showDownloads, arrowEdge: popoverEdge) {
             DownloadPopover(manager: downloadManager)
         }
     }

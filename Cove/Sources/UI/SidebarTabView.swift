@@ -1,10 +1,19 @@
 import SwiftUI
 
+/// Arc's sidebar: a header with the window controls and navigation, the URL
+/// pill, then Favorites, Pinned, a Clear line, and Today, with a footer.
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
+    @ObservedObject var activeTab: TabSession
+    let downloadManager: DownloadManager
     /// Height of the row that holds the traffic lights. Set so the row's center
     /// lands on the traffic lights' centerline wherever the sidebar is placed.
     let headerHeight: CGFloat
+    /// Where the header's controls start: just past the traffic lights.
+    let headerLeadingInset: CGFloat
+    /// Whether this sidebar's address pill is the one Command-L reaches.
+    let acceptsFocusRequests: Bool
+    @Binding var isEditingAddress: Bool
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -17,58 +26,199 @@ struct SidebarTabView: View {
         reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
     }
 
+    var body: some View {
+        VStack(spacing: 0) {
+            sections
+            footer
+        }
+    }
+
+    // MARK: - Header
+
     /// The header floats over the top of the scroll view instead of sitting in a
     /// row above it. macOS extends a scroll view up under the titlebar, and a row
     /// above it would sit behind that extension and never get clicks.
-    var body: some View {
-        tabList
-            .contentMargins(.top, headerHeight, for: .scrollContent)
+    private var sections: some View {
+        sectionList
+            .contentMargins(.top, headerHeight + ChromeMetrics.sidebarRowHeight, for: .scrollContent)
             .scrollEdgeEffectHidden(true, for: .top)
             .overlay(alignment: .top) {
                 header
             }
     }
 
-    /// The traffic lights sit on the leading side of this row; it only draws the
-    /// dock toggle on the trailing side.
     private var header: some View {
-        HStack {
-            Spacer()
+        VStack(spacing: 0) {
+            navigationRow
 
+            SidebarAddressPill(
+                session: activeTab,
+                isEditing: $isEditingAddress,
+                acceptsFocusRequests: acceptsFocusRequests
+            )
+            .id(activeTab.id)
+            .padding(.horizontal, ChromeMetrics.sidebarInset)
+        }
+    }
+
+    /// Arc's header row: traffic lights, the dock toggle, then navigation.
+    private var navigationRow: some View {
+        HStack(spacing: 4) {
             Button(action: onToggleDocked) {
                 Image(systemName: ChromeSymbols.Tabs.sidebarLayout)
-                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(ChromeButtonStyle(size: .titlebar))
+            .buttonStyle(ChromeButtonStyle())
             .help(tabManager.hideTabs ? "Keep sidebar open" : "Hide sidebar")
+
+            NavigationControls(session: activeTab)
+
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, ChromeMetrics.gutter)
+        .padding(.leading, headerLeadingInset)
+        .padding(.trailing, ChromeMetrics.sidebarInset)
         .frame(height: headerHeight)
     }
 
-    private var tabList: some View {
+    // MARK: - Sections
+
+    private var sectionList: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 2) {
-                ForEach(tabManager.tabs) { tab in
-                    ChromeTabItem(
-                        tab: tab,
-                        presentation: .sidebar,
-                        isActive: tab.id == tabManager.activeTabID,
-                        onSelect: { tabManager.selectTab(tab.id) },
-                        onClose: { tabManager.closeTab(tab.id) },
-                        canClose: tabManager.tabs.count > 1
-                    )
+            VStack(spacing: ChromeMetrics.sidebarSectionSpacing) {
+                if !tabManager.favorites.isEmpty {
+                    SidebarFavoritesGrid(tabs: tabManager.favorites, activeTabID: tabManager.activeTabID) {
+                        tabManager.selectTab($0)
+                    }
                 }
 
-                SidebarNewTabItem {
-                    tabManager.addTab()
+                if !tabManager.pinned.isEmpty {
+                    tabRows(tabManager.pinned)
                 }
+
+                SidebarClearLine {
+                    tabManager.clearTodayTabs()
+                }
+
+                today
             }
             .padding(.horizontal, ChromeMetrics.sidebarInset)
-            .padding(.top, ChromeMetrics.gutter)
-            .padding(.bottom, ChromeMetrics.sidebarInset)
+            .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
             .animation(tabReorderAnimation, value: tabOrder)
         }
+    }
+
+    /// New Tab on top, then today's tabs newest first, so a new tab appears
+    /// right under the row that made it.
+    private var today: some View {
+        VStack(spacing: 2) {
+            SidebarNewTabItem {
+                tabManager.addTab()
+            }
+
+            tabRows(tabManager.tabs.reversed())
+        }
+    }
+
+    private func tabRows(_ tabs: [TabSession]) -> some View {
+        VStack(spacing: 2) {
+            ForEach(tabs) { tab in
+                ChromeTabItem(
+                    tab: tab,
+                    presentation: .sidebar,
+                    isActive: tab.id == tabManager.activeTabID,
+                    onSelect: { tabManager.selectTab(tab.id) },
+                    onClose: { tabManager.closeTab(tab.id) },
+                    canClose: tabManager.tabs.count > 1
+                )
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    /// Library (downloads for now) leading, the space dots centered. The new
+    /// space button arrives with Spaces.
+    private var footer: some View {
+        HStack {
+            DownloadsStatusButton(downloadManager: downloadManager, popoverEdge: .top)
+            Spacer()
+        }
+        .overlay {
+            Circle()
+                .fill(.secondary)
+                .frame(width: 6, height: 6)
+                .help("Space")
+        }
+        .padding(.horizontal, ChromeMetrics.sidebarInset)
+        .frame(height: ChromeMetrics.sidebarFooterHeight)
+    }
+}
+
+/// Arc's Favorites: a grid of large tiles showing only the favicon.
+private struct SidebarFavoritesGrid: View {
+    let tabs: [TabSession]
+    let activeTabID: UUID?
+    let onSelect: (UUID) -> Void
+
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 8) {
+            ForEach(tabs) { tab in
+                SidebarFavoriteTile(tab: tab, isActive: tab.id == activeTabID) {
+                    onSelect(tab.id)
+                }
+            }
+        }
+    }
+}
+
+private struct SidebarFavoriteTile: View {
+    @ObservedObject var tab: TabSession
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        FaviconView(image: tab.favicon, size: 20)
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .background {
+                if isActive {
+                    ConcentricRectangle.chrome(minimum: ChromeRadius.tile)
+                        .fill(ChromePalette.content)
+                        .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                }
+            }
+            .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)
+            .help(tab.pageTitle)
+            .onTapGesture(perform: action)
+    }
+}
+
+/// The line between Pinned and Today. Hovering it offers Clear, which closes
+/// everything in Today.
+private struct SidebarClearLine: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Rectangle()
+            .fill(.separator)
+            .frame(height: 1)
+            .overlay {
+                Button(action: action) {
+                    Label("Clear", systemImage: ChromeSymbols.Tabs.clear)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .background(ChromePalette.shell)
+                }
+                .buttonStyle(.plain)
+                .opacity(isHovered ? 1 : 0)
+            }
+            .frame(height: ChromeMetrics.sidebarSectionSpacing * 2)
+            .contentShape(Rectangle())
+            .animation(ChromeMotion.hover, value: isHovered)
+            .onHover { isHovered = $0 }
     }
 }
 

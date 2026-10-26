@@ -6,6 +6,7 @@ enum BrowserSettingKeys {
     static let homePageURL = "browser.homePageURL"
     static let showTabsInSidebar = "browser.showTabsInSidebar"
     static let hideTabs = "browser.hideTabs"
+    static let sidebarWidth = "browser.sidebarWidth"
     static let contentBlockingEnabled = "browser.contentBlockingEnabled"
     static let saveBrowsingHistory = "browser.saveBrowsingHistory"
     static let showRecentSites = "browser.showRecentSites"

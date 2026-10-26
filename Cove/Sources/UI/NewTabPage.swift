@@ -48,7 +48,9 @@ struct NewTabPage: View {
                     }
             }
             .font(.title3)
-            .chromeFieldStyle(focused: isSearchFocused, large: true)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .chromeFieldStyle(focused: isSearchFocused, minimumRadius: ChromeRadius.tile)
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
 

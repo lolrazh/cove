@@ -9,7 +9,13 @@ enum TabLayout: String {
 
 @MainActor
 final class TabManager: ObservableObject {
+    /// Every open tab, oldest first: the top strip's order. The sidebar's Today
+    /// section lists the same tabs newest first.
     @Published var tabs: [TabSession] = []
+    /// Arc's sections above Today. Nothing moves tabs into them yet; the
+    /// sidebar already lays them out so pinning and favorites slot in.
+    @Published private(set) var favorites: [TabSession] = []
+    @Published private(set) var pinned: [TabSession] = []
     @Published var activeTabID: UUID?
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
@@ -68,6 +74,8 @@ final class TabManager: ObservableObject {
         settings.setHideTabs(hide)
     }
 
+    /// Opens a tab at the end of the strip, which is the top of Today. Tabs
+    /// opened from a link instead go next to their opener.
     func addTab(url: String? = nil) {
         let tab: TabSession
 
@@ -82,7 +90,7 @@ final class TabManager: ObservableObject {
             }
         }
 
-        open(tab, nextTo: activeTabID)
+        open(tab)
     }
 
     func addTab(request: URLRequest, nextTo openerID: UUID? = nil) {
@@ -192,6 +200,15 @@ final class TabManager: ObservableObject {
     func closeActiveTab() {
         guard let activeTabID else { return }
         closeTab(activeTabID)
+    }
+
+    /// Arc's Clear: closes everything in Today and leaves a fresh tab.
+    func clearTodayTabs() {
+        let closed = tabs
+        addTab()
+        for tab in closed {
+            closeTab(tab.id)
+        }
     }
 
     func focusAddressBar() {

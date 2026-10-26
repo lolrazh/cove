@@ -8,11 +8,12 @@ import SwiftUI
 /// switches animate cleanly and never shift view identity mid-animation.
 ///
 ///   top tabs         the tab row is titlebar-height, tabs sit beside the traffic lights
-///   top, hidden      the tab row collapses to a gutter; hovering the top edge reopens it
+///   top, hidden      the tab row collapses to the card inset; hovering the top edge floats it over the page
 ///   sidebar          the sidebar is docked left and pushes the card over
 ///   sidebar, hidden  the docked sidebar collapses; hovering the left edge floats it over the page
 struct BrowserShellView<Content: View>: View {
     private let appServices: AppServices
+    @ObservedObject private var settings: BrowserSettingsStore
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: TabSession
     @Binding var areTabsVisible: Bool
@@ -20,6 +21,7 @@ struct BrowserShellView<Content: View>: View {
 
     @Environment(\.trafficLightInset) private var trafficLightInset
     @State private var isHoveringChrome = false
+    @State private var isEditingAddress = false
     @State private var hideTask: Task<Void, Never>?
 
     init(
@@ -30,6 +32,7 @@ struct BrowserShellView<Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.appServices = appServices
+        self._settings = ObservedObject(wrappedValue: appServices.settingsStore)
         self._tabManager = ObservedObject(wrappedValue: tabManager)
         self._activeTab = ObservedObject(wrappedValue: activeTab)
         self._areTabsVisible = areTabsVisible
@@ -45,11 +48,14 @@ struct BrowserShellView<Content: View>: View {
             VStack(spacing: 0) {
                 tabRow
                 contentCard
-                    .padding(.leading, showsDockedSidebar ? 0 : ChromeMetrics.gutter)
-                    .padding([.trailing, .bottom], ChromeMetrics.gutter)
+                    .padding(.leading, showsDockedSidebar ? 0 : ChromeMetrics.cardInset)
+                    .padding([.trailing, .bottom], ChromeMetrics.cardInset)
             }
         }
         .background(ChromePalette.shell)
+        .overlay(alignment: .top) {
+            floatingTabRow
+        }
         .overlay(alignment: .topLeading) {
             floatingSidebar
         }
@@ -69,27 +75,55 @@ struct BrowserShellView<Content: View>: View {
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
         }
+        // Command-L with the sidebar tucked away brings it out to edit in.
+        .onChange(of: activeTab.addressFocusRequest) { _, _ in
+            if isSidebarHidden { reveal() }
+        }
+        .onChange(of: isEditingAddress) { _, editing in
+            if !editing { scheduleHide(after: .milliseconds(600)) }
+        }
     }
 
     // MARK: - Tabs
 
-    /// Top tabs, beside the traffic lights. Collapses to a gutter in sidebar mode
-    /// and when top tabs are hidden.
-    private var tabRow: some View {
+    /// The titlebar band: top tabs beside the traffic lights.
+    private var tabStrip: some View {
         TabStripView(tabManager: tabManager)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
             .padding(.bottom, ChromeMetrics.tabBottomInset)
             .frame(height: ChromeMetrics.titlebarHeight, alignment: .bottom)
-            .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.gutter, alignment: .bottom)
+    }
+
+    /// The band in its docked position, above the card. Collapses to the card
+    /// inset in sidebar mode and when top tabs are hidden.
+    private var tabRow: some View {
+        tabStrip
+            .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.cardInset, alignment: .bottom)
             .opacity(showsTopRow ? 1 : 0)
             .clipped()
             .allowsHitTesting(showsTopRow)
             .onHover(perform: chromeHover)
     }
 
+    /// The band floating over the page while hidden top tabs are revealed. It
+    /// is flush with the window's top, so only its bottom corners show.
+    private var floatingTabRow: some View {
+        tabStrip
+            .chromeFloatingSurface(minimumRadius: ChromeRadius.tab)
+            .onHover(perform: chromeHover)
+            .offset(y: showsFloatingTopRow ? 0 : -(ChromeMetrics.titlebarHeight + ChromeMetrics.gutter * 4))
+            .allowsHitTesting(showsFloatingTopRow)
+    }
+
     private var tabRowLeadingInset: CGFloat {
         max(ChromeMetrics.gutter, trafficLightInset + ChromeMetrics.trafficLightTrailingGap)
+    }
+
+    /// Where the sidebar header's controls start, past the traffic lights, for
+    /// a sidebar whose leading edge sits `sidebarOrigin` in from the window's.
+    private func headerLeadingInset(sidebarOrigin: CGFloat) -> CGFloat {
+        max(ChromeMetrics.sidebarInset, trafficLightInset - sidebarOrigin + ChromeMetrics.trafficLightTrailingGap)
     }
 
     /// The sidebar in its docked position. Its width animates to zero rather than
@@ -97,15 +131,44 @@ struct BrowserShellView<Content: View>: View {
     private var dockedSidebar: some View {
         SidebarTabView(
             tabManager: tabManager,
+            activeTab: activeTab,
+            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.titlebarHeight,
+            headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
+            acceptsFocusRequests: showsDockedSidebar,
+            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
-        .frame(width: ChromeMetrics.sidebarWidth)
-        .frame(width: showsDockedSidebar ? ChromeMetrics.sidebarWidth : 0, alignment: .trailing)
+        .frame(width: sidebarWidth)
+        .overlay(alignment: .trailing) {
+            resizeHandle
+        }
+        .frame(width: showsDockedSidebar ? sidebarWidth : 0, alignment: .trailing)
         .opacity(showsDockedSidebar ? 1 : 0)
         .clipped()
         .allowsHitTesting(showsDockedSidebar)
         .onHover(perform: chromeHover)
+    }
+
+    private var sidebarWidth: CGFloat {
+        CGFloat(settings.sidebarWidth).clamped(to: ChromeMetrics.sidebarWidthRange)
+    }
+
+    /// Drag the sidebar's trailing edge to resize it. The handle covers the
+    /// gap between the sidebar's rows and the card, so it never sits over
+    /// either.
+    private var resizeHandle: some View {
+        Color.clear
+            .frame(width: ChromeMetrics.sidebarInset)
+            .contentShape(Rectangle())
+            .pointerStyle(.columnResize)
+            .gesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    .onChanged { drag in
+                        let width = drag.location.x + ChromeMetrics.sidebarInset / 2
+                        settings.setSidebarWidth(width.clamped(to: ChromeMetrics.sidebarWidthRange))
+                    }
+            )
     }
 
     /// The sidebar floating over the page while hidden-tabs mode is revealed.
@@ -113,20 +176,20 @@ struct BrowserShellView<Content: View>: View {
     private var floatingSidebar: some View {
         SidebarTabView(
             tabManager: tabManager,
+            activeTab: activeTab,
+            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
+            headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
+            acceptsFocusRequests: isSidebarHideable,
+            isEditingAddress: $isEditingAddress,
             onToggleDocked: toggleDocked
         )
-        .frame(width: ChromeMetrics.sidebarWidth)
+        .frame(width: sidebarWidth)
         .frame(maxHeight: .infinity)
-        // Elevation comes from the shadow alone; no outline.
-        .background {
-            ConcentricRectangle.chrome()
-                .fill(ChromePalette.shell)
-                .shadow(color: .black.opacity(0.18), radius: 16, y: 4)
-        }
+        .chromeFloatingSurface()
         .padding(ChromeMetrics.gutter)
         .onHover(perform: chromeHover)
-        .offset(x: showsFloatingSidebar ? 0 : -(ChromeMetrics.sidebarWidth + ChromeMetrics.gutter * 4))
+        .offset(x: showsFloatingSidebar ? 0 : -(sidebarWidth + ChromeMetrics.gutter * 4))
         .allowsHitTesting(showsFloatingSidebar)
     }
 
@@ -134,13 +197,7 @@ struct BrowserShellView<Content: View>: View {
 
     private var contentCard: some View {
         VStack(spacing: 0) {
-            NavigationBar(
-                session: activeTab,
-                downloadManager: appServices.downloadManager
-            )
-            .id(activeTab.id)
-
-            Divider()
+            navigationBar
 
             ZStack(alignment: .top) {
                 content
@@ -154,6 +211,26 @@ struct BrowserShellView<Content: View>: View {
         // A concentric clip also becomes the hit area, and resolves in the
         // wrong place: without this the card swallows clicks meant for the tabs.
         .contentShape(Rectangle())
+    }
+
+    /// The toolbar above the page, in top-tab mode only. In sidebar mode its
+    /// controls live in the sidebar and the card holds just the page; the bar
+    /// collapses rather than leaving, so the mode switch animates.
+    private var navigationBar: some View {
+        VStack(spacing: 0) {
+            NavigationBar(
+                session: activeTab,
+                downloadManager: appServices.downloadManager,
+                acceptsFocusRequests: isTopMode
+            )
+            .id(activeTab.id)
+
+            Divider()
+        }
+        .frame(height: isTopMode ? nil : 0, alignment: .bottom)
+        .opacity(isTopMode ? 1 : 0)
+        .clipped()
+        .allowsHitTesting(isTopMode)
     }
 
     @ViewBuilder
@@ -171,8 +248,16 @@ struct BrowserShellView<Content: View>: View {
 
     // MARK: - Visibility
 
+    private var isTopMode: Bool {
+        tabManager.tabLayout == .horizontal
+    }
+
     private var showsTopRow: Bool {
-        tabManager.tabLayout == .horizontal && (!tabManager.hideTabs || areTabsVisible)
+        isTopMode && !tabManager.hideTabs
+    }
+
+    private var showsFloatingTopRow: Bool {
+        isTopMode && tabManager.hideTabs && areTabsVisible
     }
 
     private var showsDockedSidebar: Bool {
@@ -180,15 +265,19 @@ struct BrowserShellView<Content: View>: View {
     }
 
     private var showsFloatingSidebar: Bool {
-        tabManager.tabLayout == .sidebar && tabManager.hideTabs && areTabsVisible
+        isSidebarHideable && areTabsVisible
     }
 
     private var isTopRowHidden: Bool {
-        tabManager.tabLayout == .horizontal && tabManager.hideTabs && !areTabsVisible
+        isTopMode && tabManager.hideTabs && !areTabsVisible
+    }
+
+    private var isSidebarHideable: Bool {
+        tabManager.tabLayout == .sidebar && tabManager.hideTabs
     }
 
     private var isSidebarHidden: Bool {
-        tabManager.tabLayout == .sidebar && tabManager.hideTabs && !areTabsVisible
+        isSidebarHideable && !areTabsVisible
     }
 
     // MARK: - Hide / Reveal
@@ -224,12 +313,18 @@ struct BrowserShellView<Content: View>: View {
 
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, !isHoveringChrome, tabManager.hideTabs else { return }
+            guard !Task.isCancelled, !isHoveringChrome, !isEditingAddress, tabManager.hideTabs else { return }
             areTabsVisible = false
         }
     }
 
     private func toggleDocked() {
         tabManager.setHideTabs(!tabManager.hideTabs)
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

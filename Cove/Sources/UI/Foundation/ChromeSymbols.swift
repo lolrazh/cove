@@ -9,12 +9,14 @@ enum ChromeSymbols {
         static let search = "magnifyingglass"
         static let globe = "globe"
         static let loadFailed = "exclamationmark.triangle"
+        static let secure = "lock.fill"
     }
 
     enum Tabs {
         static let add = "plus"
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
+        static let clear = "chevron.down"
     }
 
     enum Settings {

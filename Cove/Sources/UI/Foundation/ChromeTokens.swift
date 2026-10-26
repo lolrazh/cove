@@ -3,13 +3,15 @@ import AppKit
 
 /// Layout for the browser frame. Everything hangs off two numbers macOS gives us:
 /// the compact titlebar height and the traffic-light cluster, which is vertically
-/// centered in it. `gutter` is the gap between the window edge and everything
-/// inside it: above the tabs, and around the content card.
+/// centered in it. `gutter` is the gap between the window edge and the chrome in
+/// the titlebar band; `cardInset` is the gap around the page card.
 enum ChromeMetrics {
     /// Height of the `.unifiedCompact` titlebar. The traffic lights center on it.
     static let titlebarHeight: CGFloat = 40
-    /// Gap between the window edge, the tab row and the content card.
+    /// Gap between the window edge and the tab row, and around floating chrome.
     static let gutter: CGFloat = 6
+    /// Gap between the window edge and the page card, like Arc's floating page.
+    static let cardInset: CGFloat = 8
     /// Tabs sit closer to the page than to the window edge, so they read as
     /// belonging to it. This leaves them a point below the traffic lights'
     /// centerline, which looks centered next to the lights' larger glyph.
@@ -25,9 +27,17 @@ enum ChromeMetrics {
     /// Space between the zoom button and the first tab.
     static let trafficLightTrailingGap: CGFloat = 10
 
-    static let sidebarWidth: CGFloat = 240
-    static let sidebarInset: CGFloat = gutter
+    /// The sidebar is resized by dragging its trailing edge; the lower bound
+    /// keeps the header's four controls clear of the traffic lights.
+    static let sidebarWidthRange: ClosedRange<CGFloat> = 220...400
+    static let sidebarDefaultWidth: CGFloat = 240
+    /// Horizontal inset of the sidebar's rows: the same gap to the page card as
+    /// the card keeps from the window.
+    static let sidebarInset: CGFloat = cardInset
     static let sidebarRowHeight: CGFloat = 32
+    /// Space between the sidebar's sections, and above and below the Clear line.
+    static let sidebarSectionSpacing: CGFloat = 8
+    static let sidebarFooterHeight: CGFloat = 36
     /// Width of the invisible edge that reveals hidden tabs.
     static let revealEdge: CGFloat = 8
 
