@@ -51,6 +51,23 @@ struct SidebarTabView: View {
             SidebarAddressPill(session: activeTab, onEdit: tabManager.editCurrentURL)
                 .padding(.horizontal, ChromeMetrics.sidebarInset)
         }
+        .background { headerBacking }
+    }
+
+    /// Rows scroll up under the header. This hides them behind it and fades
+    /// them out over the gap below the pill instead of cutting them off.
+    private var headerBacking: some View {
+        Rectangle()
+            .fill(ChromePalette.shell)
+            .padding(.bottom, -ChromeMetrics.sidebarSectionSpacing)
+            .mask {
+                VStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                        .frame(height: ChromeMetrics.sidebarSectionSpacing)
+                }
+            }
+            .allowsHitTesting(false)
     }
 
     /// Arc's header row: traffic lights, the dock toggle, then navigation.
