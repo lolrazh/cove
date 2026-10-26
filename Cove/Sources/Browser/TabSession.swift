@@ -307,6 +307,27 @@ extension TabSession: WKNavigationDelegate {
         return .allow
     }
 
+    /// HTTP logins get a sheet; everything else, like server trust, gets WebKit's
+    /// default handling. Cancelling shows the page the server sends instead.
+    func webView(
+        _ webView: WKWebView,
+        respondTo challenge: URLAuthenticationChallenge
+    ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
+        let loginMethods = [
+            NSURLAuthenticationMethodHTTPBasic,
+            NSURLAuthenticationMethodHTTPDigest,
+            NSURLAuthenticationMethodNTLM,
+        ]
+        guard loginMethods.contains(challenge.protectionSpace.authenticationMethod) else {
+            return (.performDefaultHandling, nil)
+        }
+        guard let window = webView.window,
+              let credential = await PageDialogs.logIn(to: challenge, in: window) else {
+            return (.rejectProtectionSpace, nil)
+        }
+        return (.useCredential, credential)
+    }
+
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         services.downloadManager.handleDownload(download)
     }

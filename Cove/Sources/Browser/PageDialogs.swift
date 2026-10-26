@@ -37,6 +37,42 @@ enum PageDialogs {
         return field.stringValue
     }
 
+    /// Asks for a user name and password for a site behind HTTP authentication.
+    static func logIn(
+        to challenge: URLAuthenticationChallenge,
+        in window: NSWindow
+    ) async -> URLCredential? {
+        let space = challenge.protectionSpace
+        let alert = NSAlert()
+        alert.messageText = "Log in to \(space.host)"
+        alert.informativeText = if challenge.previousFailureCount > 0 {
+            "The user name or password was incorrect."
+        } else if space.receivesCredentialSecurely {
+            "Your login information will be sent securely."
+        } else {
+            "Your login information will be sent unencrypted."
+        }
+        alert.addButton(withTitle: "Log In")
+        alert.addButton(withTitle: "Cancel")
+
+        let user = NSTextField(string: challenge.proposedCredential?.user ?? "")
+        user.placeholderString = "User Name"
+        let password = NSSecureTextField()
+        password.placeholderString = "Password"
+        let fields = NSStackView(views: [user, password])
+        fields.orientation = .vertical
+        for field in [user, password] {
+            field.widthAnchor.constraint(equalToConstant: fieldWidth).isActive = true
+        }
+        fields.frame.size = fields.fittingSize
+        alert.accessoryView = fields
+        alert.window.initialFirstResponder = user
+        user.nextKeyView = password
+
+        guard await alert.beginSheetModal(for: window) == .alertFirstButtonReturn else { return nil }
+        return URLCredential(user: user.stringValue, password: password.stringValue, persistence: .forSession)
+    }
+
     // MARK: - Private
 
     /// Wide enough for a URL or a sentence, like the fields in system alerts.

@@ -38,7 +38,7 @@ Each workstream is one agent and one or more PRs. Order matters where noted.
 - [ ] **Failed loads show a blank page.** `didFail` and
       `didFailProvisionalNavigation` are empty. Show an error page with Retry,
       and ignore cancellations (`NSURLErrorCancelled`, frame-load-interrupted).
-- [ ] **No HTTP authentication.** No `didReceive challenge` handling, so sites
+- [x] **No HTTP authentication.** No `didReceive challenge` handling, so sites
       behind basic or digest auth can't be opened.
 - [ ] **Tabs are lost on quit.** No session restore.
 - [x] **The address field stays highlighted after navigation** (visible in
