@@ -106,4 +106,14 @@ extension View {
     ) -> some View {
         modifier(ChromeHoverSurface(restingFill: restingFill, minimumRadius: minimumRadius))
     }
+
+    /// Chrome floating over the page, like the revealed sidebar or tab strip:
+    /// the shell color, raised by a shadow alone, with no outline.
+    func chromeFloatingSurface(minimumRadius: CGFloat = ChromeRadius.control) -> some View {
+        background {
+            ConcentricRectangle.chrome(minimum: minimumRadius)
+                .fill(ChromePalette.shell)
+                .shadow(color: .black.opacity(0.18), radius: 16, y: 4)
+        }
+    }
 }
