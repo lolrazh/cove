@@ -87,14 +87,15 @@ private struct CommandBarPanel: View {
 
     private var field: some View {
         HStack(spacing: 12) {
-            Image(systemName: ChromeSymbols.Navigation.search)
+            // Split View mode says where the page will open.
+            Image(systemName: model.mode == .splitView ? ChromeSymbols.Tabs.splitView : ChromeSymbols.Navigation.search)
                 .font(.title2.weight(.medium))
                 .foregroundStyle(.secondary)
 
             CommandBarField(
                 text: $model.query,
                 completion: model.completion,
-                placeholder: "Search or enter URL",
+                placeholder: model.mode == .splitView ? "Open in Split View" : "Search or enter URL",
                 onKey: handle
             )
         }

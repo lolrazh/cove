@@ -10,6 +10,9 @@ final class CommandBarModel: ObservableObject {
         case newTab
         /// ⌘L and the URL pill: Return navigates the current tab.
         case editURL
+        /// ⌃⇧=: Return opens the result in a new pane beside the focused
+        /// one, or brings an open tab into the split.
+        case splitView
     }
 
     @Published private(set) var isPresented = false
@@ -85,6 +88,8 @@ final class CommandBarModel: ObservableObject {
 
     func open(_ result: CommandBarResult, inNewTab: Bool) {
         switch result.kind {
+        case .tab(let id) where mode == .splitView:
+            tabManager.openInSplitView(id)
         case .tab(let id):
             tabManager.selectTab(id)
         case .archived(let id):
@@ -122,6 +127,9 @@ final class CommandBarModel: ObservableObject {
     /// A new tab unless the input was meant for the current one, or the current
     /// tab is an empty start page with nothing to lose.
     private func load(_ input: String, inNewTab: Bool) {
+        if mode == .splitView {
+            return tabManager.addTabInSplitView(url: input)
+        }
         let activeTab = tabManager.activeTab
         let reuseActive = activeTab.map { $0.isNewTabPage && $0.currentURL.isEmpty } ?? false
         if let activeTab, !inNewTab, mode == .editURL || reuseActive {
@@ -243,9 +251,11 @@ final class CommandBarModel: ObservableObject {
         guard isPresented else { return }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
-        // This space's tabs first, then those open in the window's others.
+        // This space's tabs first, then those open in the window's others;
+        // in Split View mode, only the tabs that can join the split.
         let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherSpaces)
-            .filter { $0.id != tabManager.activeTabID && !$0.currentURL.isEmpty }
+            .filter { mode == .splitView ? tabManager.canOpenInSplitView($0.id) : $0.id != tabManager.activeTabID }
+            .filter { !$0.currentURL.isEmpty }
             .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
         let history = trimmed.isEmpty
             ? historyStore.recentlyVisited.map { HistoryPage(url: $0.url, title: $0.title, frecency: 0) }
