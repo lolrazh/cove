@@ -46,7 +46,7 @@ struct BrowserView: View {
                         activeTabContent(activeTab)
                     }
                     .overlay {
-                        CommandBarOverlay(model: tabManager.commandBar)
+                        CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
                     }
                 }
             }
@@ -71,14 +71,14 @@ struct BrowserView: View {
         // in a private window.
         .onChange(of: appearsActive, initial: true) { _, active in
             guard active, !tabManager.isPrivate, let window = NSApp.keyWindow else { return }
-            appServices.externalURLRouter.activate(tabManager, in: window)
+            appServices.externalURLRouter.activate(tabManager, in: window, openWindow: openWindow)
         }
         // Links from other apps come to an open window instead of each opening
         // a new one (SwiftUI opens one only if none exists), then go through
         // the router like everything else.
         .handlesExternalEvents(preferring: externalEvents, allowing: externalEvents)
         .onOpenURL { url in
-            appServices.externalURLRouter.open([url])
+            appServices.externalURLRouter.open([url], from: .otherApp)
         }
         .sheet(isPresented: isPresent($tabManager.spaceToEdit)) {
             if let id = tabManager.spaceToEdit {

@@ -243,14 +243,27 @@ final class TabManager: ObservableObject {
     /// Opens a link from outside the window in a new tab, reusing the window's
     /// only tab if it's still an untouched start page.
     func openExternalURL(_ url: URL) {
-        if tabs.count == 1,
-           let activeTab,
-           activeTab.isNewTabPage,
-           activeTab.currentURL.isEmpty {
-            activeTab.navigate(url.absoluteString)
+        if let startPage = untouchedStartPage {
+            startPage.navigate(url.absoluteString)
         } else {
             addTab(url: url.absoluteString)
         }
+    }
+
+    /// Takes in a live tab from a Peek or Little Cove, page and history
+    /// included: beside the tab that opened it, or at the top of Today, in
+    /// place of an untouched start page. It's selected.
+    func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil) {
+        let startPage = untouchedStartPage
+        tab.host = host(for: tab.id)
+        open(tab, nextTo: openerID)
+        startPage.map { closeTab($0.id) }
+    }
+
+    /// The window's only tab, while it's still a start page nobody has used.
+    private var untouchedStartPage: TabSession? {
+        guard tabs.count == 1, let tab = tabs.first, tab.id == activeTabID, tab.isNewTabPage, tab.currentURL.isEmpty else { return nil }
+        return tab
     }
 
     private func bindSettings() {

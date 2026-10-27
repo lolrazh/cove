@@ -5,6 +5,7 @@ import SwiftUI
 /// page card and the sidebar alike. A click anywhere else dismisses it.
 struct CommandBarOverlay: View {
     @ObservedObject var model: CommandBarModel
+    let onOpenLittleCove: () -> Void
 
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
@@ -46,6 +47,7 @@ struct CommandBarOverlay: View {
         switch result.kind {
         case .command(.newWindow): openWindow(id: BrowserView.windowID)
         case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
+        case .command(.newLittleCove): onOpenLittleCove()
         case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
         case .command(.settings): openSettings()
         default: break

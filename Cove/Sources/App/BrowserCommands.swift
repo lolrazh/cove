@@ -22,16 +22,26 @@ struct BrowserViewCommands: Commands {
                 openWindow(id: BrowserView.privateWindowID)
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
+
+            Button("New Little Cove Window") {
+                appServices.externalURLRouter.openLittleCove()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .option])
         }
 
         // Replaces File > Close, which also claimed Command-W and, coming
         // first in the menu bar, closed the whole window instead of the tab.
         CommandGroup(replacing: .saveItem) {
+            // Outside a browser window, like Little Cove or History, ⌘W
+            // closes the window.
             Button("Close Tab") {
-                tabManager?.closeActiveTab()
+                if let tabManager {
+                    tabManager.closeActiveTab()
+                } else {
+                    NSApp.keyWindow?.performClose(nil)
+                }
             }
             .keyboardShortcut("w", modifiers: .command)
-            .disabled(tabManager == nil)
 
             Button("Close Window") {
                 NSApp.keyWindow?.performClose(nil)

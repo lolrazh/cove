@@ -58,7 +58,7 @@ struct CoveApp: App {
     /// that was active last.
     private func openInBrowser(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
-        appServices.externalURLRouter.open([url])
+        appServices.externalURLRouter.open([url], from: .cove)
     }
 }
 

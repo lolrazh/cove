@@ -29,6 +29,11 @@ enum ChromeSymbols {
         static let folder = "folder"
         static let backToPin = "arrow.uturn.backward"
         static let collapsed = "chevron.right"
+        static let openInCove = "arrow.up.forward.app"
+        static let littleCove = "macwindow"
+        static let expandPeek = "arrow.up.left.and.arrow.down.right"
+        static let splitView = "rectangle.split.2x1"
+        static let splitVertically = "rectangle.split.1x2"
     }
 
     enum Spaces {
