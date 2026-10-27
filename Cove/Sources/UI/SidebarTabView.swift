@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Arc's sidebar: a header with the window controls and navigation, the URL
-/// pill, then Favorites, Pinned, a Clear line, and Today, with a footer.
+/// pill, then Favorites, Pinned, a Clear line, and Today, with the media
+/// player and a footer.
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: TabSession
@@ -27,6 +28,8 @@ struct SidebarTabView: View {
     var body: some View {
         VStack(spacing: 0) {
             sections
+            MediaPlayer(tabManager: tabManager, style: .card)
+                .padding(.horizontal, ChromeMetrics.sidebarInset)
             footer
         }
     }
