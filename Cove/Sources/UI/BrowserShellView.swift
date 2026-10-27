@@ -223,8 +223,8 @@ struct BrowserShellView<Content: View>: View {
         VStack(spacing: 0) {
             NavigationBar(
                 session: activeTab,
-                downloadManager: appServices.downloadManager,
-                onEditAddress: tabManager.editCurrentURL
+                tabManager: tabManager,
+                downloadManager: appServices.downloadManager
             )
 
             Divider()

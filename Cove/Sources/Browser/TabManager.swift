@@ -27,6 +27,8 @@ final class TabManager: ObservableObject {
     }
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
+    /// The background tab the media player controls.
+    @Published private(set) var mediaTab: TabSession?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
 
@@ -72,6 +74,7 @@ final class TabManager: ObservableObject {
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
+        trackMedia()
         sweepClock.ticks
             .sink { [weak self] underMemoryPressure in self?.sweepIdleTabs(underMemoryPressure: underMemoryPressure) }
             .store(in: &cancellables)
@@ -181,6 +184,28 @@ final class TabManager: ObservableObject {
                 self.hideTabs = hideTabs
             }
             .store(in: &cancellables)
+    }
+
+    /// Keeps `mediaTab` current as tabs play, pause, open, close and get
+    /// selected. `@Published` announces a change before making it, so the
+    /// pick waits a turn of the main queue to see it.
+    private func trackMedia() {
+        let mediaChanged = $tabs
+            .map { tabs in Publishers.MergeMany(tabs.map { $0.$nowPlaying.map { _ in } }) }
+            .switchToLatest()
+        Publishers.Merge(mediaChanged, $activeTabID.map { _ in })
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.updateMediaTab() }
+            .store(in: &cancellables)
+    }
+
+    private func updateMediaTab() {
+        let tab = tabsInDisplayOrder
+            .filter { $0.id != activeTabID }
+            .preferringPlaying(\.nowPlaying)
+        if tab !== mediaTab {
+            mediaTab = tab
+        }
     }
 
     private func makeTab(

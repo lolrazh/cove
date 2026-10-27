@@ -22,6 +22,16 @@ enum ChromeSymbols {
         static let muted = "speaker.slash.fill"
     }
 
+    enum Media {
+        static let play = "play.fill"
+        static let pause = "pause.fill"
+        static let previousTrack = "backward.fill"
+        static let nextTrack = "forward.fill"
+        static let seekBackward = "gobackward.10"
+        static let seekForward = "goforward.10"
+        static let close = "xmark"
+    }
+
     enum Settings {
         static let general = "gearshape"
         static let appearance = "paintpalette"
