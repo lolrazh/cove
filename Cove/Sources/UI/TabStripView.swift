@@ -45,10 +45,9 @@ struct TabStripView: View {
             ForEach(tabManager.tabs) { tab in
                 ChromeTabItem(
                     tab: tab,
+                    tabManager: tabManager,
                     presentation: .horizontal,
                     isActive: tab.id == tabManager.activeTabID,
-                    onSelect: { tabManager.selectTab(tab.id) },
-                    onClose: { tabManager.closeTab(tab.id) },
                     canClose: tabManager.tabs.count > 1,
                     width: sharedTabWidth
                 )

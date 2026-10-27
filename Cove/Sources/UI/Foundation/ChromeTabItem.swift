@@ -10,10 +10,9 @@ enum ChromeTabPresentation {
 /// active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
+    let tabManager: TabManager
     let presentation: ChromeTabPresentation
     let isActive: Bool
-    let onSelect: () -> Void
-    let onClose: () -> Void
     let canClose: Bool
     /// Fixed width for top tabs, which share the strip evenly. Sidebar tabs fill.
     var width: CGFloat? = nil
@@ -42,13 +41,13 @@ struct ChromeTabItem: View {
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
-        .onTapGesture(perform: onSelect)
+        .onTapGesture { tabManager.selectTab(tab.id) }
     }
 
     private var closeButton: some View {
         let isVisible = canClose && isHovered
 
-        return Button(action: onClose) {
+        return Button { tabManager.closeTab(tab.id) } label: {
             Image(systemName: ChromeSymbols.Tabs.close)
                 .foregroundStyle(.secondary)
         }
