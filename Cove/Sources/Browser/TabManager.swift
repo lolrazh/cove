@@ -547,6 +547,28 @@ final class TabManager: ObservableObject {
         pinStore.change { _ = $0.removeFolder(id) }
     }
 
+    /// File › Import Bookmarks…: another browser's bookmark file, chosen in
+    /// an open panel, becomes a folder in Pinned.
+    func importBookmarks() {
+        guard let window = activeTab?.webView?.window ?? NSApp.keyWindow else { return }
+        let panel = NSOpenPanel()
+        panel.message = "Choose Safari's Bookmarks.plist or Chrome's Bookmarks file."
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Safari")
+        Task {
+            guard await panel.beginSheetModal(for: window) == .OK, let url = panel.url else { return }
+            guard let data = try? Data(contentsOf: url), let bookmarks = try? BookmarkImport.bookmarks(from: data) else {
+                toasts.show("Couldn't Read Bookmarks", symbol: ChromeSymbols.Navigation.loadFailed)
+                return
+            }
+            let folder = SidebarFolder(
+                name: "Imported from \(BookmarkImport.source(of: data).rawValue)",
+                contents: SidebarTree(bookmarks.map(SidebarItem.init))
+            )
+            pinStore.change { $0.addFolder(folder) }
+            toasts.show("Imported \(folder.contents.tabs.count) Bookmarks", symbol: ChromeSymbols.Tabs.folder)
+        }
+    }
+
     // MARK: Live tabs for the store's pins
 
     /// Matches the live tabs to the store's pins: a tab for each new pin,

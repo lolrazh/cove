@@ -59,6 +59,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case unpinTab
     case addToFavorites
     case newFolder
+    case importBookmarks
     case duplicateTab
     case muteTab
     case unmuteTab
@@ -92,6 +93,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: "Unpin Tab"
         case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
+        case .importBookmarks: "Import Bookmarks"
         case .duplicateTab: "Duplicate Tab"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
@@ -127,6 +129,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ChromeSymbols.Tabs.unpin
         case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
+        case .importBookmarks: "square.and.arrow.down.on.square"
         case .duplicateTab: "plus.square.on.square"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
@@ -162,6 +165,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ["bookmark", "today"]
         case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
+        case .importBookmarks: ["safari", "chrome", "pinned"]
         case .duplicateTab: ["copy", "clone"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]

@@ -71,6 +71,22 @@ struct PinsTests {
         #expect(titles(within.favorites) == "BA")
     }
 
+    @Test func `imported bookmarks become pins and folders, nesting kept`() throws {
+        let imported: [ImportedBookmark] = [
+            .page(title: "Example", url: URL(string: "https://example.com/")!),
+            .folder(title: "Work", children: [
+                .page(title: "Docs", url: URL(string: "https://docs.example/")!),
+                .folder(title: "Deep", children: [.page(title: "Deeper", url: URL(string: "https://deep.example/")!)]),
+            ]),
+        ]
+        let tree = SidebarTree(imported.map(SidebarItem.init))
+        #expect(tree.tabs.map(\.title) == ["Example", "Docs", "Deeper"])
+        #expect(tree.tabs.map(\.url) == ["https://example.com/", "https://docs.example/", "https://deep.example/"])
+        #expect(tree.folders.map(\.name) == ["Work", "Deep"])
+        let work = try #require(tree.folders.first)
+        #expect(work.contents.tabs.map(\.title) == ["Docs", "Deeper"])
+    }
+
     @Test func `a pin's title is updated in place and a deleted folder gives back its pins`() {
         var pins = pins
         pins.update(d.id) { $0.title = "Docs" }

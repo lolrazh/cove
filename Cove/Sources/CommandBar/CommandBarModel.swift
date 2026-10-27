@@ -133,6 +133,8 @@ final class CommandBarModel: ObservableObject {
             if let id = tabManager.activeTabID { tabManager.moveTab(id, toEndOf: .favorites) }
         case .newFolder:
             tabManager.newFolder()
+        case .importBookmarks:
+            tabManager.importBookmarks()
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .muteTab, .unmuteTab:
@@ -189,7 +191,7 @@ final class CommandBarModel: ObservableObject {
             case .pinTab: canPin && activeSection == .today
             case .addToFavorites: canPin && [.today, .pinned].contains(activeSection)
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
-            case .newFolder: !tabManager.isPrivate
+            case .newFolder, .importBookmarks: !tabManager.isPrivate
             case .duplicateTab: true
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false

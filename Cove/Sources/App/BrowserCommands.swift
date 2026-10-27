@@ -39,6 +39,13 @@ struct BrowserViewCommands: Commands {
             .keyboardShortcut("w", modifiers: [.command, .shift])
         }
 
+        CommandGroup(after: .importExport) {
+            Button("Import Bookmarks…") {
+                tabManager?.importBookmarks()
+            }
+            .disabled(tabManager?.isPrivate ?? true)
+        }
+
         CommandMenu("History") {
             HistoryMenu(
                 tabManager: tabManager,

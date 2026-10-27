@@ -10,6 +10,18 @@ struct Pin: Identifiable, Codable, Hashable {
     var title: String
 }
 
+extension SidebarItem where Tab == Pin {
+    /// A bookmark from another browser, as a pin or a folder of them.
+    init(_ bookmark: ImportedBookmark) {
+        switch bookmark {
+        case .page(let title, let url):
+            self = .tab(Pin(id: UUID(), url: url.absoluteString, title: title))
+        case .folder(let title, let children):
+            self = .folder(SidebarFolder(name: title, contents: SidebarTree(children.map(Self.init))))
+        }
+    }
+}
+
 /// The sidebar's durable sections: Favorites, a row of pins, and Pinned, a
 /// tree of pins and folders. Pure, so the moves can be tested. With Spaces,
 /// each space will own a Pinned tree while Favorites stay shared.
