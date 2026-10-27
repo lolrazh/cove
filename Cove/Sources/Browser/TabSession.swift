@@ -416,11 +416,12 @@ extension TabSession: WKNavigationDelegate {
 
     /// Cancellations aren't failures: another navigation replaced this one, or
     /// the response became a download, which WebKit reports as its "frame load
-    /// interrupted" error (the constant for it is deprecated).
+    /// interrupted" error, or WebKit's media player took over a video or audio
+    /// file, its "plug-in handled load" (the constants for both are deprecated).
     private func showFailure(_ error: Error) {
         let error = error as NSError
         let isCancellation = (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled)
-            || (error.domain == "WebKitErrorDomain" && error.code == 102)
+            || (error.domain == "WebKitErrorDomain" && [102, 204].contains(error.code))
         guard !isCancellation else { return }
 
         let url = error.userInfo[NSURLErrorFailingURLErrorKey] as? URL
