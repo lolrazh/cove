@@ -60,9 +60,9 @@ extension TabManager {
             case .webArchive: try? await page.webArchive()
             case .source: await page.pageSource()?.data
             }
-            guard let data, (try? data.write(to: url)) != nil else {
+            let saved = data.map { (try? $0.write(to: url)) != nil } ?? false
+            if !saved {
                 toasts.show("Couldn't Save Page", symbol: ChromeSymbols.Navigation.loadFailed)
-                return
             }
         }
     }
