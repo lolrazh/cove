@@ -23,9 +23,15 @@ final class BoostInjector {
     private static let styleID = "cove-boost"
 
     /// Sets the page's Boost styles, last in its head so they win ties with
-    /// the page's own; an empty sheet removes them.
+    /// the page's own; an empty sheet removes them. Marks a page that has no
+    /// background of its own, for a tint to blend with the canvas color.
     private static let applyStyle = """
     (css) => {
+        const root = document.documentElement;
+        const isClear = (element) => !element || getComputedStyle(element).backgroundColor === "rgba(0, 0, 0, 0)";
+        root.classList.remove("\(Boost.canvasClass)");
+        root.classList.toggle("\(Boost.canvasClass)", !!css && isClear(root) && isClear(document.body));
+
         let style = document.getElementById("\(styleID)");
         if (!css) { style?.remove(); return; }
         if (!style) {

@@ -52,7 +52,8 @@ struct BoostTests {
             $0.hiddenElements = ["#ad", "div.promo > a"]
         }
         let lines = boost.stylesheet.components(separatedBy: "\n")
-        #expect(lines.first?.contains("background: #FF0000") == true)
+        #expect(lines.contains { $0.contains("background: #FF0000") })
+        #expect(lines.firstIndex { $0.contains("background: #FF0000") }! < lines.firstIndex { $0.contains("font-family") }!)
         #expect(lines.contains { $0.contains("font-family: ui-serif") })
         #expect(lines.contains("#ad { display: none !important; }"))
         #expect(lines.contains("div.promo > a { display: none !important; }"))

@@ -29,6 +29,9 @@ struct Boost: Codable, Identifiable, Hashable {
         }
     }
 
+    /// The class `BoostInjector` gives a page without a background.
+    static let canvasClass = "cove-boost-canvas"
+
     var id = UUID()
     /// The site, as `Site` writes it: a host without "www.".
     var domain: String
@@ -74,11 +77,17 @@ struct Boost: Codable, Identifiable, Hashable {
     var stylesheet: String {
         var rules: [String] = []
         if let tint {
-            // A wash over everything, colored by the tint but keeping the
-            // page's light and dark. It lets clicks through.
+            // Two washes over everything that let clicks through: one gives
+            // the page the tint's hue, keeping its light and dark; a fainter
+            // one tints the white that the first leaves white. They blend
+            // with the page's background, so a page without one gets the
+            // canvas color, or they'd show at full strength.
             rules.append("""
-            html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; \
-            pointer-events: none; background: \(tint); mix-blend-mode: color; opacity: 0.6; }
+            html.\(Self.canvasClass) { background-color: Canvas; }
+            html::before, html::after { content: ""; position: fixed; inset: 0; z-index: 2147483647; \
+            pointer-events: none; background: \(tint); }
+            html::before { mix-blend-mode: multiply; opacity: 0.12; }
+            html::after { mix-blend-mode: color; opacity: 0.6; }
             """)
         }
         if let font {
