@@ -30,6 +30,7 @@ struct SplitPageView: View {
                     SplitPane(tab: tab, isFocused: tab.id == tabManager.activeTabID, appServices: appServices) {
                         tabManager.selectTab(tab.id)
                     }
+                    .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
                         .frame(
                             width: split.axis == .horizontal ? length * split.fractions[index] : nil,
                             height: split.axis == .vertical ? length * split.fractions[index] : nil

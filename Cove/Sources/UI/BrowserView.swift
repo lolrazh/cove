@@ -133,6 +133,7 @@ struct BrowserView: View {
             } else {
                 PageView(tab: tab, appServices: appServices)
                     .id(tab.id)
+                    .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

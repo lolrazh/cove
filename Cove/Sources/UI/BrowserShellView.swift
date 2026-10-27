@@ -208,11 +208,6 @@ struct BrowserShellView<Content: View>: View {
 
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay {
-                    if let editor = tabManager.boostEditor, editor.page === activeTab {
-                        BoostEditorPanel(editor: editor, onClose: tabManager.closeBoostEditor)
-                    }
-                }
                 .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
