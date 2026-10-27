@@ -14,10 +14,49 @@ struct SavedTab: Codable {
     let lastUsedAt: Date?
 }
 
-struct SavedWindow: Codable {
+/// One space's Today in a window, and the tab it had selected.
+struct SavedSpace: Codable {
+    let spaceID: UUID
     let tabs: [SavedTab]
-    let activeTabIndex: Int
+    /// The selected tab, if it was one of `tabs`.
+    let activeTabIndex: Int?
+    /// The selected tab, if it was a pinned tab or favorite: its pin's ID.
+    let activePinID: UUID?
+}
+
+/// A window: every space's Today as it was left there, and the space shown.
+struct SavedWindow: Codable {
+    let spaces: [SavedSpace]
+    let activeSpaceID: UUID
     var placement: WindowPlacement?
+
+    init(spaces: [SavedSpace], activeSpaceID: UUID) {
+        self.spaces = spaces
+        self.activeSpaceID = activeSpaceID
+    }
+
+    private enum UnscopedKeys: String, CodingKey {
+        case tabs, activeTabIndex
+    }
+
+    /// A window saved before Spaces had one Today, which is the first space's.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        placement = try container.decodeIfPresent(WindowPlacement.self, forKey: .placement)
+        if let spaces = try container.decodeIfPresent([SavedSpace].self, forKey: .spaces) {
+            self.spaces = spaces
+            activeSpaceID = try container.decode(UUID.self, forKey: .activeSpaceID)
+        } else {
+            let unscoped = try decoder.container(keyedBy: UnscopedKeys.self)
+            spaces = [SavedSpace(
+                spaceID: Space.defaultID,
+                tabs: try unscoped.decode([SavedTab].self, forKey: .tabs),
+                activeTabIndex: try unscoped.decode(Int.self, forKey: .activeTabIndex),
+                activePinID: nil
+            )]
+            activeSpaceID = Space.defaultID
+        }
+    }
 }
 
 /// Where a window was on screen. The frame is the window's size outside full
@@ -103,13 +142,13 @@ final class SessionStore {
         return restorableWindows.count
     }
 
-    /// Saves the window whenever its tabs, active tab or any saved tab change.
-    /// A restored window's placement applies once its window is known.
+    /// Saves the window whenever its tabs, active tab, space or any saved tab
+    /// change. A restored window's placement applies once its window is known.
     func track(_ tabManager: TabManager, placement: WindowPlacement?) {
         let tabsChanged = tabManager.$tabs
             .map { tabs in Publishers.MergeMany(tabs.map(\.savedTabChanges)) }
             .switchToLatest()
-        let changes = Publishers.Merge(tabsChanged, tabManager.$activeTabID.map { _ in })
+        let changes = Publishers.Merge3(tabsChanged, tabManager.$activeTabID.map { _ in }, tabManager.$activeSpaceID.map { _ in })
             .sink { [weak self] in self?.scheduleSave() }
         trackedWindows.append(TrackedWindow(tabManager: tabManager, placement: placement, changes: changes))
     }

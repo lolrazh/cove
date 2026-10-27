@@ -85,6 +85,8 @@ enum ChromeMotion {
     static let tab = Animation.smooth(duration: 0.18)
     /// The Command Bar scaling and fading in. Quick: it answers a keystroke.
     static let commandBar = Animation.smooth(duration: 0.18)
+    /// The sidebar paging from one space to the next.
+    static let page = Animation.spring(duration: 0.36, bounce: 0.12)
     /// A toast appearing over the page.
     static let appear = Animation.spring(duration: 0.3, bounce: 0.2)
     static let fade = Animation.easeOut(duration: 0.25)
