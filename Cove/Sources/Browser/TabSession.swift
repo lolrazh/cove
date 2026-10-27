@@ -248,10 +248,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         case .awake(let webView):
             return webView
         case .asleep(let interactionState):
-            let webView = services.webKitEnvironment.makeWebView(in: services.context)
-            page = .awake(webView)
-            configureWebView(webView)
-            setupObservers(for: webView)
+            let webView = openWebView(for: URL(string: currentURL))
             if let interactionState {
                 webView.interactionState = interactionState
             } else if !currentURL.isEmpty {
@@ -259,6 +256,34 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             }
             return webView
         }
+    }
+
+    /// The web view to load a page in. WebKit loads an extension's pages
+    /// only in a web view made for that extension, and other pages only
+    /// outside one, so crossing between them takes a new web view, and the
+    /// back/forward list starts again.
+    private func webView(loading url: URL?) -> WKWebView {
+        guard let url, services.context.extensions.extensionContext(for: url) !== pageExtension else { return wake() }
+        if case .awake(let webView) = page {
+            releaseWebView(webView)
+        }
+        return openWebView(for: url)
+    }
+
+    /// The extension whose page the tab shows, awake or asleep; nil for the web.
+    private var pageExtension: WKWebExtensionContext? {
+        switch page {
+        case .awake(let webView): (webView as? BrowserWebView)?.extensionPage
+        case .asleep: URL(string: currentURL).flatMap(services.context.extensions.extensionContext(for:))
+        }
+    }
+
+    private func openWebView(for url: URL?) -> WKWebView {
+        let webView = services.webKitEnvironment.makeWebView(in: services.context, for: url)
+        page = .awake(webView)
+        configureWebView(webView)
+        setupObservers(for: webView)
+        return webView
     }
 
     /// Releases the page's web view, keeping its back/forward list to wake
@@ -292,7 +317,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         }
 
         isNewTabPage = false
-        let webView = wake()
+        let webView = webView(loading: request.url)
         webView.load(request)
         refreshNavigationState()
         // Typing a destination hands focus to the page, as in Safari, which also
@@ -306,7 +331,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func loadRequest(_ request: URLRequest) {
-        wake().load(request)
+        webView(loading: request.url).load(request)
     }
 
     func goBack() {
@@ -570,7 +595,8 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
-        if !services.context.isPrivate {
+        // An extension's pages aren't places to go back to.
+        if !services.context.isPrivate, pageExtension == nil {
             services.historyStore.recordVisit(url: url, title: title)
             visitAwaitingTitle = title.isEmpty ? url : nil
         }
@@ -606,6 +632,15 @@ extension TabSession: WKNavigationDelegate {
     ) async -> WKNavigationActionPolicy {
         if navigationAction.targetFrame?.isMainFrame == true, opensInPeek(navigationAction), let peek = host?.peek {
             peek(navigationAction.request)
+            return .cancel
+        }
+        if navigationAction.targetFrame?.isMainFrame == true,
+           let url = navigationAction.request.url,
+           services.context.extensions.extensionContext(for: url) !== pageExtension {
+            // Into or out of an extension's pages, in a web view made for them,
+            // once this one has finished asking.
+            let request = navigationAction.request
+            Task { self.loadRequest(request) }
             return .cancel
         }
         if navigationAction.targetFrame?.isMainFrame == true {

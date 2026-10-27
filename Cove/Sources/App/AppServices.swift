@@ -21,6 +21,7 @@ final class AppServices {
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
     let boosts = BoostInjector(store: BoostStore())
+    let extensionLibrary: ExtensionLibrary
 
     private var didPrepareLaunch = false
     private var spacePruning: AnyCancellable?
@@ -31,16 +32,20 @@ final class AppServices {
         let faviconStore = FaviconStore()
         let downloadManager = DownloadManager(settings: settingsStore)
         let contentBlockerManager = ContentBlockerManager(settings: settingsStore)
+        let extensionLibrary = ExtensionLibrary()
 
         self.settingsStore = settingsStore
         self.historyStore = historyStore
         self.faviconStore = faviconStore
-        let browsingContext = BrowsingContext.standard(faviconStore: faviconStore)
+        let browsingContext = BrowsingContext.standard(faviconStore: faviconStore, extensions: extensionLibrary)
         self.browsingContext = browsingContext
+        self.extensionLibrary = extensionLibrary
         self.spaceStore = SpaceStore(
             initialTheme: ChromeTheme(rawValue: defaults.string(forKey: BrowserSettingKeys.legacyThemeColor) ?? "")
         ) { profileID in
-            profileID == Profile.defaultID ? browsingContext : .profile(profileID, faviconStore: faviconStore)
+            profileID == Profile.defaultID
+                ? browsingContext
+                : .profile(profileID, faviconStore: faviconStore, extensions: extensionLibrary)
         }
         self.downloadManager = downloadManager
         self.contentBlockerManager = contentBlockerManager
@@ -50,6 +55,9 @@ final class AppServices {
         // deleted them.
         spacePruning = spaceStore.$spaces.sink { [pinStore] spaces in
             pinStore.change { $0.prune(to: spaces) }
+        }
+        extensionLibrary.openBrowserWindow = { [weak self] isPrivate in
+            self?.externalURLRouter.openBrowserWindow(isPrivate: isPrivate)
         }
     }
 
@@ -70,6 +78,9 @@ final class AppServices {
         guard !didPrepareLaunch else { return }
         didPrepareLaunch = true
         spaceStore.removeOrphanedDataStores()
+        Task { [extensionLibrary] in
+            await extensionLibrary.loadInstalled()
+        }
 
         guard settingsStore.contentBlockingEnabled else { return }
 

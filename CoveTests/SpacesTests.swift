@@ -186,7 +186,7 @@ struct SpaceStoreTests {
     private func makeStore() -> SpaceStore {
         SpaceStore(fileURL: fileURL) { _ in
             Issue.record("No context is needed")
-            return .standard(faviconStore: FaviconStore(readingThrough: FaviconStore()))
+            return .standard(faviconStore: FaviconStore(readingThrough: FaviconStore()), extensions: ExtensionLibrary(directory: nil))
         }
     }
 

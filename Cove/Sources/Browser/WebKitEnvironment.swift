@@ -11,9 +11,17 @@ final class WebKitEnvironment {
         self.browserUserAgent = Self.makeBrowserUserAgent()
     }
 
-    func makeWebView(in context: BrowsingContext) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = context.dataStore
+    /// A web view for the context's tabs, running its extensions. An
+    /// extension's own pages, like its options page, need a web view made
+    /// from that extension's configuration, so `url` picks which.
+    func makeWebView(in context: BrowsingContext, for url: URL? = nil) -> WKWebView {
+        let extensionPage = url.flatMap(context.extensions.extensionContext(for:))
+        let configuration = extensionPage?.webViewConfiguration ?? WKWebViewConfiguration()
+        if extensionPage == nil {
+            configuration.websiteDataStore = context.dataStore
+            configuration.webExtensionController = context.extensions.controller
+            contentBlockerManager.attach(to: configuration.userContentController)
+        }
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
         // Inspect Element in the page's context menu. WebKit has no public switch
@@ -24,9 +32,9 @@ final class WebKitEnvironment {
         // public switch. With it, video controls get a PiP button and pages
         // can call `requestPictureInPicture()`.
         configuration.preferences.setValue(true, forKey: "allowsPictureInPictureMediaPlayback")
-        contentBlockerManager.attach(to: configuration.userContentController)
 
         let webView = BrowserWebView(frame: .zero, configuration: configuration)
+        webView.extensionPage = extensionPage
         configure(webView)
         return webView
     }
