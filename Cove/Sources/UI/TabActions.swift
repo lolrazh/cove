@@ -22,6 +22,10 @@ struct TabActions: View {
             Divider()
         }
 
+        splitting
+
+        Divider()
+
         Button("Duplicate Tab") {
             tabManager.duplicateTab(tab.id)
         }
@@ -98,6 +102,41 @@ struct TabActions: View {
             if section == .pinned, case .tab = placement {
                 Button("New Folder with Tab") {
                     tabManager.newFolder(around: tab.id)
+                }
+            }
+        }
+    }
+
+    /// A tab's menu brings it into the split on screen, or separates its
+    /// split; the menu bar adds a pane to the active tab's, with ⌃⇧=.
+    @ViewBuilder
+    private var splitting: some View {
+        switch placement {
+        case .tab:
+            if let split = tabManager.split(containing: tab.id) {
+                Button("Separate Split View") {
+                    tabManager.separateSplit(split.id)
+                }
+            } else if tabManager.section(of: tab.id) == .today {
+                Button("Open in Split View") {
+                    tabManager.openInSplitView(tab.id)
+                }
+                .disabled(!tabManager.canOpenInSplitView(tab.id))
+            }
+        case .menuBar:
+            Button("Add Split View") {
+                tabManager.addSplitView()
+            }
+            .keyboardShortcut("=", modifiers: [.control, .shift])
+            .disabled(!tabManager.canAddSplitPane)
+
+            if let split = tabManager.activeSplit {
+                Button(split.axis == .horizontal ? "Stack Split View" : "Arrange Split View Side by Side") {
+                    tabManager.rotateSplit(split.id)
+                }
+
+                Button("Separate Split View") {
+                    tabManager.separateSplit(split.id)
                 }
             }
         }

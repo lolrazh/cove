@@ -157,6 +157,13 @@ final class CommandBarModel: ObservableObject {
             tabManager.spaceToEdit = tabManager.activeSpaceID
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
+        case .addSplitView:
+            // After this bar is gone, so the split's own Command Bar can come up.
+            DispatchQueue.main.async { [tabManager] in tabManager.addSplitView() }
+        case .rotateSplitView:
+            if let split = tabManager.activeSplit { tabManager.rotateSplit(split.id) }
+        case .separateSplitView:
+            if let split = tabManager.activeSplit { tabManager.separateSplit(split.id) }
         case .muteTab, .unmuteTab:
             tabManager.activeTab?.toggleMuted()
         case .pauseMedia:
@@ -215,6 +222,8 @@ final class CommandBarModel: ObservableObject {
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
             case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
             case .duplicateTab: true
+            case .addSplitView: tabManager.canAddSplitPane
+            case .rotateSplitView, .separateSplitView: tabManager.activeSplit != nil
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
             case .pauseMedia: tabManager.mediaTab?.nowPlaying?.isPlaying == true

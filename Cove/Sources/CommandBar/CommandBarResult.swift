@@ -65,6 +65,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case newSpace
     case editSpace
     case duplicateTab
+    case addSplitView
+    case rotateSplitView
+    case separateSplitView
     case muteTab
     case unmuteTab
     case pauseMedia
@@ -103,6 +106,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: "New Space"
         case .editSpace: "Edit Space"
         case .duplicateTab: "Duplicate Tab"
+        case .addSplitView: "Add Split View"
+        case .rotateSplitView: "Rotate Split View"
+        case .separateSplitView: "Separate Split View"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
         case .pauseMedia: "Pause Media"
@@ -143,6 +149,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: ChromeSymbols.Settings.spaces
         case .editSpace: "pencil"
         case .duplicateTab: "plus.square.on.square"
+        case .addSplitView: ChromeSymbols.Tabs.splitView
+        case .rotateSplitView: ChromeSymbols.Tabs.splitVertically
+        case .separateSplitView: "rectangle"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
         case .pauseMedia: ChromeSymbols.Media.pause
@@ -183,6 +192,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: ["create", "add", "profile"]
         case .editSpace: ["rename", "icon", "color", "theme", "profile"]
         case .duplicateTab: ["copy", "clone"]
+        case .addSplitView: ["side by side", "pane", "tile"]
+        case .rotateSplitView: ["vertical", "horizontal", "stack", "side by side"]
+        case .separateSplitView: ["unsplit", "pane"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]
         case .closeOtherTabs: ["clean", "tidy"]
