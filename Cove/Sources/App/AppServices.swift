@@ -15,6 +15,7 @@ final class AppServices {
     let pinStore = PinStore()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
+    let boosts = BoostInjector(store: BoostStore())
 
     private var didPrepareLaunch = false
 
@@ -44,7 +45,8 @@ final class AppServices {
             webKitEnvironment: webKitEnvironment,
             contentBlocker: contentBlockerManager,
             context: context,
-            siteZoom: siteZoom
+            siteZoom: siteZoom,
+            boosts: boosts
         )
     }
 

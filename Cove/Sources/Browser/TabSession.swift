@@ -17,6 +17,7 @@ struct TabSessionServices {
     let contentBlocker: ContentBlockerManager
     let context: BrowsingContext
     let siteZoom: SiteZoomStore
+    let boosts: BoostInjector
 }
 
 @MainActor
@@ -585,6 +586,7 @@ extension TabSession: WKNavigationDelegate {
                 webView.configuration.userContentController,
                 for: navigationAction.request.url
             )
+            services.boosts.update(webView, for: navigationAction.request.url)
         }
         return .allow
     }
