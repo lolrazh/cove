@@ -370,9 +370,10 @@ final class TabManager: ObservableObject {
         )
     }
 
+    /// Next to the opener goes past the rest of its split, which stays together.
     private func open(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         if let openerID,
-           let openerIndex = tabs.firstIndex(where: { $0.id == openerID }) {
+           let openerIndex = tabs.lastIndex(where: { splitGroup(of: openerID).contains($0.id) }) {
             tabs.insert(tab, at: openerIndex + 1)
         } else {
             tabs.append(tab)
