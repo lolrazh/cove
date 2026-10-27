@@ -12,6 +12,7 @@ final class AppServices {
     let tabArchive = TabArchive()
     /// What normal windows browse with; private windows make their own.
     let browsingContext: BrowsingContext
+    let pinStore = PinStore()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
 

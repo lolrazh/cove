@@ -17,11 +17,20 @@ enum BookmarkImport {
         case unrecognizedFile
     }
 
+    enum Source: String {
+        case safari = "Safari"
+        case chrome = "Chrome"
+    }
+
     /// Tells the two formats apart by content, since Chrome's file has no
     /// extension: JSON starts with a brace, a property list doesn't.
-    static func bookmarks(from data: Data) throws -> [ImportedBookmark] {
+    static func source(of data: Data) -> Source {
         let firstByte = data.first { !Character(UnicodeScalar($0)).isWhitespace }
-        return firstByte == UInt8(ascii: "{") ? try chrome(data) : try safari(data)
+        return firstByte == UInt8(ascii: "{") ? .chrome : .safari
+    }
+
+    static func bookmarks(from data: Data) throws -> [ImportedBookmark] {
+        source(of: data) == .chrome ? try chrome(data) : try safari(data)
     }
 
     // MARK: - Safari

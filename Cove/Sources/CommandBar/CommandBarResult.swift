@@ -55,6 +55,11 @@ struct CommandBarSection: Identifiable {
 /// elsewhere in the app, under the names their menu items use.
 enum CommandBarCommand: CaseIterable, Hashable {
     case copyURL
+    case pinTab
+    case unpinTab
+    case addToFavorites
+    case newFolder
+    case importBookmarks
     case duplicateTab
     case muteTab
     case unmuteTab
@@ -84,6 +89,11 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var title: String {
         switch self {
         case .copyURL: "Copy URL"
+        case .pinTab: "Pin Tab"
+        case .unpinTab: "Unpin Tab"
+        case .addToFavorites: "Add to Favorites"
+        case .newFolder: "New Folder"
+        case .importBookmarks: "Import Bookmarks"
         case .duplicateTab: "Duplicate Tab"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
@@ -115,6 +125,11 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var symbol: String {
         switch self {
         case .copyURL: "link"
+        case .pinTab: ChromeSymbols.Tabs.pin
+        case .unpinTab: ChromeSymbols.Tabs.unpin
+        case .addToFavorites: ChromeSymbols.Tabs.favorite
+        case .newFolder: ChromeSymbols.Tabs.folder
+        case .importBookmarks: "square.and.arrow.down.on.square"
         case .duplicateTab: "plus.square.on.square"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
@@ -146,6 +161,11 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var keywords: [String] {
         switch self {
         case .copyURL: ["link", "address"]
+        case .pinTab: ["bookmark", "keep"]
+        case .unpinTab: ["bookmark", "today"]
+        case .addToFavorites: ["favourite", "bookmark", "star"]
+        case .newFolder: ["pinned", "group"]
+        case .importBookmarks: ["safari", "chrome", "pinned"]
         case .duplicateTab: ["copy", "clone"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Cove
 
@@ -55,6 +56,28 @@ struct TabOrderTests {
         unchanged.move("c", onto: "c")
         unchanged.move("z", onto: "a")
         #expect(unchanged == tabs)
+    }
+
+    @Test func `the display order runs favorites, pinned, then today, as each layout shows them`() {
+        struct Pinned: Identifiable { let id = UUID(); let name: Character }
+        let favorites = "fg".map(Pinned.init)
+        let (a, b, c, d) = (Pinned(name: "a"), Pinned(name: "b"), Pinned(name: "c"), Pinned(name: "d"))
+        let folded = SidebarFolder(name: "Folded", isCollapsed: true, contents: SidebarTree([.tab(c)]))
+        let open = SidebarFolder(name: "Open", contents: SidebarTree([.tab(d)]))
+        let pinned = SidebarTree([.tab(a), .folder(folded), .folder(open), .tab(b)])
+        let today = "xyz".map(Pinned.init)
+
+        func names(_ tabs: [Pinned]) -> String { String(tabs.map(\.name)) }
+        let sidebar = TabLayout.sidebar.displayOrder(favorites: favorites, pinned: pinned, today: today)
+        let strip = TabLayout.horizontal.displayOrder(favorites: favorites, pinned: pinned, today: today)
+
+        // The sidebar skips the folded folder's tab and lists Today newest first.
+        #expect(names(sidebar) == "fgadbzyx")
+        #expect(names(strip) == "fgacdbxyz")
+        // ⌘1 is the first favorite, or the first pinned tab without any.
+        #expect(sidebar.element(forShortcut: 1)?.name == "f")
+        #expect(TabLayout.sidebar.displayOrder(favorites: [], pinned: pinned, today: today).element(forShortcut: 1)?.name == "a")
+        #expect(sidebar.element(forShortcut: 9)?.name == "x")
     }
 
     @Test func `moving works the same in a list shown reversed`() {

@@ -15,7 +15,13 @@ struct TabStripView: View {
     }
 
     private var tabOrder: [UUID] {
-        tabManager.tabs.map(\.id)
+        (pinnedTabs + tabManager.tabs).map(\.id)
+    }
+
+    /// Favorites and pinned tabs lead the strip as favicon-only tabs, like
+    /// Safari's pinned tabs; the sidebar's folders are flattened.
+    private var pinnedTabs: [TabSession] {
+        tabManager.favorites + tabManager.pinned.tabs
     }
 
     private var tabAnimation: Animation? {
@@ -43,18 +49,11 @@ struct TabStripView: View {
         let sharedTabWidth = resolvedSharedTabWidth(for: availableWidth)
 
         return HStack(spacing: Metrics.tabSpacing) {
+            ForEach(pinnedTabs) { tab in
+                tabItem(tab, presentation: .compact, width: ChromeMetrics.compactTabWidth)
+            }
             ForEach(tabManager.tabs) { tab in
-                ChromeTabItem(
-                    tab: tab,
-                    tabManager: tabManager,
-                    presentation: .horizontal,
-                    isActive: tab.id == tabManager.activeTabID,
-                    canClose: tabManager.tabs.count > 1,
-                    width: sharedTabWidth
-                )
-                .reorderableTab(tab, in: tabManager, dragging: $draggedTabID)
-                .background { WindowDragExclusion() }
-                .transition(.tabSlot(.horizontal))
+                tabItem(tab, presentation: .horizontal, width: sharedTabWidth)
             }
             Button(action: { tabManager.newTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
@@ -68,10 +67,25 @@ struct TabStripView: View {
         .animation(tabAnimation, value: tabOrder)
     }
 
+    private func tabItem(_ tab: TabSession, presentation: ChromeTabPresentation, width: CGFloat) -> some View {
+        ChromeTabItem(
+            tab: tab,
+            tabManager: tabManager,
+            presentation: presentation,
+            isActive: tab.id == tabManager.activeTabID,
+            canClose: tabManager.canCloseTab(tab.id),
+            width: width
+        )
+        .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+        .background { WindowDragExclusion() }
+        .transition(.tabSlot(.horizontal))
+    }
+
     private func resolvedSharedTabWidth(for availableWidth: CGFloat) -> CGFloat {
         let tabCount = max(tabManager.tabs.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
-        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight
+        let pinnedReservation = CGFloat(pinnedTabs.count) * (ChromeMetrics.compactTabWidth + Metrics.tabSpacing)
+        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 

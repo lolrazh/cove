@@ -2,6 +2,8 @@ import SwiftUI
 
 enum ChromeTabPresentation {
     case horizontal
+    /// A pinned tab or favorite in the top strip: the favicon alone.
+    case compact
     case sidebar
 }
 
@@ -20,26 +22,35 @@ struct ChromeTabItem: View {
     @State private var isHovered = false
     @State private var isRenaming = false
     @State private var draftTitle = ""
-    @FocusState private var isTitleFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
-            FaviconView(image: tab.favicon, size: 16)
+            if presentation == .compact {
+                // The favicon, or the sound control while there's sound.
+                if showsAudioButton {
+                    audioButton
+                } else {
+                    FaviconView(image: tab.favicon, size: 16)
+                }
+            } else {
+                FaviconView(image: tab.favicon, size: 16)
 
-            titleView
-                .frame(maxWidth: .infinity, alignment: .leading)
+                titleView
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Close together, so narrow top tabs keep room for the title.
-            HStack(spacing: 0) {
-                audioButton
-                closeButton
+                // Close together, so narrow top tabs keep room for the title.
+                HStack(spacing: 0) {
+                    backToPinButton
+                    audioButton
+                    closeButton
+                }
             }
         }
         // A sleeping tab fades a little, as in Arc, until hovered: it's still
         // there, it just has to wake.
         .opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
-        .padding(.leading, 8)
-        .padding(.trailing, ChromeMetrics.tabAccessoryInset)
+        .padding(.leading, presentation == .compact ? 0 : 8)
+        .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
         .frame(width: width, height: height)
         .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
         // Makes the close button's ConcentricRectangle follow this tab's corners.
@@ -48,12 +59,14 @@ struct ChromeTabItem: View {
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
+        .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
         .animation(ChromeMotion.fade, value: tab.isAsleep)
         .onHover { isHovered = $0 }
         .onTapGesture { tabManager.selectTab(tab.id) }
         // Alongside the single click, so selecting a tab never waits to see
         // whether a second click follows.
         .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .help(presentation == .compact ? title : "")
         .contextMenu {
             TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: beginRenaming))
         }
@@ -64,16 +77,8 @@ struct ChromeTabItem: View {
     @ViewBuilder
     private var titleView: some View {
         if isRenaming {
-            TextField("Tab Name", text: $draftTitle)
-                .textFieldStyle(.plain)
+            RenameField(prompt: "Tab Name", text: $draftTitle, onCommit: finishRenaming) { isRenaming = false }
                 .font(.callout)
-                .focused($isTitleFieldFocused)
-                .onAppear { isTitleFieldFocused = true }
-                .onSubmit(finishRenaming)
-                .onExitCommand { isRenaming = false }
-                .onChange(of: isTitleFieldFocused) { _, isFocused in
-                    if !isFocused { finishRenaming() }
-                }
         } else {
             Text(title)
                 .font(.callout)
@@ -112,6 +117,24 @@ struct ChromeTabItem: View {
         }
     }
 
+    /// A pinned tab that has wandered offers the way back to its pinned page.
+    @ViewBuilder
+    private var backToPinButton: some View {
+        if tab.isAwayFromPin {
+            Button(action: tab.returnToPin) {
+                Image(systemName: ChromeSymbols.Tabs.backToPin)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(accessoryStyle)
+            .help("Back to \(pinnedHost)")
+            .transition(.opacity)
+        }
+    }
+
+    private var pinnedHost: String {
+        tab.pinnedURL.flatMap(URL.init).flatMap(\.host) ?? "pinned page"
+    }
+
     private static let asleepOpacity = 0.55
 
     private var closeButton: some View {
@@ -139,7 +162,7 @@ struct ChromeTabItem: View {
                 shape
                     .fill(ChromePalette.raised)
                     .chromeShadow(.raised)
-            case .horizontal:
+            case .horizontal, .compact:
                 AttachedTabShape()
                     .fill(ChromePalette.content)
                     .padding(.horizontal, -ChromeRadius.flare)
@@ -164,7 +187,7 @@ struct ChromeTabItem: View {
 
     private var height: CGFloat {
         switch presentation {
-        case .horizontal: ChromeMetrics.tabHeight
+        case .horizontal, .compact: ChromeMetrics.tabHeight
         case .sidebar: ChromeMetrics.sidebarRowHeight
         }
     }
