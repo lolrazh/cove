@@ -19,6 +19,12 @@ struct BrowserViewCommands: Commands {
             .keyboardShortcut("n", modifiers: [.command, .control])
             .disabled(tabManager?.documentStore == nil)
 
+            Button("New Easel") {
+                tabManager?.newDocument(.easel)
+            }
+            .keyboardShortcut("e", modifiers: [.command, .control])
+            .disabled(tabManager?.documentStore == nil)
+
             Button("New Window") {
                 openWindow(id: BrowserView.windowID)
             }

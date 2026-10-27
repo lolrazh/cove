@@ -151,7 +151,8 @@ private struct CaptureResultBar: View {
             action("Copy", symbol: ChromeSymbols.Capture.copy) { tabManager.copyCapture(capture) }
             action("Save…", symbol: ChromeSymbols.Capture.save) { tabManager.saveCapture(capture) }
             if tabManager.documentStore != nil {
-                sendToNote
+                send(to: .note)
+                send(to: .easel)
             }
 
             Button(action: tabManager.endCapture) {
@@ -166,19 +167,19 @@ private struct CaptureResultBar: View {
         .padding(16)
     }
 
-    /// A new note, or the end of a recent one.
-    private var sendToNote: some View {
+    /// A new note or easel, or a recent one.
+    private func send(to kind: DocumentKind) -> some View {
         Menu {
-            Button("New Note") { tabManager.sendCapture(capture, toNote: nil) }
-            let notes = tabManager.captureDestinations.prefix(8)
-            if !notes.isEmpty {
+            Button("New \(kind.name)") { tabManager.sendCapture(capture, to: kind, id: nil) }
+            let documents = tabManager.captureDestinations(kind).prefix(8)
+            if !documents.isEmpty {
                 Divider()
-                ForEach(notes) { note in
-                    Button(note.displayTitle) { tabManager.sendCapture(capture, toNote: note.id) }
+                ForEach(documents) { document in
+                    Button(document.displayTitle) { tabManager.sendCapture(capture, to: kind, id: document.id) }
                 }
             }
         } label: {
-            Label("Send to Note", systemImage: ChromeSymbols.Documents.note)
+            Label("Send to \(kind.name)", systemImage: kind.symbol)
                 .padding(.horizontal, 8)
         }
         .menuStyle(.button)

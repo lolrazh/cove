@@ -1,6 +1,6 @@
-import Foundation
+import WebKit
 
-/// Arc's notes, kept in the sidebar like tabs: made in Today, pinnable in
+/// Arc's notes and easels, kept in the sidebar like tabs: made in Today, pinnable in
 /// Pinned and its folders, a space's own. One on screen takes the page
 /// card's place; the active tab stays selected beneath it, so selecting any
 /// tab brings the page back. A private window has none: a note is written
@@ -9,6 +9,12 @@ extension TabManager {
     /// The note on screen.
     var activeDocument: DocumentInfo? {
         activeDocumentID.flatMap { documentStore?.documents[$0] }
+    }
+
+    /// What an easel's live clippings browse with: the space's profile, so a
+    /// signed-in page stays signed in.
+    var clippingDataStore: WKWebsiteDataStore {
+        (activeTab?.services ?? services).context.dataStore
     }
 
     func isDocument(_ id: UUID) -> Bool {

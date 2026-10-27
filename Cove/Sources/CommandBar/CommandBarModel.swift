@@ -164,6 +164,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.newFolder()
         case .newNote:
             tabManager.newDocument(.note)
+        case .newEasel:
+            tabManager.newDocument(.easel)
         case .importBookmarks:
             tabManager.importBookmarks()
         case .newSpace:
@@ -240,7 +242,7 @@ final class CommandBarModel: ObservableObject {
             case .addToFavorites: showsPage && canPin && [.today, .pinned].contains(activeSection)
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
             case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
-            case .newNote: tabManager.documentStore != nil
+            case .newNote, .newEasel: tabManager.documentStore != nil
             case .duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView where !showsPage: false
             case .duplicateTab: true
             case .addSplitView: tabManager.canAddSplitPane

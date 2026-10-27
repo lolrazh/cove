@@ -47,6 +47,7 @@ enum ChromeSymbols {
     enum Documents {
         static let note = "note.text"
         static let newNote = "square.and.pencil"
+        static let easel = "scribble.variable"
     }
 
     enum Spaces {

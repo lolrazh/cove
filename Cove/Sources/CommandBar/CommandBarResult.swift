@@ -66,6 +66,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case addToFavorites
     case newFolder
     case newNote
+    case newEasel
     case importBookmarks
     case newSpace
     case editSpace
@@ -110,6 +111,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
         case .newNote: "New Note"
+        case .newEasel: "New Easel"
         case .importBookmarks: "Import Bookmarks"
         case .newSpace: "New Space"
         case .editSpace: "Edit Space"
@@ -156,6 +158,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
         case .newNote: ChromeSymbols.Documents.newNote
+        case .newEasel: ChromeSymbols.Documents.easel
         case .importBookmarks: "square.and.arrow.down.on.square"
         case .newSpace: ChromeSymbols.Settings.spaces
         case .editSpace: "pencil"
@@ -202,6 +205,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
         case .newNote: ["write", "text", "document", "jot"]
+        case .newEasel: ["canvas", "board", "draw", "sketch", "whiteboard", "clipping"]
         case .importBookmarks: ["safari", "chrome", "pinned"]
         case .newSpace: ["create", "add", "profile"]
         case .editSpace: ["rename", "icon", "color", "theme", "profile"]

@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// A note in the page card, in the page's place. Links in it open in new tabs.
+/// A note or easel in the page card, in the page's place. Links in it, and
+/// clippings' pages, open in new tabs.
 struct DocumentPage: View {
     let id: UUID
     @ObservedObject var store: DocumentStore
@@ -12,6 +13,12 @@ struct DocumentPage: View {
             case .note:
                 if let note = store.note(id) {
                     NoteView(id: id, note: note, store: store) { tabManager.addTab(url: $0.absoluteString) }
+                }
+            case .easel:
+                if let easel = store.easel(id) {
+                    EaselView(id: id, easel: easel, store: store, dataStore: tabManager.clippingDataStore) {
+                        tabManager.addTab(url: $0.absoluteString)
+                    }
                 }
             }
         }

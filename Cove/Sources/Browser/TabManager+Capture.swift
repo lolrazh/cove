@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 /// Arc's Capture (⌘⇧2, the Command Bar, a page's context menu): a region or
 /// an element of the active page as an image, to copy, save, or send to a
-/// note.
+/// note or, as a live clipping, to an easel.
 extension TabManager {
     /// Starts capturing the active page, in region mode.
     func startCapture() {
@@ -29,21 +29,24 @@ extension TabManager {
         toasts.show("Copied Capture", symbol: ChromeSymbols.Capture.capture)
     }
 
-    /// The notes a capture can go to, most recently changed first.
-    var captureDestinations: [DocumentInfo] {
-        (documentStore?.documents.values.filter { $0.kind == .note } ?? [])
+    /// The notes or easels a capture can go to, most recently changed first.
+    func captureDestinations(_ kind: DocumentKind) -> [DocumentInfo] {
+        (documentStore?.documents.values.filter { $0.kind == kind } ?? [])
             .sorted { $0.modifiedAt > $1.modifiedAt }
     }
 
-    /// The capture at the end of a note, or of a new one named for its page;
-    /// the note comes on screen.
-    func sendCapture(_ capture: Capture, toNote id: UUID?) {
+    /// The capture at the end of a note, or as a live clipping on an easel,
+    /// or on a new one named for its page; it comes on screen.
+    func sendCapture(_ capture: Capture, to kind: DocumentKind, id: UUID?) {
         guard let documentStore else { return }
-        let id = id ?? documentStore.create(.note).id
+        let id = id ?? documentStore.create(kind).id
         if documentStore.documents[id]?.title.isEmpty == true {
             documentStore.rename(id, to: capture.source.name)
         }
-        documentStore.note(id)?.append(capture)
+        switch kind {
+        case .note: documentStore.note(id)?.append(capture)
+        case .easel: documentStore.easel(id)?.add(capture)
+        }
         endCapture()
         showDocument(id)
     }

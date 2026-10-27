@@ -178,6 +178,7 @@ struct SidebarTabView: View {
             .contextMenu {
                 if tabManager.documentStore != nil {
                     Button("New Note") { tabManager.newDocument(.note) }
+                    Button("New Easel") { tabManager.newDocument(.easel) }
                 }
             }
 
