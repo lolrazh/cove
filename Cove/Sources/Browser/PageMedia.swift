@@ -12,8 +12,8 @@ import WebKit
 /// those, and a page that unmutes itself is muted again. Sound made with Web
 /// Audio, or by media elements never added to the document, isn't seen.
 @MainActor
-final class PageAudio {
-    private static let messageName = "pageAudio"
+final class PageMedia {
+    private static let messageName = "pageMedia"
 
     private static let script = """
     (() => {
@@ -113,10 +113,10 @@ final class PageAudio {
     /// Holds the monitor weakly: the content controller keeps its handlers
     /// for as long as the web view lives.
     private final class Relay: NSObject, WKScriptMessageHandlerWithReply {
-        private weak var audio: PageAudio?
+        private weak var media: PageMedia?
 
-        init(_ audio: PageAudio) {
-            self.audio = audio
+        init(_ media: PageMedia) {
+            self.media = media
         }
 
         @MainActor
@@ -127,8 +127,8 @@ final class PageAudio {
             guard let body = message.body as? [String: Any],
                   let id = body["frame"] as? String,
                   let isAudible = body["audible"] as? Bool,
-                  let audio else { return (false, nil) }
-            return (audio.frame(id, isAudible: isAudible, info: message.frameInfo), nil)
+                  let media else { return (false, nil) }
+            return (media.frame(id, isAudible: isAudible, info: message.frameInfo), nil)
         }
     }
 }

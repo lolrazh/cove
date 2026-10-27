@@ -63,7 +63,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let onSelect: (@MainActor () -> Void)?
     private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
-    private var audio: PageAudio?
+    private var media: PageMedia?
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
     private var webViewCanGoForward = false
@@ -205,7 +205,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         let interactionState = loadFailure == nil ? webView.interactionState as? Data : nil
         releaseWebView(webView)
         page = .asleep(interactionState: interactionState)
-        audio = nil
+        media = nil
         isLoading = false
         estimatedProgress = 0
         loadFailure = nil
@@ -290,7 +290,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func toggleMuted() {
         isMuted.toggle()
-        audio?.setMuted(isMuted)
+        media?.setMuted(isMuted)
     }
 
     /// The page's zoom, remembered for its site.
@@ -388,7 +388,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         FormInput.install(in: webView.configuration.userContentController) { [weak self] hasInput in
             self?.hasUnsavedInput = hasInput
         }
-        audio = PageAudio(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
+        media = PageMedia(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
             self?.isPlayingAudio = isPlaying
         }
     }
@@ -483,7 +483,7 @@ extension TabSession: WKNavigationDelegate {
     /// A new page: its audio starts fresh, and its site opens at the zoom it
     /// was left at.
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        audio?.reset()
+        media?.reset()
         webView.pageZoom = services.siteZoom.zoom(for: webView.url)
     }
 
