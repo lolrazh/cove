@@ -245,6 +245,11 @@ final class TabManager: ObservableObject {
         selectTab(tab.id)
     }
 
+    /// Drag and drop: the dragged tab takes the place of the one under it.
+    func moveTab(_ id: UUID, onto target: UUID) {
+        tabs.move(id, onto: target)
+    }
+
     /// A copy of the tab beside it, back and forward history included.
     func duplicateTab(_ id: UUID) {
         guard let tab = tabs.first(where: { $0.id == id }) else { return }

@@ -26,6 +26,7 @@
 		2E68D5EC61BEEF96F135EBBF /* BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */; };
 		38546BB588A7E827B0AD51DD /* ChromeTabSlot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8F2DFCC94DC9CB6FDFFF7D3 /* ChromeTabSlot.swift */; };
 		3AF825DE92C8A7FA1413EF0D /* FaviconFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED634449436374F07F550C3C /* FaviconFetcher.swift */; };
+		3BB7BADFA4DBB8B2A92FA1D0 /* TabReordering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 875E7F241F959DD45E691CEA /* TabReordering.swift */; };
 		446759578956DFFE0AA2E11D /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4612B5D749B998C0867F1355 /* BrowserWebView.swift */; };
 		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
 		4EE45757F76BCE50BA2AED6D /* BrowserShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1371EC35AEAB2357849190 /* BrowserShellView.swift */; };
@@ -123,6 +124,7 @@
 		7C09C21F89D86520A6E27B5B /* FaviconImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconImage.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
 		829CC2510A17E758182AA6CE /* TabOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabOrderTests.swift; sourceTree = "<group>"; };
+		875E7F241F959DD45E691CEA /* TabReordering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReordering.swift; sourceTree = "<group>"; };
 		8E0D8B72636BB66A1C1A7A8D /* ChromeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTheme.swift; sourceTree = "<group>"; };
 		8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedTabShape.swift; sourceTree = "<group>"; };
 		8FE6C74D8892131AED706785 /* TabSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSession.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
 				C8F2B914158DA789C71247F6 /* SiteMonogram.swift */,
 				2452CC2ABC37DA8D2EB63E6C /* TabActions.swift */,
+				875E7F241F959DD45E691CEA /* TabReordering.swift */,
 				C8A4E68B430D945E3968A4B9 /* TabStripView.swift */,
 				2C4EDC71019502B637450CF1 /* WindowChromeHost.swift */,
 				3DCDB299366F2892C2866707 /* Foundation */,
@@ -469,6 +472,7 @@
 				90DC20D2F55390DA459C3922 /* TabCommands.swift in Sources */,
 				4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */,
 				89257E2980E78C1F9E822D53 /* TabOrder.swift in Sources */,
+				3BB7BADFA4DBB8B2A92FA1D0 /* TabReordering.swift in Sources */,
 				5B8E3220895EF655A6AE359F /* TabSession.swift in Sources */,
 				7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */,
 				4F30D6D1F9940BA0EEC8AF7A /* Toast.swift in Sources */,
