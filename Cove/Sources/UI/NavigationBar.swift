@@ -26,6 +26,9 @@ struct NavigationBar: View {
         HStack(spacing: 8) {
             NavigationControls(session: session)
             addressField
+            if tabManager.isPrivate {
+                PrivateBadge()
+            }
             MediaPlayer(tabManager: tabManager, style: .compact)
             DownloadsStatusButton(downloadManager: downloadManager)
         }

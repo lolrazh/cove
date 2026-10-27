@@ -26,7 +26,7 @@ final class CommandBarModel: ObservableObject {
     private let historyStore: HistoryStore
     private let faviconStore: FaviconStore
     private let recentlyClosed: RecentlyClosedTabs
-    private let archive: TabArchive
+    private let archive: TabArchive?
     private let ranker = CommandBarRanker()
     private let suggestions = SearchSuggestions()
     private var suggestionTask: Task<Void, Never>?
@@ -40,7 +40,7 @@ final class CommandBarModel: ObservableObject {
         historyStore: HistoryStore,
         faviconStore: FaviconStore,
         recentlyClosed: RecentlyClosedTabs,
-        archive: TabArchive
+        archive: TabArchive?
     ) {
         self.tabManager = tabManager
         self.settings = settings
@@ -168,7 +168,7 @@ final class CommandBarModel: ObservableObject {
             withAnimation(ChromeMotion.shell) { tabManager.setHideTabs(false) }
         case .reopenClosedTab:
             tabManager.reopenClosedTab()
-        case .newWindow, .showHistory, .settings:
+        case .newWindow, .newPrivateWindow, .showHistory, .settings:
             // Opening a SwiftUI scene needs the view's environment; the view
             // handles these before calling `open`.
             break
@@ -197,7 +197,7 @@ final class CommandBarModel: ObservableObject {
             case .hideTabs: !tabManager.hideTabs
             case .showTabs: tabManager.hideTabs
             case .reopenClosedTab: !recentlyClosed.entries.isEmpty
-            case .newWindow, .showHistory, .settings: true
+            case .newWindow, .newPrivateWindow, .showHistory, .settings: true
             }
         }
     }
@@ -219,7 +219,7 @@ final class CommandBarModel: ObservableObject {
             query: query,
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
-                archive: archive.entries,
+                archive: archive?.entries ?? [],
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),
                 commands: availableCommands

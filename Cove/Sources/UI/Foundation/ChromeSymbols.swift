@@ -11,6 +11,7 @@ enum ChromeSymbols {
         static let loadFailed = "exclamationmark.triangle"
         static let secure = "lock.fill"
         static let link = "link"
+        static let privateBrowsing = "hand.raised.fill"
     }
 
     enum Tabs {

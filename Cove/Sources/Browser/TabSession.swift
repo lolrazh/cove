@@ -15,7 +15,7 @@ struct TabSessionServices {
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
     let contentBlocker: ContentBlockerManager
-    let sitePermissions: SitePermissions
+    let context: BrowsingContext
     let siteZoom: SiteZoomStore
 }
 
@@ -189,7 +189,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         case .awake(let webView):
             return webView
         case .asleep(let interactionState):
-            let webView = services.webKitEnvironment.makeWebView()
+            let webView = services.webKitEnvironment.makeWebView(in: services.context)
             page = .awake(webView)
             configureWebView(webView)
             setupObservers(for: webView)
@@ -507,8 +507,10 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
-        services.historyStore.recordVisit(url: url, title: title)
-        visitAwaitingTitle = title.isEmpty ? url : nil
+        if !services.context.isPrivate {
+            services.historyStore.recordVisit(url: url, title: title)
+            visitAwaitingTitle = title.isEmpty ? url : nil
+        }
         faviconFetcher.upgradeFromPage(webView, currentImage: favicon) { [weak self] image in
             self?.favicon = image
         }
@@ -667,7 +669,7 @@ extension TabSession: WKUIDelegate {
         origin: WKSecurityOrigin
     ) async -> WKPermissionDecision {
         guard let window = await dialogWindow() else { return .deny }
-        return await services.sitePermissions.decide(devices, for: origin) {
+        return await services.context.sitePermissions.decide(devices, for: origin) {
             await PageDialogs.allow(devices, for: origin, in: window)
         }
     }

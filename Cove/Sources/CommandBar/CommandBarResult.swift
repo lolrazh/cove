@@ -76,6 +76,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case showTabs
     case reopenClosedTab
     case newWindow
+    case newPrivateWindow
     case showHistory
     case settings
 
@@ -103,6 +104,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .showTabs: "Show Tabs"
         case .reopenClosedTab: "Reopen Last Closed Tab"
         case .newWindow: "New Window"
+        case .newPrivateWindow: "New Private Window"
         case .showHistory: "Show All History"
         case .settings: "Settings"
         }
@@ -131,6 +133,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .showTabs: "eye"
         case .reopenClosedTab: "arrow.uturn.backward"
         case .newWindow: "macwindow.badge.plus"
+        case .newPrivateWindow: ChromeSymbols.Navigation.privateBrowsing
         case .showHistory: ChromeSymbols.Navigation.history
         case .settings: ChromeSymbols.Settings.general
         }
@@ -157,6 +160,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .hideTabs, .showTabs: ["toggle", "sidebar", "immersive"]
         case .reopenClosedTab: ["restore", "undo"]
         case .newWindow: []
+        case .newPrivateWindow: ["incognito", "private browsing"]
         case .showHistory: ["recent", "visited"]
         case .settings: ["preferences", "options"]
         }

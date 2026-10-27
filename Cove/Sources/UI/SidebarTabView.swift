@@ -89,6 +89,12 @@ struct SidebarTabView: View {
             NavigationControls(session: activeTab)
 
             Spacer(minLength: 0)
+
+            if tabManager.isPrivate {
+                // The header has no room for the word beside the controls.
+                PrivateBadge()
+                    .labelStyle(.iconOnly)
+            }
         }
         .padding(.leading, headerLeadingInset)
         .padding(.trailing, ChromeMetrics.sidebarInset)

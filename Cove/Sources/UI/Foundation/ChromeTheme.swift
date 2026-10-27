@@ -8,6 +8,10 @@ struct ChromeTheme: Equatable {
 
     static let system = ChromeTheme()
 
+    /// Private windows: a deep indigo that darkens the frame in either
+    /// appearance, so they never pass for a normal window.
+    static let privateBrowsing = ChromeTheme(rawValue: "#2E2560")
+
     /// The Settings swatches, after Arc's space colors: saturated enough to
     /// survive the mix below, in both appearances.
     static let presets: [ChromeTheme] = [

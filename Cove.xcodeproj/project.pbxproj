@@ -65,7 +65,9 @@
 		90007D43BCC7E8C6B486D5AA /* ContentBlockerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */; };
 		90DC20D2F55390DA459C3922 /* TabCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5502F0C04024977CFC65877E /* TabCommands.swift */; };
 		977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8E34BC62111CB1B5E23952B /* SettingsView.swift */; };
+		986C5523B0EA491EF47E55A0 /* PrivateBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */; };
 		997099B304C6308D9AB502C0 /* TabActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2452CC2ABC37DA8D2EB63E6C /* TabActions.swift */; };
+		9A447E43772345F3421D015D /* BrowsingContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234610D344EB4782FD7057DB /* BrowsingContext.swift */; };
 		9AD612205AE443FE902CCE73 /* CommandBarRanker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C96626CAA872A2EE0C1AB6F6 /* CommandBarRanker.swift */; };
 		9BA11BC9A01A1E0EE52AB25A /* ChromeSurfaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF75DD1E271153EF4173B1AD /* ChromeSurfaces.swift */; };
 		A09D337523E3A389C4EC77B7 /* ConnectionSecurity.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDED67D2689A57B6B30BADD1 /* ConnectionSecurity.swift */; };
@@ -122,6 +124,7 @@
 		0ED353AE473C25822ABBD4BA /* TabManager+PageTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TabManager+PageTools.swift"; sourceTree = "<group>"; };
 		1AAA58B74923BA5B80443009 /* PageZoom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageZoom.swift; sourceTree = "<group>"; };
 		1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyClosedTabs.swift; sourceTree = "<group>"; };
+		234610D344EB4782FD7057DB /* BrowsingContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowsingContext.swift; sourceTree = "<group>"; };
 		2452CC2ABC37DA8D2EB63E6C /* TabActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabActions.swift; sourceTree = "<group>"; };
 		299C6A48C45930BD9D73E7BA /* CommandBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarView.swift; sourceTree = "<group>"; };
 		2C4724DA9BDE2466D45B0FBA /* SidebarAddressPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAddressPill.swift; sourceTree = "<group>"; };
@@ -159,6 +162,7 @@
 		78CAF27E26781E0DB9D293C4 /* LoadFailurePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadFailurePage.swift; sourceTree = "<group>"; };
 		7C09C21F89D86520A6E27B5B /* FaviconImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconImage.swift; sourceTree = "<group>"; };
 		7CA337274A4F23ED7FF72368 /* Site.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Site.swift; sourceTree = "<group>"; };
+		7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateBadge.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
 		829CC2510A17E758182AA6CE /* TabOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabOrderTests.swift; sourceTree = "<group>"; };
 		875E7F241F959DD45E691CEA /* TabReordering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReordering.swift; sourceTree = "<group>"; };
@@ -243,6 +247,7 @@
 				E550183114525F755B5C3B04 /* NavigationControls.swift */,
 				7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */,
 				7593A82019BD18A2FB11A603 /* PageProgressBar.swift */,
+				7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */,
 				B4A8077A99B1B7F8AD4A2A2C /* SavePagePanel.swift */,
 				2C4724DA9BDE2466D45B0FBA /* SidebarAddressPill.swift */,
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
@@ -294,6 +299,7 @@
 			isa = PBXGroup;
 			children = (
 				4612B5D749B998C0867F1355 /* BrowserWebView.swift */,
+				234610D344EB4782FD7057DB /* BrowsingContext.swift */,
 				DDED67D2689A57B6B30BADD1 /* ConnectionSecurity.swift */,
 				06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */,
 				2CE2F65859C71D28B5A91955 /* Database.swift */,
@@ -508,6 +514,7 @@
 				4EE45757F76BCE50BA2AED6D /* BrowserShellView.swift in Sources */,
 				AAC6EAA04A4CE70A4BBB03C9 /* BrowserView.swift in Sources */,
 				446759578956DFFE0AA2E11D /* BrowserWebView.swift in Sources */,
+				9A447E43772345F3421D015D /* BrowsingContext.swift in Sources */,
 				F2EBBDA1FA1B344B886766C1 /* ChromeButtonStyle.swift in Sources */,
 				D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */,
 				9BA11BC9A01A1E0EE52AB25A /* ChromeSurfaces.swift in Sources */,
@@ -552,6 +559,7 @@
 				B7E7A51FA241EF02329EE04A /* PageProgressBar.swift in Sources */,
 				8B04F5475F57771937977934 /* PageToolsCommands.swift in Sources */,
 				FCFBCAA7E43C96A81DB158C2 /* PageZoom.swift in Sources */,
+				986C5523B0EA491EF47E55A0 /* PrivateBadge.swift in Sources */,
 				211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */,
 				154DFA3F0A442660CC2EACFE /* SavePagePanel.swift in Sources */,
 				14F9E6C68FB8FC3EFDBEFA65 /* SearchSuggestions.swift in Sources */,

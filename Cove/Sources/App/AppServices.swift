@@ -11,7 +11,8 @@ final class AppServices {
     let externalURLRouter: ExternalURLRouter
     let recentlyClosedTabs = RecentlyClosedTabs()
     let tabArchive = TabArchive()
-    let sitePermissions = SitePermissions()
+    /// What normal windows browse with; private windows make their own.
+    let browsingContext = BrowsingContext.standard()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
 
@@ -34,14 +35,14 @@ final class AppServices {
         self.externalURLRouter = externalURLRouter
     }
 
-    var tabSessionServices: TabSessionServices {
+    func tabSessionServices(in context: BrowsingContext) -> TabSessionServices {
         TabSessionServices(
             historyStore: historyStore,
             faviconStore: faviconStore,
             downloadManager: downloadManager,
             webKitEnvironment: webKitEnvironment,
             contentBlocker: contentBlockerManager,
-            sitePermissions: sitePermissions,
+            context: context,
             siteZoom: siteZoom
         )
     }

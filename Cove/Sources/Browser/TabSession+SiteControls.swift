@@ -21,7 +21,7 @@ extension TabSession {
     }
 
     var sitePermissions: SitePermissions {
-        services.sitePermissions
+        services.context.sitePermissions
     }
 
     /// Whether ads and trackers are blocked here: on in Settings, and not
