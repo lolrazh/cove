@@ -4,16 +4,13 @@ import WebKit
 /// it for good, by adding a selector for it to the Boost. Escape, or leaving
 /// the page, ends it.
 ///
-/// The script runs in the Boosts' content world. It swallows the click and
-/// the presses around it, so a zapped link or button does nothing. The
-/// selector it reports is meant to find the same element after a reload: a
-/// stable id, a test id, or the shortest path of tags and classes that finds
-/// it alone, made unique with `:nth-of-type` only where needed. Classes and
-/// ids with long runs of digits look generated and are skipped.
+/// The picker runs in the Boosts' content world. The selector it reports is
+/// meant to find the same element after a reload: a stable id, a test id, or
+/// the shortest path of tags and classes that finds it alone, made unique
+/// with `:nth-of-type` only where needed. Classes and ids with long runs of
+/// digits look generated and are skipped.
 @MainActor
-final class BoostZap {
-    private static let messageName = "boostZap"
-
+enum BoostZap {
     /// Returns a selector that finds the element alone in its document.
     static let selectorFunction = """
     (element) => {
@@ -50,113 +47,23 @@ final class BoostZap {
     }
     """
 
-    private static func script(selector: String) -> String {
-        """
-        (() => {
-            const selectorFor = \(selector);
-            const post = (message) => webkit.messageHandlers.\(messageName).postMessage(message);
-            const outline = document.createElement("div");
-            outline.style.cssText = `position: fixed; z-index: 2147483647; pointer-events: none;
-                border: 2px solid #ff4d6d; border-radius: 4px; background: rgb(255 77 109 / 0.15);
-                transition: all 80ms ease-out; display: none;`;
-            const cursor = document.createElement("style");
-            cursor.textContent = "* { cursor: crosshair !important; }";
-            document.documentElement.append(outline, cursor);
-
-            let target = null;
-            const show = (element) => {
-                target = element;
-                const box = element.getBoundingClientRect();
-                Object.assign(outline.style, {
-                    display: "block", left: `${box.left}px`, top: `${box.top}px`,
-                    width: `${box.width}px`, height: `${box.height}px`,
-                });
-            };
-            const swallow = (event) => {
-                event.preventDefault();
-                event.stopImmediatePropagation();
-            };
-            const listeners = {
-                mouseover: (event) => {
-                    if (event.target instanceof Element && event.target !== document.documentElement) { show(event.target); }
-                },
-                scroll: () => target && show(target),
-                pointerdown: swallow,
-                mousedown: swallow,
-                pointerup: swallow,
-                mouseup: swallow,
-                click: (event) => {
-                    swallow(event);
-                    if (!target) { return; }
-                    post({ selector: selectorFor(target) });
-                    outline.style.display = "none";
-                    target = null;
-                },
-                keydown: (event) => {
-                    if (event.key !== "Escape") { return; }
-                    swallow(event);
-                    stop();
-                    post({ ended: true });
-                },
-                pagehide: () => post({ ended: true }),
-            };
-            const stop = () => {
-                for (const [type, listener] of Object.entries(listeners)) {
-                    window.removeEventListener(type, listener, true);
-                }
-                outline.remove();
-                cursor.remove();
-            };
-            for (const [type, listener] of Object.entries(listeners)) {
-                window.addEventListener(type, listener, true);
-            }
-            globalThis.\(messageName) = { stop };
-        })();
-        """
-    }
-
-    private weak var webView: WKWebView?
-    private var isRunning = true
-
     /// Starts zapping in the page. `onZap` gets each selector; `onEnd` is
     /// called when the page ends it, by Escape or by going away.
-    init(in webView: WKWebView, onZap: @escaping @MainActor (String) -> Void, onEnd: @escaping @MainActor () -> Void) {
-        self.webView = webView
-        let relay = Relay { [weak self] message in
-            if let selector = message["selector"] as? String, !selector.isEmpty {
-                onZap(selector)
-            } else if message["ended"] != nil {
-                self?.stop()
-                onEnd()
-            }
-        }
-        webView.configuration.userContentController.add(relay, contentWorld: BoostInjector.world, name: Self.messageName)
-        webView.evaluateJavaScript(Self.script(selector: Self.selectorFunction), in: nil, in: BoostInjector.world)
-        // Escape goes to the page from here.
-        webView.window?.makeFirstResponder(webView)
-    }
-
-    /// Ends zapping; the page is left as it was, less what was zapped.
-    func stop() {
-        guard isRunning, let webView else { return }
-        isRunning = false
-        webView.evaluateJavaScript("globalThis.\(Self.messageName)?.stop()", in: nil, in: BoostInjector.world)
-        webView.configuration.userContentController.removeScriptMessageHandler(
-            forName: Self.messageName,
-            contentWorld: BoostInjector.world
+    static func start(
+        in webView: WKWebView,
+        onZap: @escaping @MainActor (String) -> Void,
+        onEnd: @escaping @MainActor () -> Void
+    ) -> ElementPicker {
+        ElementPicker(
+            in: webView,
+            world: BoostInjector.world,
+            name: "boostZap",
+            tint: "#ff4d6d",
+            report: selectorFunction,
+            onPick: { picked in
+                if let selector = picked as? String, !selector.isEmpty { onZap(selector) }
+            },
+            onEnd: onEnd
         )
-    }
-
-    private final class Relay: NSObject, WKScriptMessageHandler {
-        private let onMessage: @MainActor ([String: Any]) -> Void
-
-        init(_ onMessage: @escaping @MainActor ([String: Any]) -> Void) {
-            self.onMessage = onMessage
-        }
-
-        func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard let body = message.body as? [String: Any] else { return }
-            MainActor.assumeIsolated { onMessage(body) }
-        }
     }
 }
