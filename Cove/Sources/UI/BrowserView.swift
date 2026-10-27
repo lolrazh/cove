@@ -19,13 +19,15 @@ struct BrowserView: View {
 
     /// A normal window browses with the shared context and is saved with the
     /// session. A private window gets a context of its own and keeps nothing:
-    /// no session, and an archive of its own, in memory, for its closed tabs.
+    /// no session, no pins, and an archive of its own, in memory, for its
+    /// closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
         let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
         return TabManager(
             settings: appServices.settingsStore,
             services: appServices.tabSessionServices(in: context),
             archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
+            pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
             session: isPrivate ? nil : appServices.sessionStore
         )
     }

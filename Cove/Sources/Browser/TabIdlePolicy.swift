@@ -35,6 +35,14 @@ struct TabIdlePolicy {
         return policy
     }
 
+    /// For pinned tabs and favorites, which are kept for good: they sleep like
+    /// any other tab but are never archived.
+    var neverArchiving: Self {
+        var policy = self
+        policy.archiveAfter = nil
+        return policy
+    }
+
     /// Archiving wins when both are due. The selected tab and a tab in use
     /// are left alone.
     func action(for tab: Tab, at now: Date) -> Action? {

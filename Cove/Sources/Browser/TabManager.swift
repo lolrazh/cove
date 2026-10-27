@@ -12,15 +12,18 @@ final class TabManager: ObservableObject {
     /// Every open tab, oldest first: the top strip's order. The sidebar's Today
     /// section lists the same tabs newest first.
     @Published var tabs: [TabSession] = []
-    /// Arc's sections above Today. Nothing moves tabs into them yet; the
-    /// sidebar already lays them out so pinning and favorites slot in.
+    /// Arc's sections above Today: a live tab for each pin the store keeps,
+    /// Favorites as a row and Pinned as a tree with folders. Built from the
+    /// store, so every window shows the same pins with tabs of its own.
     @Published private(set) var favorites: [TabSession] = []
-    @Published private(set) var pinned: [TabSession] = []
+    @Published private(set) var pinned = SidebarTree<TabSession>()
+    /// A folder just made, for the sidebar to offer a name for.
+    @Published var folderToName: UUID?
     /// The selected tab is the one on screen, so it's always awake; the
     /// others may sleep once they've been left alone long enough.
     @Published var activeTabID: UUID? {
         didSet {
-            tabs.first { $0.id == oldValue }?.markUsed()
+            oldValue.flatMap(tab)?.markUsed()
             activeTab?.markUsed()
             activeTab?.wake()
         }
@@ -39,8 +42,14 @@ final class TabManager: ObservableObject {
     /// Where this window's closed and idle tabs go: the shared archive, or a
     /// private window's own, kept in memory and gone with the window.
     let archive: TabArchive
+    /// The shared pins, or a private window's own empty, unsaved ones.
+    private let pinStore: PinStore
     private let sweepClock = TabSweepClock()
     private var cancellables: Set<AnyCancellable> = []
+    /// The live tab behind each pin, by the pin's ID, and what keeps the
+    /// store up to date with where it is.
+    private var pinnedTabs: [UUID: TabSession] = [:]
+    private var pinnedTabRecorders: [UUID: AnyCancellable] = [:]
 
     /// This window's Command Bar. Lazy only because it needs `self`.
     private(set) lazy var commandBar = CommandBarModel(
@@ -55,14 +64,30 @@ final class TabManager: ObservableObject {
     private(set) lazy var library = LibraryModel(tabManager: self, services: services, archive: archive)
 
     var activeTab: TabSession? {
-        tabs.first { $0.id == activeTabID }
+        activeTabID.flatMap(tab)
     }
 
-    /// The tabs as they're shown: top to bottom in the sidebar, where Today
-    /// lists the newest first, or left to right in the strip. Switching with
-    /// the keyboard, dragging, and Close Tabs Below all follow this order.
+    /// Any tab in the window: in Today, Pinned or Favorites.
+    func tab(_ id: UUID) -> TabSession? {
+        pinnedTabs[id] ?? tabs.first { $0.id == id }
+    }
+
+    var allTabs: [TabSession] {
+        favorites + pinned.tabs + tabs
+    }
+
+    /// The tabs as they're shown: Favorites, then Pinned, then Today, top to
+    /// bottom in the sidebar, where Today lists the newest first, or left to
+    /// right in the strip. Switching with the keyboard, dragging, and Close
+    /// Tabs Below all follow this order.
     var tabsInDisplayOrder: [TabSession] {
-        tabLayout == .sidebar ? tabs.reversed() : tabs
+        favorites + shownPinnedTabs + (tabLayout == .sidebar ? tabs.reversed() : tabs)
+    }
+
+    /// The pinned tabs on screen: the strip shows them all, the sidebar keeps
+    /// collapsed folders' tabs out of sight.
+    var shownPinnedTabs: [TabSession] {
+        tabLayout == .sidebar ? pinned.visibleTabs : pinned.tabs
     }
 
     /// A private window passes an in-memory archive and no session, so
@@ -71,17 +96,22 @@ final class TabManager: ObservableObject {
         settings: BrowserSettingsStore,
         services: TabSessionServices,
         archive: TabArchive,
+        pins: PinStore,
         session: SessionStore?
     ) {
         self.settings = settings
         self.services = services
         self.archive = archive
+        self.pinStore = pins
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
         trackMedia()
         sweepClock.ticks
             .sink { [weak self] underMemoryPressure in self?.sweepIdleTabs(underMemoryPressure: underMemoryPressure) }
+            .store(in: &cancellables)
+        pins.$pins
+            .sink { [weak self] pins in self?.reconcilePinnedTabs(with: pins) }
             .store(in: &cancellables)
 
         // Restored tabs start asleep; selecting the active one wakes it, so a
@@ -199,8 +229,10 @@ final class TabManager: ObservableObject {
     /// selected. `@Published` announces a change before making it, so the
     /// pick waits a turn of the main queue to see it.
     private func trackMedia() {
-        let mediaChanged = $tabs
-            .map { tabs in Publishers.MergeMany(tabs.map { $0.$nowPlaying.map { _ in } }) }
+        let mediaChanged = Publishers.CombineLatest3($tabs, $favorites, $pinned)
+            .map { tabs, favorites, pinned in
+                Publishers.MergeMany((favorites + pinned.tabs + tabs).map { $0.$nowPlaying.map { _ in } })
+            }
             .switchToLatest()
         Publishers.Merge(mediaChanged, $activeTabID.map { _ in })
             .receive(on: DispatchQueue.main)
@@ -218,12 +250,12 @@ final class TabManager: ObservableObject {
     }
 
     private func makeTab(
+        id tabID: UUID = UUID(),
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = false,
         restoring saved: SavedTab? = nil
     ) -> TabSession {
-        let tabID = UUID()
 
         return TabSession(
             id: tabID,
@@ -250,31 +282,33 @@ final class TabManager: ObservableObject {
         activeTabID = tab.id
     }
 
+    /// Closes a Today tab, unless it's the last tab in the window. The next
+    /// newer tab takes its place on screen, else the next older, else the
+    /// pinned tab nearest Today. A pinned tab is kept: closing it resets it.
     func closeTab(_ id: UUID) {
-        guard tabs.count > 1 else { return }
-
-        if let index = tabs.firstIndex(where: { $0.id == id }) {
-            let wasActive = (id == activeTabID)
-            let replacementID: UUID? = if wasActive {
-                if index < tabs.count - 1 {
-                    tabs[index + 1].id
-                } else {
-                    tabs[index - 1].id
-                }
-            } else {
-                nil
-            }
-
-            // Into the archive, as in Arc, where it keeps its back/forward
-            // list for Reopen Last Closed Tab.
-            let closed = tabs.remove(at: index)
-            closed.close()
-            archive.add(closed.savedTab, reason: .closed)
-
-            if let replacementID {
-                activeTabID = replacementID
-            }
+        if let tab = pinnedTabs[id] {
+            closePinnedTab(tab)
+            return
         }
+        guard allTabs.count > 1, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+
+        let wasActive = (id == activeTabID)
+        // Into the archive, as in Arc, where it keeps its back/forward list
+        // for Reopen Last Closed Tab.
+        let closed = tabs.remove(at: index)
+        closed.close()
+        archive.add(closed.savedTab, reason: .closed)
+
+        if wasActive {
+            activeTabID = (tabs.indices.contains(index) ? tabs[index] : tabsInDisplayOrder.last)?.id
+        }
+    }
+
+    /// Whether a tab's close button does anything: a Today tab closes unless
+    /// it's the last tab; a pinned tab resets, while awake or away from its pin.
+    func canCloseTab(_ id: UUID) -> Bool {
+        if let tab = pinnedTabs[id] { return !tab.isAsleep || tab.isAwayFromPin }
+        return allTabs.count > 1
     }
 
     /// Reopens the most recently closed tab.
@@ -286,8 +320,8 @@ final class TabManager: ObservableObject {
     // MARK: - Idle tabs
 
     /// Sleeps background tabs idle past the setting and archives Today tabs
-    /// idle past theirs. Short of memory, every background tab that can sleep
-    /// does.
+    /// idle past theirs; pinned tabs and favorites sleep but stay. Short of
+    /// memory, every background tab that can sleep does.
     func sweepIdleTabs(underMemoryPressure: Bool = false, now: Date = .now) {
         var policy = TabIdlePolicy(
             sleepAfter: settings.sleepTabsAfter.interval,
@@ -303,6 +337,10 @@ final class TabManager: ObservableObject {
             case .archive: archiveTab(tab.id)
             case nil: break
             }
+        }
+        for tab in pinnedTabs.values
+        where policy.neverArchiving.action(for: TabIdlePolicy.Tab(tab, isActive: tab.id == activeTabID), at: now) == .sleep {
+            tab.sleep()
         }
     }
 
@@ -337,14 +375,9 @@ final class TabManager: ObservableObject {
         selectTab(tab.id)
     }
 
-    /// Drag and drop: the dragged tab takes the place of the one under it.
-    func moveTab(_ id: UUID, onto target: UUID) {
-        tabs.move(id, onto: target)
-    }
-
-    /// A copy of the tab beside it, back and forward history included.
+    /// A copy of the tab beside it in Today, back and forward history included.
     func duplicateTab(_ id: UUID) {
-        guard let tab = tabs.first(where: { $0.id == id }) else { return }
+        guard let tab = tab(id) else { return }
         open(makeTab(restoring: tab.savedTab), nextTo: id)
     }
 
@@ -361,10 +394,10 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// Closes the tabs shown after this one: below it in the sidebar, to its
-    /// right in the strip. It becomes active if the active tab is among them.
+    /// Closes the Today tabs shown after this one: below it in the sidebar, to
+    /// its right in the strip. It becomes active if the active tab is among them.
     func closeTabs(below id: UUID) {
-        let closing = tabsInDisplayOrder.elements(after: id)
+        let closing = tabsInDisplayOrder.elements(after: id).filter { pinnedTabs[$0.id] == nil }
         if closing.contains(where: { $0.id == activeTabID }) {
             selectTab(id)
         }
@@ -394,6 +427,188 @@ final class TabManager: ObservableObject {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url, forType: .string)
         toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)
+    }
+
+    // MARK: - Pinned tabs and favorites
+
+    enum TabSection {
+        case favorites
+        case pinned
+        case today
+    }
+
+    func section(of id: UUID) -> TabSection? {
+        switch pinStore.pins.section(of: id) {
+        case .favorites: .favorites
+        case .pinned: .pinned
+        case nil: tabs.contains { $0.id == id } ? .today : nil
+        }
+    }
+
+    /// ⌘D and Pin Tab: a Today tab moves into Pinned, or Favorites, where
+    /// it's kept across launches. A start page has nothing to pin.
+    func pinTab(_ id: UUID, to section: Pins.Section = .pinned, at position: SidebarPosition = .end) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].currentURL.isEmpty else { return }
+        let tab = tabs.remove(at: index)
+        tab.pinnedURL = tab.currentURL
+        adoptPinnedTab(tab)
+        pinStore.change { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), to: section, at: position) }
+    }
+
+    /// Unpin Tab: the live tab goes back to Today, at the top, or in the
+    /// place of the tab it was dropped on.
+    func unpinTab(_ id: UUID, onto target: UUID? = nil) {
+        guard let tab = pinnedTabs[id] else { return }
+        releasePinnedTab(tab, onto: target)
+        pinStore.change { $0.remove(id) }
+    }
+
+    func togglePinned(_ id: UUID) {
+        pinnedTabs[id] == nil ? pinTab(id) : unpinTab(id)
+    }
+
+    /// Drag and drop: the dragged tab takes the place of the one under it,
+    /// moving between Favorites, Pinned and Today as needed.
+    func moveTab(_ id: UUID, onto target: UUID) {
+        guard id != target, let from = section(of: id), let to = section(of: target) else { return }
+        switch (from, to) {
+        case (.today, .today): tabs.move(id, onto: target)
+        case (.today, .favorites): pinTab(id, to: .favorites, at: .before(target))
+        case (.today, .pinned): pinTab(id, to: .pinned, at: .before(target))
+        case (.favorites, .today), (.pinned, .today): unpinTab(id, onto: target)
+        case (.favorites, _), (.pinned, _): pinStore.change { $0.move(id, onto: target) }
+        }
+    }
+
+    /// A tab dropped on a folder goes in at the end of it.
+    func moveTab(_ id: UUID, into folderID: UUID) {
+        moveTab(id, to: .pinned, at: .into(folderID))
+    }
+
+    /// A tab dropped on a section's empty space goes to the end of it.
+    func moveTab(_ id: UUID, toEndOf section: Pins.Section) {
+        moveTab(id, to: section, at: .end)
+    }
+
+    private func moveTab(_ id: UUID, to section: Pins.Section, at position: SidebarPosition) {
+        if pinnedTabs[id] == nil {
+            pinTab(id, to: section, at: position)
+        } else {
+            pinStore.change { $0.move(id, to: section, at: position) }
+        }
+    }
+
+    /// Closing a pinned tab keeps it: the next tab takes its place on screen
+    /// and it goes back to its pinned address, asleep.
+    private func closePinnedTab(_ tab: TabSession) {
+        if tab.id == activeTabID, let next = tabsInDisplayOrder.element(1, from: tab.id), next.id != tab.id {
+            selectTab(next.id)
+        }
+        tab.resetToPin(title: pinStore.pins.pin(tab.id)?.title ?? "")
+        if tab.id == activeTabID {
+            tab.wake()
+        }
+    }
+
+    // MARK: Folders
+
+    /// New Folder: an empty folder at the end of Pinned, or inside another,
+    /// or one made around a pinned tab in its place. The sidebar then asks
+    /// for its name.
+    func newFolder(in parentID: UUID? = nil, around tabID: UUID? = nil) {
+        let folder = SidebarFolder<Pin>(name: "New Folder")
+        pinStore.change { pins in
+            if let tabID, pins.section(of: tabID) == .pinned {
+                pins.addFolder(folder, at: .before(tabID))
+                pins.move(tabID, to: .pinned, at: .into(folder.id))
+            } else {
+                pins.addFolder(folder, at: parentID.map(SidebarPosition.into) ?? .end)
+            }
+        }
+        folderToName = folder.id
+    }
+
+    /// An empty name leaves the folder as it was.
+    func renameFolder(_ id: UUID, to name: String) {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        pinStore.change { $0.updateFolder(id) { $0.name = name } }
+    }
+
+    func toggleFolderCollapsed(_ id: UUID) {
+        pinStore.change { $0.updateFolder(id) { $0.isCollapsed.toggle() } }
+    }
+
+    /// Deleting a folder unpins what it held: the tabs go back to Today.
+    func deleteFolder(_ id: UUID) {
+        for pin in pinStore.pins.pinned.folder(id)?.contents.tabs ?? [] {
+            pinnedTabs[pin.id].map { releasePinnedTab($0) }
+        }
+        pinStore.change { _ = $0.removeFolder(id) }
+    }
+
+    // MARK: Live tabs for the store's pins
+
+    /// Matches the live tabs to the store's pins: a tab for each new pin,
+    /// built asleep where it was left, and the tabs of pins that are gone
+    /// closed, unless they're back in Today, as after an unpin here.
+    private func reconcilePinnedTabs(with pins: Pins) {
+        favorites = pins.favorites.map(liveTab)
+        pinned = pins.pinned.map(liveTab)
+
+        for (id, tab) in pinnedTabs where pins.pin(id) == nil {
+            pinnedTabs[id] = nil
+            pinnedTabRecorders[id] = nil
+            guard !tabs.contains(where: { $0.id == id }) else { continue }
+            tab.close()
+            if id == activeTabID {
+                if let next = tabsInDisplayOrder.first {
+                    selectTab(next.id)
+                } else {
+                    addTab()
+                }
+            }
+        }
+    }
+
+    private func liveTab(for pin: Pin) -> TabSession {
+        if let tab = pinnedTabs[pin.id] {
+            if tab.pinnedURL != pin.url { tab.pinnedURL = pin.url }
+            return tab
+        }
+        let saved = pinStore.savedTab(for: pin.id)
+            ?? SavedTab(url: pin.url, title: pin.title, customTitle: nil, interactionState: nil, lastUsedAt: nil)
+        let tab = makeTab(id: pin.id, restoring: saved)
+        tab.pinnedURL = pin.url
+        adoptPinnedTab(tab)
+        return tab
+    }
+
+    /// Takes a live tab in as a pin's, and keeps the store told where it is
+    /// and what the pinned page is called. `@Published` announces a change
+    /// before making it, so the record waits a turn of the main queue.
+    private func adoptPinnedTab(_ tab: TabSession) {
+        pinnedTabs[tab.id] = tab
+        pinnedTabRecorders[tab.id] = tab.savedTabChanges
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self, weak tab] in
+                guard let self, let tab else { return }
+                pinStore.record(tab.savedTab, for: tab.id)
+                if !tab.isAwayFromPin, !tab.pageTitle.isEmpty {
+                    pinStore.change { $0.update(tab.id) { $0.title = tab.pageTitle } }
+                }
+            }
+    }
+
+    /// Hands a pin's live tab back to Today: at the top, or where it was
+    /// dropped, on the side of the target it came from.
+    private func releasePinnedTab(_ tab: TabSession, onto target: UUID? = nil) {
+        tab.pinnedURL = nil
+        if let target, let index = tabs.firstIndex(where: { $0.id == target }) {
+            tabs.insert(tab, at: tabLayout == .sidebar ? index : index + 1)
+        } else {
+            tabs.append(tab)
+        }
     }
 
     func goBack() {

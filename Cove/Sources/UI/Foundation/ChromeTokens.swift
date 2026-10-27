@@ -21,6 +21,8 @@ enum ChromeMetrics {
     /// Inset of a tab's close button from the tab's edges. The button fills the
     /// tab's height less this on each side.
     static let tabAccessoryInset: CGFloat = 4
+    /// A pinned tab in the strip shows only its favicon, like Safari's.
+    static let compactTabWidth: CGFloat = tabHeight + 12
     /// Header height for the floating sidebar, which starts a gutter below the
     /// window's top: it keeps the header on the traffic lights' centerline.
     static let floatingSidebarHeaderHeight: CGFloat = titlebarHeight - gutter * 2
@@ -35,6 +37,10 @@ enum ChromeMetrics {
     /// the card keeps from the window.
     static let sidebarInset: CGFloat = cardInset
     static let sidebarRowHeight: CGFloat = 32
+    /// A favorite's tile; as many fit a row as the sidebar's width allows.
+    static let favoriteTileRange: ClosedRange<CGFloat> = 30...40
+    /// How far a folder's contents sit in from the folder's row.
+    static let sidebarFolderIndent: CGFloat = 14
     /// Space between the sidebar's sections, and above and below the Clear line.
     static let sidebarSectionSpacing: CGFloat = 8
     static let sidebarFooterHeight: CGFloat = 36

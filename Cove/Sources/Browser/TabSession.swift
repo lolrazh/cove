@@ -39,6 +39,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var pageTitle: String = ""
     /// A name the user gave the tab, shown instead of the page's title.
     @Published private(set) var customTitle: String?
+    /// The address a pinned tab or favorite stands for: where closing it goes
+    /// back to. Nil for a Today tab.
+    @Published var pinnedURL: String?
     @Published var canGoBack: Bool = false
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
@@ -166,8 +169,40 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// Fires whenever something in `savedTab` changes enough to save.
     var savedTabChanges: AnyPublisher<Void, Never> {
         $currentURL.map { _ in }
-            .merge(with: $customTitle.map { _ in })
+            .merge(with: $pageTitle.map { _ in }, $customTitle.map { _ in })
             .eraseToAnyPublisher()
+    }
+
+    // MARK: - Pinning
+
+    /// A pinned tab that has been navigated somewhere other than its pinned
+    /// address, so it can be brought back.
+    var isAwayFromPin: Bool {
+        guard let pinnedURL else { return false }
+        return Self.pageKey(currentURL) != Self.pageKey(pinnedURL)
+    }
+
+    /// Loads the pinned address again, on top of the page's history.
+    func returnToPin() {
+        guard let pinnedURL else { return }
+        loadURL(pinnedURL)
+    }
+
+    /// Closing a pinned tab: back at its pinned address, asleep, with its
+    /// history gone, as if it had just been pinned.
+    func resetToPin(title: String) {
+        guard let pinnedURL else { return }
+        discardPage()
+        hasSyntheticStartPageEntry = false
+        currentURL = pinnedURL
+        pageTitle = title
+        refreshNavigationState()
+        updateFavicon(for: URL(string: pinnedURL))
+    }
+
+    /// Two addresses that differ only by a trailing slash are the same page.
+    private static func pageKey(_ url: String) -> Substring {
+        url.last == "/" ? url.dropLast() : url[...]
     }
 
     /// A tab from the last session, or the archive, shows what it showed until

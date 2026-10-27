@@ -22,6 +22,12 @@ enum ChromeSymbols {
         static let clear = "chevron.down"
         static let playingAudio = "speaker.wave.2.fill"
         static let muted = "speaker.slash.fill"
+        static let pin = "pin"
+        static let unpin = "pin.slash"
+        static let favorite = "star"
+        static let folder = "folder"
+        static let backToPin = "arrow.uturn.backward"
+        static let collapsed = "chevron.right"
     }
 
     enum Media {
