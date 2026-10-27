@@ -1,9 +1,10 @@
 import WebKit
 
-/// What a window browses with: where sites keep their cookies, storage,
-/// cache and favicons, what they've been allowed to use, and whether its
-/// pages leave a trace. Normal windows share one; each private window gets its own, which
-/// goes when the window closes. A profile will be one of these too.
+/// What a window's tabs browse with: where sites keep their cookies, storage,
+/// cache and favicons, what they've been allowed to use, and whether their
+/// pages leave a trace. Each profile has one, shared by its spaces' tabs in
+/// every window; each private window gets its own, which goes when the window
+/// closes.
 @MainActor
 final class BrowsingContext {
     let dataStore: WKWebsiteDataStore
@@ -19,8 +20,16 @@ final class BrowsingContext {
         self.isPrivate = isPrivate
     }
 
+    /// The default profile's: WebKit's default data store.
     static func standard(faviconStore: FaviconStore) -> BrowsingContext {
         BrowsingContext(dataStore: .default(), faviconStore: faviconStore, isPrivate: false)
+    }
+
+    /// Another profile's: a persistent data store of its own, found again by
+    /// the profile's ID on every launch. Favicons are shared; they say which
+    /// sites were visited, not who was signed in.
+    static func profile(_ id: UUID, faviconStore: FaviconStore) -> BrowsingContext {
+        BrowsingContext(dataStore: WKWebsiteDataStore(forIdentifier: id), faviconStore: faviconStore, isPrivate: false)
     }
 
     /// A context whose site data lives in memory only. It reads favicons the
