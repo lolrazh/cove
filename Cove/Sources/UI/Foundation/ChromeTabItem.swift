@@ -51,12 +51,7 @@ struct ChromeTabItem: View {
         .opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
         .padding(.leading, presentation == .compact ? 0 : 8)
         .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
-        .frame(width: width, height: height)
-        .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
-        // Makes the close button's ConcentricRectangle follow this tab's corners.
-        .containerShape(RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous))
-        .background { background }
-        .contentShape(Rectangle())
+        .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width)
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
@@ -151,48 +146,61 @@ struct ChromeTabItem: View {
         .animation(ChromeMotion.hover, value: isVisible)
     }
 
-    /// The active tab is drawn in the page's color: it *is* the page you're
-    /// looking at. In the top strip it also reaches down into the content card,
-    /// so tab and page read as one surface. Others only show a fill on hover.
-    @ViewBuilder
-    private var background: some View {
-        if isActive {
-            switch presentation {
-            case .sidebar:
-                shape
-                    .fill(ChromePalette.raised)
-                    .chromeShadow(.raised)
-            case .horizontal, .compact:
-                AttachedTabShape()
-                    .fill(ChromePalette.content)
-                    .padding(.horizontal, -ChromeRadius.flare)
-                    .padding(.bottom, -ChromeMetrics.tabBottomInset)
-            }
-        } else if isHovered {
-            shape.fill(ChromePalette.hover)
-        }
-    }
-
     private var showsAudioButton: Bool {
         tab.isPlayingAudio || tab.isMuted
     }
 
     private var accessoryStyle: ChromeButtonStyle {
-        ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2))
+        presentation.accessoryStyle
     }
 
-    private var shape: ConcentricRectangle {
-        .chrome(minimum: ChromeRadius.tab)
+    private var title: String {
+        tab.title.isEmpty ? "New Tab" : tab.title
     }
+}
 
-    private var height: CGFloat {
-        switch presentation {
+extension ChromeTabPresentation {
+    var height: CGFloat {
+        switch self {
         case .horizontal, .compact: ChromeMetrics.tabHeight
         case .sidebar: ChromeMetrics.sidebarRowHeight
         }
     }
 
-    private var title: String {
-        tab.title.isEmpty ? "New Tab" : tab.title
+    /// A button inside the tab, like its close button.
+    var accessoryStyle: ChromeButtonStyle {
+        ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2))
+    }
+}
+
+extension View {
+    /// A tab's size and surface, for anything shown as a tab: a page or a
+    /// note. The active tab is drawn in the page's color: it *is* what you're
+    /// looking at. In the top strip it also reaches down into the content
+    /// card, so tab and page read as one surface. Others only show a fill on
+    /// hover.
+    func chromeTabSurface(_ presentation: ChromeTabPresentation, isActive: Bool, isHovered: Bool, width: CGFloat?) -> some View {
+        frame(width: width, height: presentation.height)
+            .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
+            // Makes the close button's ConcentricRectangle follow the tab's corners.
+            .containerShape(RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous))
+            .background {
+                if isActive {
+                    switch presentation {
+                    case .sidebar:
+                        ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
+                            .fill(ChromePalette.raised)
+                            .chromeShadow(.raised)
+                    case .horizontal, .compact:
+                        AttachedTabShape()
+                            .fill(ChromePalette.content)
+                            .padding(.horizontal, -ChromeRadius.flare)
+                            .padding(.bottom, -ChromeMetrics.tabBottomInset)
+                    }
+                } else if isHovered {
+                    ConcentricRectangle.chrome(minimum: ChromeRadius.tab).fill(ChromePalette.hover)
+                }
+            }
+            .contentShape(Rectangle())
     }
 }

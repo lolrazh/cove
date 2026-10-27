@@ -44,6 +44,11 @@ enum ChromeSymbols {
         static let save = "square.and.arrow.down"
     }
 
+    enum Documents {
+        static let note = "note.text"
+        static let newNote = "square.and.pencil"
+    }
+
     enum Spaces {
         static let newSpace = "plus"
         static let profile = "person.crop.circle"

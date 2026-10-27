@@ -22,10 +22,13 @@ struct Capture {
     let image: NSImage
     let source: CaptureSource
 
-    /// The image as PNG, at the screen's resolution.
+    /// The image as PNG, at the screen's resolution and marked with it, so
+    /// it opens at the size it was on screen.
     var pngData: Data? {
-        image.cgImage(forProposedRect: nil, context: nil, hints: nil)
-            .flatMap { NSBitmapImageRep(cgImage: $0).representation(using: .png, properties: [:]) }
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        bitmap.size = image.size
+        return bitmap.representation(using: .png, properties: [:])
     }
 }
 

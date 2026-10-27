@@ -10,12 +10,18 @@ struct SidebarAddressPill: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
+            // A note on screen in place of the page shows its title.
+            if let id = tabManager.activeDocumentID, let store = tabManager.documentStore {
+                DocumentLabel(id: id, store: store)
+                    .padding(.leading, 4)
+            } else {
+                SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
 
-            Text(domain)
-                .foregroundStyle(url == nil ? .secondary : .primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
+                Text(domain)
+                    .foregroundStyle(url == nil ? .secondary : .primary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
 
             Spacer(minLength: 0)
         }

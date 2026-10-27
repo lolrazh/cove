@@ -13,6 +13,12 @@ struct BrowserViewCommands: Commands {
             .keyboardShortcut("t", modifiers: .command)
             .disabled(tabManager == nil)
 
+            Button("New Note") {
+                tabManager?.newDocument(.note)
+            }
+            .keyboardShortcut("n", modifiers: [.command, .control])
+            .disabled(tabManager?.documentStore == nil)
+
             Button("New Window") {
                 openWindow(id: BrowserView.windowID)
             }

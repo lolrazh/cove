@@ -19,9 +19,9 @@ final class TabManager: ObservableObject {
     @Published var spaceToEdit: UUID?
     /// A space waiting for its deletion to be confirmed.
     @Published var spaceToDelete: UUID?
-    /// The space's open tabs, oldest first: the top strip's order. The
-    /// sidebar's Today section lists the same tabs newest first.
-    @Published var tabs: [TabSession] = [] {
+    /// The space's Today, oldest first: the top strip's order. The sidebar
+    /// lists it newest first. Mostly tabs, and the notes kept among them.
+    @Published var today: [TodayItem<TabSession>] = [] {
         // A tab that leaves Today leaves its split.
         didSet { pruneSplits() }
     }
@@ -44,6 +44,8 @@ final class TabManager: ObservableObject {
     /// long enough.
     @Published var activeTabID: UUID? {
         didSet {
+            // Selecting a tab puts its page back on screen.
+            activeDocumentID = nil
             // A Peek or a capture belongs to the page it was opened over.
             closePeek()
             endCapture()
@@ -52,6 +54,11 @@ final class TabManager: ObservableObject {
             shownTabs.forEach { $0.wake() }
         }
     }
+    /// The note on screen in place of the active tab's page, if any. Set
+    /// through `showDocument`; selecting a tab clears it.
+    @Published var activeDocumentID: UUID?
+    /// A note waiting for its deletion to be confirmed.
+    @Published var documentToDelete: UUID?
     /// The tab being dragged in the sidebar or the strip, for the lists and
     /// the page's split drop zones to follow.
     @Published var draggedTabID: UUID?
@@ -80,9 +87,11 @@ final class TabManager: ObservableObject {
     /// private window's own, kept in memory and gone with the window.
     let archive: TabArchive
     /// The shared pins, or a private window's own empty, unsaved ones.
-    private let pinStore: PinStore
+    let pinStore: PinStore
     /// The shared spaces; none in a private window.
     private let spaceStore: SpaceStore?
+    /// The notes; none in a private window, which keeps nothing.
+    let documentStore: DocumentStore?
     /// The spaces as last published, which edits are checked against.
     private var knownSpaces: Spaces
     /// The window's other spaces, as it left them.
@@ -115,9 +124,14 @@ final class TabManager: ObservableObject {
         allTabs.first { $0.id == id }
     }
 
+    /// Today's tabs, oldest first.
+    var tabs: [TabSession] {
+        today.compactMap(\.tab)
+    }
+
     /// Today as the sidebar and the strip show it, a split as one entry.
     var todayEntries: [TabEntry<TabSession>] {
-        tabs.entries(splits: splits)
+        today.entries(splits: splits)
     }
 
     var allTabs: [TabSession] {
@@ -131,8 +145,8 @@ final class TabManager: ObservableObject {
         tabLayout.displayOrder(favorites: favorites, pinned: pinned, today: tabs)
     }
 
-    /// A private window passes an in-memory archive and no session or
-    /// spaces, so nothing of it is written down or comes back. `services`
+    /// A private window passes an in-memory archive and no session, spaces
+    /// or documents, so nothing of it is written down or comes back. `services`
     /// browse with the default profile, or the private window's own context.
     init(
         settings: BrowserSettingsStore,
@@ -140,6 +154,7 @@ final class TabManager: ObservableObject {
         archive: TabArchive,
         pins: PinStore,
         spaces: SpaceStore?,
+        documents: DocumentStore?,
         session: SessionStore?
     ) {
         let saved = session?.takeRestorableWindow()
@@ -149,6 +164,7 @@ final class TabManager: ObservableObject {
         self.archive = archive
         self.pinStore = pins
         self.spaceStore = spaces
+        self.documentStore = documents
         self.knownSpaces = knownSpaces
         self.activeSpaceID = saved.flatMap { knownSpaces.space($0.activeSpaceID)?.id } ?? knownSpaces.spaces[0].id
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
@@ -165,6 +181,10 @@ final class TabManager: ObservableObject {
         pins.$layout
             .sink { [weak self] layout in self?.reconcilePinnedTabs(with: layout) }
             .store(in: &cancellables)
+        documents?.$documents
+            .dropFirst()
+            .sink { [weak self] documents in self?.reconcileDocuments(with: documents) }
+            .store(in: &cancellables)
 
         restore(saved)
         session?.track(self, placement: saved?.placement)
@@ -173,27 +193,30 @@ final class TabManager: ObservableObject {
 
     /// Restored tabs start asleep; selecting the active one wakes it, so a
     /// launch loads one page per window instead of every page. Spaces deleted
-    /// since are left behind.
+    /// since are left behind, and so are documents.
     private func restore(_ saved: SavedWindow?) {
-        var selection: UUID?
+        var shown: ParkedSpace?
         for savedSpace in saved?.spaces ?? [] {
             guard let space = knownSpaces.space(savedSpace.spaceID) else { continue }
             let services = services(for: space)
             let tabs = savedSpace.tabs.map { makeTab(restoring: $0, services: services) }
-            let selected = savedSpace.activePinID
-                ?? savedSpace.activeTabIndex.flatMap { tabs.indices.contains($0) ? tabs[$0].id : nil }
-            let splits = (savedSpace.splits ?? []).compactMap { split in
-                split.map { tabs.indices.contains($0) ? tabs[$0].id : nil }
-            }
+            let documents = (savedSpace.documents ?? []).filter { documentStore?.documents[$0.id] != nil }
+            let restored = ParkedSpace(
+                today: TodayItem.restoring(tabs: tabs, documents: documents),
+                activeTabID: savedSpace.activePinID
+                    ?? savedSpace.activeTabIndex.flatMap { tabs.indices.contains($0) ? tabs[$0].id : nil },
+                activeDocumentID: savedSpace.activeDocumentID,
+                splits: (savedSpace.splits ?? []).compactMap { split in
+                    split.map { tabs.indices.contains($0) ? tabs[$0].id : nil }
+                }
+            )
             if space.id == activeSpaceID {
-                self.tabs = tabs
-                self.splits = splits
-                selection = selected
+                shown = restored
             } else {
-                parkedSpaces[space.id] = ParkedSpace(tabs: tabs, activeTabID: selected, splits: splits)
+                parkedSpaces[space.id] = restored
             }
         }
-        select(selection)
+        unpark(shown)
     }
 
     var isPrivate: Bool {
@@ -202,21 +225,24 @@ final class TabManager: ObservableObject {
 
     var savedWindow: SavedWindow {
         let parked = knownSpaces.spaces.compactMap { space in
-            parkedSpaces[space.id].map { savedSpace(space.id, tabs: $0.tabs, activeTabID: $0.activeTabID, splits: $0.splits) }
+            parkedSpaces[space.id].map { savedSpace(space.id, $0) }
         }
         return SavedWindow(
-            spaces: [savedSpace(activeSpaceID, tabs: tabs, activeTabID: activeTabID, splits: splits)] + parked,
+            spaces: [savedSpace(activeSpaceID, shownSpace)] + parked,
             activeSpaceID: activeSpaceID
         )
     }
 
-    private func savedSpace(_ id: UUID, tabs: [TabSession], activeTabID: UUID?, splits: [TabSplit<UUID>]) -> SavedSpace {
-        SavedSpace(
+    private func savedSpace(_ id: UUID, _ space: ParkedSpace) -> SavedSpace {
+        let tabs = space.today.compactMap(\.tab)
+        return SavedSpace(
             spaceID: id,
             tabs: tabs.map(\.savedTab),
-            activeTabIndex: tabs.firstIndex { $0.id == activeTabID },
-            activePinID: activeTabID.flatMap { pinnedTabs[$0] == nil ? nil : $0 },
-            splits: splits.compactMap { split in split.map { id in tabs.firstIndex { $0.id == id } } }
+            activeTabIndex: tabs.firstIndex { $0.id == space.activeTabID },
+            activePinID: space.activeTabID.flatMap { pinnedTabs[$0] == nil ? nil : $0 },
+            splits: space.splits.compactMap { split in split.map { id in tabs.firstIndex { $0.id == id } } },
+            documents: space.today.documentPlaces(),
+            activeDocumentID: space.activeDocumentID
         )
     }
 
@@ -246,9 +272,10 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// ⌘L and the URL pill: the current address, ready to be changed.
+    /// ⌘L and the URL pill: the current address, ready to be changed. A
+    /// note has no address, so over one it asks where to go in a new tab.
     func editCurrentURL() {
-        commandBar.present(.editURL)
+        commandBar.present(activeDocumentID == nil ? .editURL : .newTab)
     }
 
     /// Opens a tab at the end of the strip, which is the top of Today. Tabs
@@ -291,10 +318,9 @@ final class TabManager: ObservableObject {
     /// from another profile than the space's starts again on the space's.
     func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         let startPage = untouchedStartPage
-        var adopted = [tab]
-        rehome(&adopted, in: activeSpace)
-        adopted[0].host = host(for: tab.id)
-        open(adopted[0], nextTo: openerID)
+        let adopted = rehomed(tab, in: activeSpace) ?? tab
+        adopted.host = host(for: tab.id)
+        open(adopted, nextTo: openerID)
         startPage.map { closeTab($0.id) }
     }
 
@@ -328,9 +354,9 @@ final class TabManager: ObservableObject {
     /// selected. `@Published` announces a change before making it, so the
     /// pick waits a turn of the main queue to see it.
     private func trackMedia() {
-        let mediaChanged = Publishers.CombineLatest3($tabs, $favorites, $pinned)
-            .map { tabs, favorites, pinned in
-                Publishers.MergeMany((favorites + pinned.tabs + tabs).map { $0.$nowPlaying.map { _ in } })
+        let mediaChanged = Publishers.CombineLatest3($today, $favorites, $pinned)
+            .map { today, favorites, pinned in
+                Publishers.MergeMany((favorites + pinned.tabs + today.compactMap(\.tab)).map { $0.$nowPlaying.map { _ in } })
             }
             .switchToLatest()
         Publishers.Merge(mediaChanged, $activeTabID.map { _ in })
@@ -387,10 +413,10 @@ final class TabManager: ObservableObject {
     /// Next to the opener goes past the rest of its split, which stays together.
     private func open(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         if let openerID,
-           let openerIndex = tabs.lastIndex(where: { splitGroup(of: openerID).contains($0.id) }) {
-            tabs.insert(tab, at: openerIndex + 1)
+           let openerIndex = today.lastIndex(where: { splitGroup(of: openerID).contains($0.id) }) {
+            today.insert(.tab(tab), at: openerIndex + 1)
         } else {
-            tabs.append(tab)
+            today.append(.tab(tab))
         }
 
         activeTabID = tab.id
@@ -404,17 +430,18 @@ final class TabManager: ObservableObject {
             closePinnedTab(tab)
             return
         }
-        guard allTabs.count > 1, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        guard allTabs.count > 1, let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab else { return }
 
         let wasActive = (id == activeTabID)
         // In a split, the neighboring pane takes the focus.
         let neighbor = split(containing: id)?.neighbor(of: id)
         // Into the archive, as in Arc, where it keeps its back/forward list
         // for Reopen Last Closed Tab.
-        retire(tabs.remove(at: index), reason: .closed)
+        today.remove(at: index)
+        retire(tab, reason: .closed)
 
         if wasActive {
-            activeTabID = neighbor ?? (tabs.indices.contains(index) ? tabs[index] : tabsInDisplayOrder.last)?.id
+            activeTabID = neighbor ?? (today[index...].lazy.compactMap(\.tab).first ?? tabsInDisplayOrder.last)?.id
         }
     }
 
@@ -454,13 +481,15 @@ final class TabManager: ObservableObject {
         }
         // Other spaces' tabs aren't on screen, their selected ones included.
         for id in parkedSpaces.keys {
-            parkedSpaces[id]?.tabs.removeAll { tab in
+            parkedSpaces[id]?.today.removeAll { item in
+                guard let tab = item.tab else { return false }
                 let action = policy.action(for: TabIdlePolicy.Tab(tab, isActive: false), at: now)
                 if action == .sleep { tab.sleep() }
                 if action == .archive { retire(tab, reason: .idle) }
                 return action == .archive
             }
         }
+        sweepIdleDocuments(policy: policy, now: now)
         for tab in pinnedTabs.values
         where policy.neverArchiving.action(for: TabIdlePolicy.Tab(tab, isActive: isShown(tab.id)), at: now) == .sleep {
             tab.sleep()
@@ -470,8 +499,9 @@ final class TabManager: ObservableObject {
     /// Moves a background tab out of Today and into the archive, with its
     /// back/forward list, so it can come back whole.
     private func archiveTab(_ id: UUID) {
-        guard !isShown(id), let index = tabs.firstIndex(where: { $0.id == id }) else { return }
-        retire(tabs.remove(at: index), reason: .idle)
+        guard !isShown(id), let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab else { return }
+        today.remove(at: index)
+        retire(tab, reason: .idle)
     }
 
     /// A tab leaving the window goes into the archive.
@@ -488,8 +518,8 @@ final class TabManager: ObservableObject {
 
     /// Selects a tab, first switching to its space if it's in another.
     func selectTab(_ id: UUID) {
-        guard id != activeTabID else { return }
-        if tab(id) == nil, let space = parkedSpaces.first(where: { $0.value.tabs.contains { $0.id == id } })?.key {
+        guard id != activeTabID || activeDocumentID != nil else { return }
+        if tab(id) == nil, let space = parkedSpaces.first(where: { $0.value.today.contains { $0.id == id } })?.key {
             show(space)
         }
         activeTabID = id
@@ -525,9 +555,13 @@ final class TabManager: ObservableObject {
         open(makeTab(restoring: tab.savedTab), nextTo: id)
     }
 
+    /// ⌘W: the note on screen, or else the active tab.
     func closeActiveTab() {
-        guard let activeTabID else { return }
-        closeTab(activeTabID)
+        if let activeDocumentID {
+            closeDocument(activeDocumentID)
+        } else if let activeTabID {
+            closeTab(activeTabID)
+        }
     }
 
     /// Closes every tab but this one, which stays as the active tab.
@@ -550,13 +584,15 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// Arc's Clear: closes everything in Today and leaves a fresh tab.
+    /// Arc's Clear: closes everything in Today and leaves a fresh tab. Notes
+    /// leave Today too; they're kept, and the Command Bar finds them.
     func clearTodayTabs() {
         let closed = tabs
         addTab()
         for tab in closed {
             closeTab(tab.id)
         }
+        today.removeAll { $0.documentID != nil }
     }
 
     /// ⌘⇧C, the Command Bar and a tab's Copy Link: the page's address to the
@@ -585,15 +621,15 @@ final class TabManager: ObservableObject {
         switch pinStore.pins(in: pinScope).section(of: id) {
         case .favorites: .favorites
         case .pinned: .pinned
-        case nil: tabs.contains { $0.id == id } ? .today : nil
+        case nil: today.contains { $0.id == id } ? .today : nil
         }
     }
 
     /// ⌘D and Pin Tab: a Today tab moves into Pinned, or Favorites, where
     /// it's kept across launches. A start page has nothing to pin.
     func pinTab(_ id: UUID, to section: Pins.Section = .pinned, at position: SidebarPosition = .end) {
-        guard let index = tabs.firstIndex(where: { $0.id == id }), !tabs[index].currentURL.isEmpty else { return }
-        let tab = tabs.remove(at: index)
+        guard let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab, !tab.currentURL.isEmpty else { return }
+        today.remove(at: index)
         tab.pinnedURL = tab.currentURL
         adoptPinnedTab(tab)
         pinStore.change(in: pinScope) { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), to: section, at: position) }
@@ -616,9 +652,11 @@ final class TabManager: ObservableObject {
     func moveTab(_ id: UUID, onto target: UUID) {
         guard id != target, let from = section(of: id), let to = section(of: target) else { return }
         switch (from, to) {
-        case (.today, .today): tabs.move(splitGroup(of: id), onto: splitGroup(of: target))
+        case (.today, .today): today.move(splitGroup(of: id), onto: splitGroup(of: target))
         case (.today, .favorites): pinTab(id, to: .favorites, at: .before(target))
+        case (.today, .pinned) where isDocument(id): pinDocument(id, at: .before(target))
         case (.today, .pinned): pinTab(id, to: .pinned, at: .before(target))
+        case (.pinned, .today) where isDocument(id): unpinDocument(id, onto: target)
         case (.favorites, .today), (.pinned, .today): unpinTab(id, onto: target)
         case (.favorites, _), (.pinned, _): pinStore.change(in: pinScope) { $0.move(id, onto: target) }
         }
@@ -634,11 +672,14 @@ final class TabManager: ObservableObject {
         moveTab(id, to: section, at: .end)
     }
 
+    /// Documents go in Pinned only.
     private func moveTab(_ id: UUID, to section: Pins.Section, at position: SidebarPosition) {
-        if pinnedTabs[id] == nil {
-            pinTab(id, to: section, at: position)
-        } else {
+        if self.section(of: id) != .today {
             pinStore.change(in: pinScope) { $0.move(id, to: section, at: position) }
+        } else if !isDocument(id) {
+            pinTab(id, to: section, at: position)
+        } else if section == .pinned {
+            pinDocument(id, at: position)
         }
     }
 
@@ -683,10 +724,15 @@ final class TabManager: ObservableObject {
         pinStore.change(in: pinScope) { $0.updateFolder(id) { $0.isCollapsed.toggle() } }
     }
 
-    /// Deleting a folder unpins what it held: the tabs go back to Today.
+    /// Deleting a folder unpins what it held: the tabs and notes go back to
+    /// Today.
     func deleteFolder(_ id: UUID) {
-        for pin in pinStore.pins(in: pinScope).pinned.folder(id)?.contents.tabs ?? [] {
+        let contents = pinStore.pins(in: pinScope).pinned.folder(id)?.contents ?? SidebarTree()
+        for pin in contents.tabs {
             pinnedTabs[pin.id].map { releasePinnedTab($0) }
+        }
+        for document in contents.documents {
+            placeInToday(.document(document))
         }
         pinStore.change(in: pinScope) { _ = $0.removeFolder(id) }
     }
@@ -772,14 +818,19 @@ final class TabManager: ObservableObject {
             }
     }
 
-    /// Hands a pin's live tab back to Today: at the top, or where it was
-    /// dropped, on the side of the target it came from.
+    /// Hands a pin's live tab back to Today.
     private func releasePinnedTab(_ tab: TabSession, onto target: UUID? = nil) {
         tab.pinnedURL = nil
-        if let target, let index = tabs.firstIndex(where: { $0.id == target }) {
-            tabs.insert(tab, at: tabLayout == .sidebar ? index : index + 1)
+        placeInToday(.tab(tab), onto: target)
+    }
+
+    /// Puts something unpinned in Today: at the top, or where it was dropped,
+    /// on the side of the target it came from.
+    func placeInToday(_ item: TodayItem<TabSession>, onto target: UUID? = nil) {
+        if let target, let index = today.firstIndex(where: { $0.id == target }) {
+            today.insert(item, at: tabLayout == .sidebar ? index : index + 1)
         } else {
-            tabs.append(tab)
+            today.append(item)
         }
     }
 
@@ -787,9 +838,15 @@ final class TabManager: ObservableObject {
 
     /// The window's state in a space it isn't showing.
     private struct ParkedSpace {
-        var tabs: [TabSession]
+        var today: [TodayItem<TabSession>]
         var activeTabID: UUID?
+        var activeDocumentID: UUID?
         var splits: [TabSplit<UUID>]
+    }
+
+    /// The space on screen, as it would be parked.
+    private var shownSpace: ParkedSpace {
+        ParkedSpace(today: today, activeTabID: activeTabID, activeDocumentID: activeDocumentID, splits: splits)
     }
 
     /// The spaces to switch between, in order; none in a private window.
@@ -803,7 +860,7 @@ final class TabManager: ObservableObject {
 
     /// Today tabs this window has open in its other spaces, in space order.
     var tabsInOtherSpaces: [TabSession] {
-        knownSpaces.spaces.flatMap { parkedSpaces[$0.id]?.tabs ?? [] }
+        knownSpaces.spaces.flatMap { parkedSpaces[$0.id]?.today.compactMap(\.tab) ?? [] }
     }
 
     /// Footer icons, the Spaces menu (⌃1–9) and the Command Bar: shows another
@@ -849,7 +906,7 @@ final class TabManager: ObservableObject {
     }
 
     /// Pins in this space: its Pinned, and its profile's Favorites.
-    private var pinScope: PinScope {
+    var pinScope: PinScope {
         PinScope(space: activeSpaceID, profile: knownSpaces.space(activeSpaceID)?.profileID ?? Profile.defaultID)
     }
 
@@ -880,15 +937,23 @@ final class TabManager: ObservableObject {
     private func show(_ id: UUID) {
         guard id != activeSpaceID else { return }
         activeTab?.markUsed()
-        parkedSpaces[activeSpaceID] = ParkedSpace(tabs: tabs, activeTabID: activeTabID, splits: splits)
+        parkedSpaces[activeSpaceID] = shownSpace
         let next = parkedSpaces.removeValue(forKey: id)
         activeSpaceID = id
         reconcilePinnedTabs(with: pinStore.layout)
-        // The splits first: setting the tabs drops those whose tabs were
+        unpark(next)
+    }
+
+    /// Puts a space's Today on screen with what it had selected.
+    private func unpark(_ space: ParkedSpace?) {
+        // The splits first: setting Today drops those whose tabs were
         // archived while the space was parked.
-        splits = next?.splits ?? []
-        tabs = next?.tabs ?? []
-        select(next?.activeTabID)
+        splits = space?.splits ?? []
+        today = space?.today ?? []
+        select(space?.activeTabID)
+        if let document = space?.activeDocumentID, section(of: document) != nil {
+            showDocument(document)
+        }
     }
 
     /// Follows edits made in any window: a deleted space's tabs go to the
@@ -901,32 +966,47 @@ final class TabManager: ObservableObject {
         }
         for id in parkedSpaces.keys {
             guard let space = spaces.space(id) else {
-                parkedSpaces.removeValue(forKey: id)?.tabs.forEach { retire($0, reason: .closed) }
+                parkedSpaces.removeValue(forKey: id)?.today.compactMap(\.tab).forEach { retire($0, reason: .closed) }
                 continue
             }
-            rehome(&parkedSpaces[id]!.tabs, in: space)
+            rehome(&parkedSpaces[id]!.today, in: space)
         }
-        var today = tabs
+        var today = today
         if rehome(&today, in: activeSpace) {
-            tabs = today
+            self.today = today
         }
         reconcilePinnedTabs(with: pinStore.layout)
         // A rebuilt tab starts asleep; the selected one wakes.
         activeTabID = activeTabID
     }
 
+    /// Takes documents out of the window's other spaces' Today, as when
+    /// they're deleted.
+    func removeParkedDocuments(where isGone: (TodayItem<TabSession>) -> Bool) {
+        for id in parkedSpaces.keys {
+            parkedSpaces[id]?.today.removeAll(where: isGone)
+        }
+    }
+
     /// Rebuilds, asleep, the tabs browsing with another profile's data store
     /// than the space's. Whether any were.
     @discardableResult
-    private func rehome(_ tabs: inout [TabSession], in space: Space?) -> Bool {
-        let services = services(for: space)
+    private func rehome(_ today: inout [TodayItem<TabSession>], in space: Space?) -> Bool {
         var changed = false
-        for index in tabs.indices where tabs[index].services.context !== services.context {
-            let saved = retireFromProfile(tabs[index])
-            tabs[index] = makeTab(id: tabs[index].id, restoring: saved, services: services)
+        for index in today.indices {
+            guard let tab = today[index].tab, let rebuilt = rehomed(tab, in: space) else { continue }
+            today[index] = .tab(rebuilt)
             changed = true
         }
         return changed
+    }
+
+    /// The tab rebuilt asleep on the space's profile, if it browses with
+    /// another's data store.
+    private func rehomed(_ tab: TabSession, in space: Space?) -> TabSession? {
+        let services = services(for: space)
+        guard tab.services.context !== services.context else { return nil }
+        return makeTab(id: tab.id, restoring: retireFromProfile(tab), services: services)
     }
 
     /// Lets go of a tab's page on its old profile's data store, and returns
@@ -938,17 +1018,29 @@ final class TabManager: ObservableObject {
         return saved
     }
 
+    /// Loads a page in the active tab, bringing it back from under a note.
+    func navigateActiveTab(to input: String) {
+        guard let activeTab else { return }
+        selectTab(activeTab.id)
+        activeTab.navigate(input)
+    }
+
+    /// Navigation acts on the page on screen, not one a note covers.
+    private var browsedTab: TabSession? {
+        activeDocumentID == nil ? activeTab : nil
+    }
+
     func goBack() {
-        activeTab?.goBack()
+        browsedTab?.goBack()
     }
 
     func goForward() {
-        activeTab?.goForward()
+        browsedTab?.goForward()
     }
 
     func reloadOrStop() {
-        guard let activeTab else { return }
-        activeTab.isLoading ? activeTab.stopLoading() : activeTab.reload()
+        guard let tab = browsedTab else { return }
+        tab.isLoading ? tab.stopLoading() : tab.reload()
     }
 
 }

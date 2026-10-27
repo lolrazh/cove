@@ -14,7 +14,7 @@ struct SavedTab: Codable {
     let lastUsedAt: Date?
 }
 
-/// One space's Today in a window, and the tab it had selected.
+/// One space's Today in a window, and what it had selected.
 struct SavedSpace: Codable {
     let spaceID: UUID
     let tabs: [SavedTab]
@@ -25,6 +25,11 @@ struct SavedSpace: Codable {
     /// Splits by their tabs' places in `tabs`. Absent in sessions saved
     /// before Split View.
     var splits: [TabSplit<Int>]? = nil
+    /// The notes in Today, by their places among the tabs. Absent in
+    /// sessions saved before notes.
+    var documents: [TodayDocumentPlace]? = nil
+    /// The note on screen, if one was.
+    var activeDocumentID: UUID? = nil
 }
 
 /// A window: every space's Today as it was left there, and the space shown.
@@ -144,16 +149,17 @@ final class SessionStore {
         return restorableWindows.count
     }
 
-    /// Saves the window whenever its tabs, splits, active tab, space or any
+    /// Saves the window whenever its Today, splits, selection, space or any
     /// saved tab change. A restored window's placement applies once its
     /// window is known.
     func track(_ tabManager: TabManager, placement: WindowPlacement?) {
-        let tabsChanged = tabManager.$tabs
-            .map { tabs in Publishers.MergeMany(tabs.map(\.savedTabChanges)) }
+        let todayChanged = tabManager.$today
+            .map { today in Publishers.MergeMany(today.compactMap(\.tab).map(\.savedTabChanges)).prepend(()) }
             .switchToLatest()
-        let changes = Publishers.Merge4(
-            tabsChanged,
+        let changes = Publishers.Merge5(
+            todayChanged,
             tabManager.$activeTabID.map { _ in },
+            tabManager.$activeDocumentID.map { _ in },
             tabManager.$activeSpaceID.map { _ in },
             tabManager.$splits.map { _ in }
         )

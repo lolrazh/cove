@@ -35,7 +35,7 @@ struct HistoryMenu: View {
             Section("Recently Visited") {
                 ForEach(historyStore.recentlyVisited) { entry in
                     Button {
-                        tabManager?.activeTab?.navigate(entry.url)
+                        tabManager?.navigateActiveTab(to: entry.url)
                     } label: {
                         pageLabel(title: entry.title, url: entry.url)
                     }

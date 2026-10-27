@@ -22,7 +22,9 @@ struct SidebarTabView: View {
     /// Everything shown, in order, so moves between and within sections
     /// animate alike; folding a folder moves its tabs out of the order.
     private var sidebarOrder: [UUID] {
-        (tabManager.favorites + tabManager.pinned.visibleTabs + tabManager.tabs).map(\.id)
+        (tabManager.favorites + tabManager.pinned.visibleTabs).map(\.id)
+            + tabManager.today.map(\.id)
+            + tabManager.pinned.documents
             + tabManager.pinned.folders.map(\.id)
             + tabManager.splits.map(\.id)
     }
@@ -95,6 +97,7 @@ struct SidebarTabView: View {
             .help(tabManager.hideTabs ? "Keep sidebar open" : "Hide sidebar")
 
             NavigationControls(session: activeTab)
+                .disabled(tabManager.activeDocumentID != nil)
 
             Spacer(minLength: 0)
 
@@ -172,11 +175,18 @@ struct SidebarTabView: View {
             SidebarNewTabItem {
                 tabManager.newTab()
             }
+            .contextMenu {
+                if tabManager.documentStore != nil {
+                    Button("New Note") { tabManager.newDocument(.note) }
+                }
+            }
 
             ForEach(tabManager.todayEntries.reversed()) { entry in
                 switch entry {
                 case .tab(let tab):
                     SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                case .document(let id):
+                    SidebarDocumentRow(id: id, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
                 case .split(_, let tabs):
                     SidebarSplitRow(tabs: tabs, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
                 }
@@ -220,11 +230,26 @@ private struct SidebarTabRow: View {
             tab: tab,
             tabManager: tabManager,
             presentation: .sidebar,
-            isActive: tab.id == tabManager.activeTabID,
+            isActive: tabManager.isSelected(tab.id),
             canClose: tabManager.canCloseTab(tab.id)
         )
         .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
         .transition(.tabSlot(.vertical))
+    }
+}
+
+/// A note's row in Pinned or Today.
+private struct SidebarDocumentRow: View {
+    let id: UUID
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+
+    var body: some View {
+        if let store = tabManager.documentStore {
+            DocumentTabItem(id: id, store: store, tabManager: tabManager, presentation: .sidebar, isActive: tabManager.isSelected(id))
+                .reorderableTab(id, in: tabManager, dragging: $draggedTabID)
+                .transition(.tabSlot(.vertical))
+        }
     }
 }
 
@@ -242,7 +267,7 @@ private struct SidebarSplitRow: View {
                     tab: tab,
                     tabManager: tabManager,
                     presentation: .sidebar,
-                    isActive: tab.id == tabManager.activeTabID,
+                    isActive: tabManager.isSelected(tab.id),
                     canClose: tabManager.canCloseTab(tab.id)
                 )
                 .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
@@ -270,7 +295,7 @@ private struct SidebarFavoritesGrid: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 6) {
             ForEach(tabs) { tab in
-                SidebarFavoriteTile(tab: tab, isActive: tab.id == tabManager.activeTabID) {
+                SidebarFavoriteTile(tab: tab, isActive: tabManager.isSelected(tab.id)) {
                     tabManager.selectTab(tab.id)
                 }
                 .contextMenu {
@@ -321,6 +346,8 @@ private struct SidebarPinnedList: View {
                 switch item {
                 case .tab(let tab):
                     SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $draggedTabID)
+                case .document(let id):
+                    SidebarDocumentRow(id: id, tabManager: tabManager, draggedTabID: $draggedTabID)
                 case .folder(let folder):
                     SidebarFolderRow(folder: folder, tabManager: tabManager, draggedTabID: $draggedTabID)
                         .transition(.tabSlot(.vertical))

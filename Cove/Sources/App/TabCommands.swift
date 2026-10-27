@@ -10,7 +10,10 @@ struct TabCommands: Commands {
             switching
                 .disabled(tabManager == nil)
 
-            if let tabManager, let tab = tabManager.activeTab {
+            if let tabManager, let document = tabManager.activeDocument {
+                Divider()
+                DocumentActions(document: document, tabManager: tabManager)
+            } else if let tabManager, let tab = tabManager.activeTab {
                 Divider()
                 TabActions(tab: tab, tabManager: tabManager, placement: .menuBar)
             }

@@ -6,7 +6,7 @@ import SwiftUI
 /// editing happens.
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
-    private let tabManager: TabManager
+    @ObservedObject private var tabManager: TabManager
     private let presentsSiteControls: Bool
 
     init(
@@ -15,13 +15,14 @@ struct NavigationBar: View {
         presentsSiteControls: Bool
     ) {
         self._session = ObservedObject(wrappedValue: session)
-        self.tabManager = tabManager
+        self._tabManager = ObservedObject(wrappedValue: tabManager)
         self.presentsSiteControls = presentsSiteControls
     }
 
     var body: some View {
         HStack(spacing: 8) {
             NavigationControls(session: session)
+                .disabled(tabManager.activeDocumentID != nil)
             addressField
             if tabManager.isPrivate {
                 PrivateBadge()
@@ -36,13 +37,20 @@ struct NavigationBar: View {
 
     private var addressField: some View {
         HStack(spacing: 4) {
-            SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
+            // A note on screen in place of the page shows its title.
+            if let id = tabManager.activeDocumentID, let store = tabManager.documentStore {
+                DocumentLabel(id: id, store: store)
+                    .padding(.leading, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
 
-            Text(session.currentURL.isEmpty ? "Search or enter URL" : session.currentURL)
-                .foregroundStyle(session.currentURL.isEmpty ? .secondary : .primary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(session.currentURL.isEmpty ? "Search or enter URL" : session.currentURL)
+                    .foregroundStyle(session.currentURL.isEmpty ? .secondary : .primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(.leading, 4)
         .padding(.trailing, 10)

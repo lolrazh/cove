@@ -18,6 +18,7 @@ final class AppServices {
     let browsingContext: BrowsingContext
     let spaceStore: SpaceStore
     let pinStore = PinStore()
+    let documentStore = DocumentStore()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
     let boosts = BoostInjector(store: BoostStore())

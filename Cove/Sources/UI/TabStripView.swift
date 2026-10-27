@@ -14,13 +14,13 @@ struct TabStripView: View {
     }
 
     private var tabOrder: [UUID] {
-        (pinnedTabs + tabManager.tabs).map(\.id) + tabManager.splits.map(\.id)
+        pinnedItems.map(\.id) + tabManager.today.map(\.id) + tabManager.splits.map(\.id)
     }
 
-    /// Favorites and pinned tabs lead the strip as favicon-only tabs, like
-    /// Safari's pinned tabs; the sidebar's folders are flattened.
-    private var pinnedTabs: [TabSession] {
-        tabManager.favorites + tabManager.pinned.tabs
+    /// Favorites and pinned tabs and notes lead the strip as icon-only tabs,
+    /// like Safari's pinned tabs; the sidebar's folders are flattened.
+    private var pinnedItems: [SidebarItem<TabSession>] {
+        tabManager.favorites.map(SidebarItem.tab) + tabManager.pinned.leaves
     }
 
     private var tabAnimation: Animation? {
@@ -52,14 +52,20 @@ struct TabStripView: View {
                 SpaceMenuButton(tabManager: tabManager)
                     .background { WindowDragExclusion() }
             }
-            ForEach(pinnedTabs) { tab in
-                tabItem(tab, presentation: .compact, width: ChromeMetrics.compactTabWidth)
+            ForEach(pinnedItems) { item in
+                switch item {
+                case .tab(let tab): tabItem(tab, presentation: .compact, width: ChromeMetrics.compactTabWidth)
+                case .document(let id): documentItem(id, presentation: .compact, width: ChromeMetrics.compactTabWidth)
+                case .folder: EmptyView()
+                }
             }
             // A split's tabs keep their widths, grouped on a resting fill.
             ForEach(tabManager.todayEntries) { entry in
                 switch entry {
                 case .tab(let tab):
                     tabItem(tab, presentation: .horizontal, width: sharedTabWidth)
+                case .document(let id):
+                    documentItem(id, presentation: .horizontal, width: sharedTabWidth)
                 case .split(_, let tabs):
                     HStack(spacing: Metrics.tabSpacing) {
                         ForEach(tabs) { tab in
@@ -86,7 +92,7 @@ struct TabStripView: View {
             tab: tab,
             tabManager: tabManager,
             presentation: presentation,
-            isActive: tab.id == tabManager.activeTabID,
+            isActive: tabManager.isSelected(tab.id),
             canClose: tabManager.canCloseTab(tab.id),
             width: width
         )
@@ -95,10 +101,20 @@ struct TabStripView: View {
         .transition(.tabSlot(.horizontal))
     }
 
+    @ViewBuilder
+    private func documentItem(_ id: UUID, presentation: ChromeTabPresentation, width: CGFloat) -> some View {
+        if let store = tabManager.documentStore {
+            DocumentTabItem(id: id, store: store, tabManager: tabManager, presentation: presentation, isActive: tabManager.isSelected(id), width: width)
+                .reorderableTab(id, in: tabManager, dragging: $tabManager.draggedTabID)
+                .background { WindowDragExclusion() }
+                .transition(.tabSlot(.horizontal))
+        }
+    }
+
     private func resolvedSharedTabWidth(for availableWidth: CGFloat) -> CGFloat {
-        let tabCount = max(tabManager.tabs.count, 1)
+        let tabCount = max(tabManager.today.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
-        let pinnedReservation = CGFloat(pinnedTabs.count) * (ChromeMetrics.compactTabWidth + Metrics.tabSpacing)
+        let pinnedReservation = CGFloat(pinnedItems.count) * (ChromeMetrics.compactTabWidth + Metrics.tabSpacing)
         let spaceReservation = tabManager.spaces.count > 1 ? ChromeMetrics.tabHeight + Metrics.tabSpacing : 0
         let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation + spaceReservation
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
