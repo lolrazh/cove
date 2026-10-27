@@ -18,6 +18,8 @@ enum ChromeSymbols {
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
         static let clear = "chevron.down"
+        static let playingAudio = "speaker.wave.2.fill"
+        static let muted = "speaker.slash.fill"
     }
 
     enum Settings {

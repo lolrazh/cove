@@ -29,7 +29,11 @@ struct ChromeTabItem: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            closeButton
+            // Close together, so narrow top tabs keep room for the title.
+            HStack(spacing: 0) {
+                audioButton
+                closeButton
+            }
         }
         .padding(.leading, 8)
         .padding(.trailing, ChromeMetrics.tabAccessoryInset)
@@ -40,8 +44,25 @@ struct ChromeTabItem: View {
         .background { background }
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
+        .animation(ChromeMotion.hover, value: showsAudioButton)
         .onHover { isHovered = $0 }
         .onTapGesture { tabManager.selectTab(tab.id) }
+    }
+
+    /// Shows while the page plays sound, and while it's muted so it can be
+    /// unmuted. Clicking it toggles.
+    @ViewBuilder
+    private var audioButton: some View {
+        if showsAudioButton {
+            Button(action: tab.toggleMuted) {
+                Image(systemName: tab.isMuted ? ChromeSymbols.Tabs.muted : ChromeSymbols.Tabs.playingAudio)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(accessoryStyle)
+            .help(tab.isMuted ? "Unmute Tab" : "Mute Tab")
+            .transition(.opacity)
+        }
     }
 
     private var closeButton: some View {
@@ -51,7 +72,7 @@ struct ChromeTabItem: View {
             Image(systemName: ChromeSymbols.Tabs.close)
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2)))
+        .buttonStyle(accessoryStyle)
         .help("Close Tab")
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
@@ -78,6 +99,14 @@ struct ChromeTabItem: View {
         } else if isHovered {
             shape.fill(ChromePalette.hover)
         }
+    }
+
+    private var showsAudioButton: Bool {
+        tab.isPlayingAudio || tab.isMuted
+    }
+
+    private var accessoryStyle: ChromeButtonStyle {
+        ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2))
     }
 
     private var shape: ConcentricRectangle {

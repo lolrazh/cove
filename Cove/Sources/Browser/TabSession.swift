@@ -32,6 +32,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published private(set) var loadFailure: LoadFailure?
     /// The link under the pointer, for the preview in the page's corner.
     @Published private(set) var hoveredLink: URL?
+    /// Whether the page is playing sound, muted or not.
+    @Published private(set) var isPlayingAudio = false
+    @Published private(set) var isMuted = false
 
     private(set) var webView: WKWebView
 
@@ -42,6 +45,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let onSelect: (@MainActor () -> Void)?
     private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
+    private var audio: PageAudio?
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
     private var webViewCanGoForward = false
@@ -174,6 +178,11 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         webView.stopLoading()
     }
 
+    func toggleMuted() {
+        isMuted.toggle()
+        audio?.setMuted(isMuted)
+    }
+
     /// The page came on screen, so dialogs waiting for it can show.
     func pageDidAppear(in window: NSWindow?) {
         dialogWindowWaiters.forEach { $0.resume(returning: window) }
@@ -256,6 +265,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
+        audio = PageAudio(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
+            self?.isPlayingAudio = isPlaying
+        }
     }
 
     private func replaceWebViewForFreshNavigation() {
@@ -276,6 +288,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         estimatedProgress = 0
         loadFailure = nil
         hoveredLink = nil
+        isPlayingAudio = false
         faviconFetcher.reset()
         favicon = nil
         setupObservers()
@@ -336,6 +349,10 @@ extension TabSession: WKNavigationDelegate {
         hoveredLink = nil
         // URL changes were ignored while the failure showed.
         handleURLChange(webView.url)
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        audio?.reset()
     }
 
     func webView(
