@@ -450,6 +450,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private func configureWebView(_ webView: WKWebView) {
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        (webView as? BrowserWebView)?.onMouseDown = { [weak self] in self?.host?.select() }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }

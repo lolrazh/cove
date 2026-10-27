@@ -3,7 +3,6 @@ import SwiftUI
 struct TabStripView: View {
     @ObservedObject var tabManager: TabManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var draggedTabID: UUID?
 
     private enum Metrics {
         static let tabSpacing: CGFloat = 4
@@ -15,7 +14,7 @@ struct TabStripView: View {
     }
 
     private var tabOrder: [UUID] {
-        (pinnedTabs + tabManager.tabs).map(\.id)
+        (pinnedTabs + tabManager.tabs).map(\.id) + tabManager.splits.map(\.id)
     }
 
     /// Favorites and pinned tabs lead the strip as favicon-only tabs, like
@@ -56,8 +55,19 @@ struct TabStripView: View {
             ForEach(pinnedTabs) { tab in
                 tabItem(tab, presentation: .compact, width: ChromeMetrics.compactTabWidth)
             }
-            ForEach(tabManager.tabs) { tab in
-                tabItem(tab, presentation: .horizontal, width: sharedTabWidth)
+            // A split's tabs keep their widths, grouped on a resting fill.
+            ForEach(tabManager.todayEntries) { entry in
+                switch entry {
+                case .tab(let tab):
+                    tabItem(tab, presentation: .horizontal, width: sharedTabWidth)
+                case .split(_, let tabs):
+                    HStack(spacing: Metrics.tabSpacing) {
+                        ForEach(tabs) { tab in
+                            tabItem(tab, presentation: .horizontal, width: sharedTabWidth)
+                        }
+                    }
+                    .background(ChromePalette.resting, in: .chrome(minimum: ChromeRadius.tab))
+                }
             }
             Button(action: { tabManager.newTab() }) {
                 Image(systemName: ChromeSymbols.Tabs.add)
@@ -67,7 +77,7 @@ struct TabStripView: View {
             .help("New Tab")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .acceptsTabDrops(dragging: $draggedTabID)
+        .acceptsTabDrops(dragging: $tabManager.draggedTabID)
         .animation(tabAnimation, value: tabOrder)
     }
 
@@ -80,7 +90,7 @@ struct TabStripView: View {
             canClose: tabManager.canCloseTab(tab.id),
             width: width
         )
-        .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+        .reorderableTab(tab.id, in: tabManager, dragging: $tabManager.draggedTabID)
         .background { WindowDragExclusion() }
         .transition(.tabSlot(.horizontal))
     }

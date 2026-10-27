@@ -18,13 +18,13 @@ struct SidebarTabView: View {
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var draggedTabID: UUID?
 
     /// Everything shown, in order, so moves between and within sections
     /// animate alike; folding a folder moves its tabs out of the order.
     private var sidebarOrder: [UUID] {
         (tabManager.favorites + tabManager.pinned.visibleTabs + tabManager.tabs).map(\.id)
             + tabManager.pinned.folders.map(\.id)
+            + tabManager.splits.map(\.id)
     }
 
     private var tabAnimation: Animation? {
@@ -127,9 +127,9 @@ struct SidebarTabView: View {
             }
             .padding(.horizontal, ChromeMetrics.sidebarInset)
             .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
-            .acceptsTabDrops(dragging: $draggedTabID)
+            .acceptsTabDrops(dragging: $tabManager.draggedTabID)
             .animation(tabAnimation, value: sidebarOrder)
-            .animation(tabAnimation, value: draggedTabID != nil)
+            .animation(tabAnimation, value: tabManager.draggedTabID != nil)
         }
     }
 
@@ -138,39 +138,44 @@ struct SidebarTabView: View {
     @ViewBuilder
     private var favorites: some View {
         if !tabManager.favorites.isEmpty {
-            SidebarFavoritesGrid(tabs: tabManager.favorites, tabManager: tabManager, draggedTabID: $draggedTabID)
-                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
+            SidebarFavoritesGrid(tabs: tabManager.favorites, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $tabManager.draggedTabID)
         } else if showsDropZones {
             SidebarDropZone(title: "Favorites")
-                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
+                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $tabManager.draggedTabID)
         }
     }
 
     @ViewBuilder
     private var pinned: some View {
         if !tabManager.pinned.isEmpty {
-            SidebarPinnedList(items: tabManager.pinned.items, tabManager: tabManager, draggedTabID: $draggedTabID)
-                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
+            SidebarPinnedList(items: tabManager.pinned.items, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $tabManager.draggedTabID)
         } else if showsDropZones {
             SidebarDropZone(title: "Pinned")
-                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
+                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $tabManager.draggedTabID)
         }
     }
 
     private var showsDropZones: Bool {
-        draggedTabID != nil && !tabManager.isPrivate
+        tabManager.draggedTabID != nil && !tabManager.isPrivate
     }
 
     /// New Tab on top, then today's tabs newest first, so a new tab appears
-    /// right under the row that made it.
+    /// right under the row that made it. A split's tabs share one row.
     private var today: some View {
         VStack(spacing: 2) {
             SidebarNewTabItem {
                 tabManager.newTab()
             }
 
-            ForEach(tabManager.tabs.reversed()) { tab in
-                SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $draggedTabID)
+            ForEach(tabManager.todayEntries.reversed()) { entry in
+                switch entry {
+                case .tab(let tab):
+                    SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                case .split(_, let tabs):
+                    SidebarSplitRow(tabs: tabs, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                }
             }
         }
     }
@@ -215,6 +220,31 @@ private struct SidebarTabRow: View {
             canClose: tabManager.canCloseTab(tab.id)
         )
         .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+        .transition(.tabSlot(.vertical))
+    }
+}
+
+/// A split's tabs in one row, side by side as on screen, on a resting fill
+/// that groups them; the focused one is raised while the split is selected.
+private struct SidebarSplitRow: View {
+    let tabs: [TabSession]
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(tabs) { tab in
+                ChromeTabItem(
+                    tab: tab,
+                    tabManager: tabManager,
+                    presentation: .sidebar,
+                    isActive: tab.id == tabManager.activeTabID,
+                    canClose: tabManager.canCloseTab(tab.id)
+                )
+                .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+            }
+        }
+        .background(ChromePalette.resting, in: .chrome(minimum: ChromeRadius.tab))
         .transition(.tabSlot(.vertical))
     }
 }

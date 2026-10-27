@@ -124,11 +124,20 @@ struct BrowserView: View {
         !tabManager.hideTabs || areTabsVisible
     }
 
+    /// The page on screen, or the split holding it, with the drop zones for
+    /// splitting and the Peek over all of it.
     private func activeTabContent(_ tab: TabSession) -> some View {
-        PageView(tab: tab, appServices: appServices)
-            .id(tab.id)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transaction { $0.animation = nil }
-            .overlay { PeekOverlay(tabManager: tabManager, appServices: appServices) }
+        Group {
+            if let split = tabManager.activeSplit {
+                SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
+            } else {
+                PageView(tab: tab, appServices: appServices)
+                    .id(tab.id)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transaction { $0.animation = nil }
+        .overlay { SplitDropZones(tabManager: tabManager) }
+        .overlay { PeekOverlay(tabManager: tabManager, appServices: appServices) }
     }
 }

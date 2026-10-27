@@ -21,6 +21,7 @@
 		154DFA3F0A442660CC2EACFE /* SavePagePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4A8077A99B1B7F8AD4A2A2C /* SavePagePanel.swift */; };
 		19084262923BDA4CCAB4C698 /* TabSplit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB17FCB2E127B7B766B46676 /* TabSplit.swift */; };
 		191F17D406A5B462BBAD746B /* SidebarAddressPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4724DA9BDE2466D45B0FBA /* SidebarAddressPill.swift */; };
+		1B706406C00DB88910837810 /* SplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECC512A79FA6ABC19524292D /* SplitView.swift */; };
 		1C00C5FA13FB08FD2567F7A1 /* BoostStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25D7E7E4DFBA0B8F78535797 /* BoostStore.swift */; };
 		1C6AF4B43B57EB5FA3FB9C4A /* BoostEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02FADC1B3B1852FD9DFBA7DF /* BoostEditor.swift */; };
 		1D2E1EB3AB5BF2F94F277126 /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4881B115778440A4CA4B65A9 /* LinkPreview.swift */; };
@@ -287,6 +288,7 @@
 		E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		E97C600BF67A95C4A3686BC7 /* Cove.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cove.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB17FCB2E127B7B766B46676 /* TabSplit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSplit.swift; sourceTree = "<group>"; };
+		ECC512A79FA6ABC19524292D /* SplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitView.swift; sourceTree = "<group>"; };
 		ED634449436374F07F550C3C /* FaviconFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconFetcher.swift; sourceTree = "<group>"; };
 		EF9C0F14A8C88E21C70144AE /* ImportedBookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedBookmark.swift; sourceTree = "<group>"; };
 		F201A912E55E8030D5BE3499 /* TabManager+SiteControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TabManager+SiteControls.swift"; sourceTree = "<group>"; };
@@ -337,6 +339,7 @@
 				E46FF27DE8D8B8B1C8C427D2 /* SiteControls.swift */,
 				C8F2B914158DA789C71247F6 /* SiteMonogram.swift */,
 				DBF380FE362560CC50CBD88C /* SourceWindow.swift */,
+				ECC512A79FA6ABC19524292D /* SplitView.swift */,
 				2452CC2ABC37DA8D2EB63E6C /* TabActions.swift */,
 				875E7F241F959DD45E691CEA /* TabReordering.swift */,
 				C8A4E68B430D945E3968A4B9 /* TabStripView.swift */,
@@ -754,6 +757,7 @@
 				91AE785464E0BEBFFC37CAD9 /* SpaceStore.swift in Sources */,
 				4BB47B91D1A497DAB48DB876 /* SpaceSwitcher.swift in Sources */,
 				8F5709A747BAC02E2C7D5EE9 /* SpacesSettingsPane.swift in Sources */,
+				1B706406C00DB88910837810 /* SplitView.swift in Sources */,
 				B0FB0E8086ED73C9C97FAF7F /* StoreFile.swift in Sources */,
 				997099B304C6308D9AB502C0 /* TabActions.swift in Sources */,
 				2A495BD12CAD0E33C0584033 /* TabArchive.swift in Sources */,
