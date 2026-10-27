@@ -168,21 +168,32 @@ landed here too.
   - `08-new-folder-naming.png`, `10-dblclick-rename.png`: New Folder with
     Tab put a folder around Apple in its place, indented it, and opened the
     name field at once; typed text landed in the field. Return committed
-    the name (it's in `pins.plist`; the doubled "Apple StuffApple Stuff" is
-    a harness artifact: a second run typed into the still-open field).
+    the name (it's in `pins.plist`). The doubled "Apple StuffApple Stuff"
+    came from the second rename: a field focused from code kept its
+    insertion point instead of selecting the name, so typing appended.
+    Fixed: `RenameField`, shared by tabs and folders, selects all as it
+    takes focus.
   - `16-relaunched.png`: after quit and relaunch the folder and its pinned
     tab are back, the tab asleep.
   - `17-top-mode.png`: in top mode the pinned Apple leads the strip as a
     favicon-only tab before the Today tabs.
   - `19-away-from-pin.png`: ⌘L on a Today tab navigates as before with
     pins present.
-- **Not verified live** (focus was lost to the user's apps before these
-  ran): the ↩ back-to-pin accessory, ⌘W resetting a pinned tab, the
-  Favorites grid and its drop zone, drags between sections and onto
-  folders, the private window, Import Bookmarks…. One attempt at ⌘1 on a
-  pinned tab didn't register (`18-cmd1-pinned-selected.png`); it ran
-  during focus contention and wasn't reproduced, but is worth a check,
-  since `tabsInDisplayOrder` now starts with the pins.
+  - `21-cmd1.png`: ⌘1 selects the pinned Apple tab (an earlier attempt,
+    `18-…`, ran while the user's app had focus and didn't register; the
+    order is now a pure `TabLayout.displayOrder`, tested).
+  - `22-away.png`: with the pinned tab active, ⌘L `apple.com/mac/` Return
+    switched to the open Today tab "Mac - Apple" instead of navigating:
+    the Command Bar's top hit for an open page is that tab. Not a pin
+    bug; the doubled folder name in `16`/`19` was the rename field not
+    selecting its text, fixed by `RenameField`.
+  - `24-away.png`: ⌘L `apple.com/ipad/` Return navigates the pinned tab
+    away and its row shows the ↩ back-to-pin accessory.
+- **Not verified live** (the user was working on the Mac; focus was lost
+  before these ran and the windows were closed): ⌘W resetting a pinned
+  tab, the ↩ click itself, the Favorites grid and its drop zone, drags
+  between sections and onto folders, the private window, Import
+  Bookmarks….
 
 ## Key Learnings
 - **One `change { }` on the store** keeps structure edits atomic: a move
