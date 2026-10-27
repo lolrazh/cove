@@ -183,7 +183,8 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       holding typed input. Restored tabs start asleep.)*
 - [x] Auto-archive Today tabs after 12h / 24h / 7d / 30d (setting); the
       archive is searchable in the Library and the Command Bar. *(The
-      Command Bar's Archive group; the Library's list arrives with 5g.)*
+      Command Bar's Archive group and the Library's Archive section, which
+      also holds tabs closed by hand.)*
 
 ### 5d. Pinned tabs and Favorites ⭑
 - [ ] Pin a tab (⌘D): moves to Pinned, persists across launches.
@@ -209,10 +210,16 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       show as one entry in the sidebar.
 
 ### 5g. Library, bookmarks, downloads
-- [ ] Library panel: Downloads, Archive, History, in the sidebar footer.
+- [x] Library panel: Downloads, Archive, History, in the sidebar footer.
+      *(Takes the sidebar's place with Back to return, or a popover with tabs
+      on top; ⌘⇧L and the Command Bar. Closed tabs go to the archive, so
+      Reopen Last Closed Tab brings back their history. The History window
+      stays for every visit.)*
 - [ ] Bookmarks via Pinned/Favorites/folders (Arc's model), plus import from
-      Safari and Chrome.
-- [ ] Downloads also show progress in the sidebar footer.
+      Safari and Chrome. *(Safari and Chrome files parse into an imported
+      bookmark tree; the open panel and inserting into Pinned wait for 5d.)*
+- [x] Downloads also show progress in the sidebar footer. *(A progress ring
+      on the Library button; a bounce and a dot when one finishes.)*
 
 ### 5h. Media
 - [x] Media player in the sidebar when a background tab plays audio or video:
