@@ -18,7 +18,7 @@ struct BoostEditorPanel: View {
     }
 
     /// Tints to pick from in one click; the color well has the rest.
-    private static let tints = ["#FF5F57", "#FF9F0A", "#FFD60A", "#30D158", "#40C8E0", "#0A84FF", "#BF5AF2", "#FF375F"]
+    private static let tints = ["#FF5F57", "#FF9F0A", "#FFD60A", "#30D158", "#0A84FF", "#BF5AF2"]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -104,6 +104,7 @@ struct BoostEditorPanel: View {
             ForEach(Self.tints, id: \.self, content: swatch)
             ColorPicker("Custom Color", selection: customTint, supportsOpacity: false)
                 .labelsHidden()
+                .controlSize(.small)
                 .help("Custom Color")
         }
     }
@@ -186,18 +187,30 @@ struct BoostEditorPanel: View {
         }
     }
 
+    /// CSS and JavaScript, folded away until asked for. The whole heading
+    /// toggles it, not just the chevron.
     private var code: some View {
-        DisclosureGroup("Code", isExpanded: $showsCode) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("CSS")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                showsCode.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: ChromeSymbols.Tabs.collapsed)
+                        .rotationEffect(.degrees(showsCode ? 90 : 0))
+                    Text("Code")
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
+
+            if showsCode {
+                caption("CSS")
                 codeEditor($editor.boost.css)
 
                 HStack {
-                    Text("JavaScript")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
+                    caption("JavaScript")
                     Spacer()
                     Button("Reload", action: editor.reload)
                         .buttonStyle(.link)
@@ -207,7 +220,6 @@ struct BoostEditorPanel: View {
                 .padding(.top, 6)
                 codeEditor($editor.boost.script)
             }
-            .padding(.top, 6)
         }
     }
 
@@ -219,11 +231,15 @@ struct BoostEditorPanel: View {
 
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+            caption(title)
             content()
         }
+    }
+
+    private func caption(_ title: String) -> some View {
+        Text(title)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
     }
 }
 
