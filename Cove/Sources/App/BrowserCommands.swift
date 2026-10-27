@@ -65,16 +65,18 @@ struct BrowserViewCommands: Commands {
 
             Divider()
 
-            browserLayoutCommands
+            browserLayoutCommands(hideTabsShortcut: nil)
         }
 
         CommandGroup(after: .toolbar) {
             Divider()
-            browserLayoutCommands
+            browserLayoutCommands(hideTabsShortcut: KeyboardShortcut("s", modifiers: .command))
         }
     }
 
-    private var browserLayoutCommands: some View {
+    /// In the Browser and View menus. ⌘S, Arc's sidebar toggle, goes on one
+    /// of them only, so it isn't claimed twice.
+    private func browserLayoutCommands(hideTabsShortcut: KeyboardShortcut?) -> some View {
         Group {
             Toggle(
                 "Show Tabs in Sidebar",
@@ -100,6 +102,7 @@ struct BrowserViewCommands: Commands {
                     }
                 )
             )
+            .keyboardShortcut(hideTabsShortcut)
             .disabled(tabManager == nil)
         }
     }
