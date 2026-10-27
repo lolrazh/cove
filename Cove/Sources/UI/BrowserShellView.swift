@@ -206,35 +206,17 @@ struct BrowserShellView<Content: View>: View {
         VStack(spacing: 0) {
             navigationBar
 
-            ZStack(alignment: .top) {
-                content
-                contentLoadingIndicator
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay { LinkPreview(url: activeTab.hoveredLink) }
-            .overlay {
-                if !activeTab.isNewTabPage {
-                    FindBar(find: activeTab.findInPage)
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay {
+                    if let editor = tabManager.boostEditor, editor.page === activeTab {
+                        BoostEditorPanel(editor: editor, onClose: tabManager.closeBoostEditor)
+                    }
                 }
-            }
-            .overlay {
-                if let editor = tabManager.boostEditor, editor.page === activeTab {
-                    BoostEditorPanel(editor: editor, onClose: tabManager.closeBoostEditor)
-                }
-            }
-            .overlay { ToastOverlay(center: tabManager.toasts) }
+                .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipShape(.chrome())
-        // A concentric clip also becomes the hit area, and resolves in the
-        // wrong place: without this the card swallows clicks meant for the tabs.
-        .contentShape(Rectangle())
-        // The shadow sits behind the clip, or the clip would cut it off.
-        .background {
-            ConcentricRectangle.chrome()
-                .fill(ChromePalette.content)
-                .chromeShadow(.card)
-        }
+        .chromeCard()
     }
 
     /// The toolbar above the page, in top-tab mode only. In sidebar mode its
@@ -254,11 +236,6 @@ struct BrowserShellView<Content: View>: View {
         .opacity(isTopMode ? 1 : 0)
         .clipped()
         .allowsHitTesting(isTopMode)
-    }
-
-    private var contentLoadingIndicator: some View {
-        PageProgressBar(progress: activeTab.estimatedProgress, isLoading: activeTab.isLoading)
-            .id(activeTab.id)
     }
 
     // MARK: - Visibility

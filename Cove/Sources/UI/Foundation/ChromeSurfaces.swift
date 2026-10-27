@@ -52,6 +52,21 @@ extension View {
         modifier(ChromeHoverSurface(restingFill: restingFill, minimumRadius: minimumRadius))
     }
 
+    /// A page's card: the page's color, clipped to the window's concentric
+    /// corners and lifted off the frame by the card shadow.
+    func chromeCard() -> some View {
+        clipShape(.chrome())
+            // A concentric clip also becomes the hit area, and resolves in the
+            // wrong place: without this the card swallows clicks meant for the tabs.
+            .contentShape(Rectangle())
+            // The shadow sits behind the clip, or the clip would cut it off.
+            .background {
+                ConcentricRectangle.chrome()
+                    .fill(ChromePalette.content)
+                    .chromeShadow(.card)
+            }
+    }
+
     /// Chrome floating over the page, like the revealed sidebar or tab strip:
     /// the shell color, raised by a shadow alone, with no outline.
     func chromeFloatingSurface(minimumRadius: CGFloat = ChromeRadius.control) -> some View {

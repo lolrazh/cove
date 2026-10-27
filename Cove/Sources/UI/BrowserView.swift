@@ -125,42 +125,9 @@ struct BrowserView: View {
     }
 
     private func activeTabContent(_ tab: TabSession) -> some View {
-        ActiveTabView(tab: tab, appServices: appServices)
+        PageView(tab: tab, appServices: appServices)
             .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { $0.animation = nil }
-    }
-}
-
-struct ActiveTabView: View {
-    @ObservedObject var tab: TabSession
-    private let appServices: AppServices
-
-    init(tab: TabSession, appServices: AppServices) {
-        self._tab = ObservedObject(wrappedValue: tab)
-        self.appServices = appServices
-    }
-
-    var body: some View {
-        Group {
-            if tab.isNewTabPage {
-                NewTabPage(
-                    settingsStore: appServices.settingsStore,
-                    historyStore: appServices.historyStore,
-                    faviconStore: appServices.faviconStore
-                ) { input in
-                    tab.navigate(input)
-                }
-            } else if case .awake(let webView) = tab.page {
-                // Only the selected tab is shown, and it's always awake.
-                WebViewRepresentable(webView: webView, onAppear: tab.pageDidAppear)
-                    .overlay {
-                        if let failure = tab.loadFailure {
-                            LoadFailurePage(failure: failure, onRetry: tab.retry)
-                        }
-                    }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
