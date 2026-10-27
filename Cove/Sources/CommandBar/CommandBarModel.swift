@@ -96,6 +96,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.reopenArchivedTab(id)
         case .space(let id):
             tabManager.switchToSpace(id)
+        case .extensionAction(let id):
+            tabManager.extensionHost.extensionContext(id: id).map(tabManager.performExtensionAction)
         case .history, .url:
             load(result.destination, inNewTab: inNewTab)
         case .search, .suggestion:
@@ -115,9 +117,14 @@ final class CommandBarModel: ObservableObject {
     }
 
     /// Favicons for page rows: a tab's own, or the cached one for its site.
+    /// An extension's row shows its button's icon.
     func icon(for result: CommandBarResult) -> NSImage? {
         if case .tab(let id) = result.kind, let tab = tabManager.tab(id) {
             return tab.favicon
+        }
+        if case .extensionAction(let id) = result.kind {
+            let action = tabManager.extensionHost.extensionContext(id: id)?.action(for: tabManager.extensionWindow.activeTab)
+            return action?.icon(for: CGSize(width: 16, height: 16))
         }
         return faviconStore.image(forPage: result.destination)
     }
@@ -204,7 +211,7 @@ final class CommandBarModel: ObservableObject {
             tabManager.reopenClosedTab()
         case .showLibrary:
             tabManager.library.present()
-        case .newWindow, .newPrivateWindow, .newLittleCove, .showHistory, .settings:
+        case .newWindow, .newPrivateWindow, .newLittleCove, .showHistory, .extensions, .settings:
             // Opening a window needs the view's environment or the app's
             // services; the view handles these before calling `open`.
             break
@@ -240,7 +247,7 @@ final class CommandBarModel: ObservableObject {
             case .hideTabs: !tabManager.hideTabs
             case .showTabs: tabManager.hideTabs
             case .reopenClosedTab: archive.lastClosed != nil
-            case .newWindow, .newPrivateWindow, .newLittleCove, .showLibrary, .showHistory, .settings: true
+            case .newWindow, .newPrivateWindow, .newLittleCove, .showLibrary, .showHistory, .extensions, .settings: true
             }
         }
     }
@@ -277,6 +284,9 @@ final class CommandBarModel: ObservableObject {
                 spaces: tabManager.spaces
                     .filter { $0.id != tabManager.activeSpaceID }
                     .map { CommandBarRanker.OtherSpace(id: $0.id, name: $0.name) },
+                extensionActions: tabManager.extensionContexts.map { context in
+                    CommandBarRanker.ExtensionAction(id: context.uniqueIdentifier, name: context.webExtension.displayName ?? "")
+                },
                 archive: archive.entries,
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),

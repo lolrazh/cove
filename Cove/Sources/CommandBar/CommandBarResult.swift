@@ -10,6 +10,8 @@ struct CommandBarResult: Identifiable, Hashable {
         case archived(UUID)
         /// Another space, to switch to.
         case space(UUID)
+        /// An extension's button, by its context's unique identifier.
+        case extensionAction(String)
         /// A page from history.
         case history
         /// The input taken as an address.
@@ -93,6 +95,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case newLittleCove
     case showLibrary
     case showHistory
+    case extensions
     case settings
 
     var title: String {
@@ -134,6 +137,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newLittleCove: "New Little Cove Window"
         case .showLibrary: "Library"
         case .showHistory: "Show All History"
+        case .extensions: "Extensions"
         case .settings: "Settings"
         }
     }
@@ -176,6 +180,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newLittleCove: ChromeSymbols.Tabs.littleCove
         case .showLibrary: ChromeSymbols.Navigation.library
         case .showHistory: ChromeSymbols.Navigation.history
+        case .extensions: ChromeSymbols.Extensions.extensions
         case .settings: ChromeSymbols.Settings.general
         }
     }
@@ -216,6 +221,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newLittleCove: ["little arc", "mini", "small", "quick"]
         case .showLibrary: ["downloads", "archive", "history"]
         case .showHistory: ["recent", "visited"]
+        case .extensions: ["add-ons", "plugins", "manage", "load", "unpacked"]
         case .settings: ["preferences", "options"]
         }
     }

@@ -15,9 +15,16 @@ struct CommandBarRanker {
         let name: String
     }
 
+    /// An extension's button, offered by the extension's name.
+    struct ExtensionAction {
+        let id: String
+        let name: String
+    }
+
     struct Sources {
         var tabs: [OpenTab] = []
         var spaces: [OtherSpace] = []
+        var extensionActions: [ExtensionAction] = []
         var archive: [ArchivedTab] = []
         var history: [HistoryPage] = []
         var suggestions: [String] = []
@@ -84,6 +91,7 @@ struct CommandBarRanker {
             .map { CommandBarResult(kind: .suggestion, title: $0, destination: $0) }
 
         let commands = sources.spaces.map(Self.spaceResult).filter { match.matches(title: $0.title, keywords: ["space"]) }
+            + sources.extensionActions.map(Self.extensionResult).filter { match.matches(title: $0.title, keywords: ["extension"]) }
             + sources.commands
             .filter { match.matches(title: $0.title, keywords: $0.keywords) }
             .prefix(Limit.commands)
@@ -103,7 +111,9 @@ struct CommandBarRanker {
     /// With nothing typed: recent pages to jump back to, and every command.
     private func rankEmpty(_ sources: Sources) -> Ranking {
         let recent = sources.history.prefix(Limit.recent).map(Self.historyResult)
-        let commands = sources.commands.map(Self.commandResult) + sources.spaces.map(Self.spaceResult)
+        let commands = sources.commands.map(Self.commandResult)
+            + sources.spaces.map(Self.spaceResult)
+            + sources.extensionActions.map(Self.extensionResult)
         let sections = [
             CommandBarSection(title: "Recent", results: Array(recent)),
             CommandBarSection(title: "Commands", results: commands),
@@ -191,6 +201,10 @@ struct CommandBarRanker {
 
     private static func spaceResult(_ space: OtherSpace) -> CommandBarResult {
         CommandBarResult(kind: .space(space.id), title: "Switch to \(space.name)", destination: "")
+    }
+
+    private static func extensionResult(_ action: ExtensionAction) -> CommandBarResult {
+        CommandBarResult(kind: .extensionAction(action.id), title: action.name, destination: "")
     }
 }
 

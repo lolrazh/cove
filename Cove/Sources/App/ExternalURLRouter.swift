@@ -62,6 +62,12 @@ final class ExternalURLRouter {
         littleCove.open(nil)
     }
 
+    /// A new browser window, private or not, as an extension's
+    /// `windows.create` asks; from the last active window's environment.
+    func openBrowserWindow(isPrivate: Bool) {
+        openBrowserWindow?(id: isPrivate ? BrowserView.privateWindowID : BrowserView.windowID)
+    }
+
     /// Open in Cove: Little Cove's tab, page and all, into Today.
     func moveToBrowserWindow(_ tab: TabSession) {
         inBrowserWindow { $0.adoptTab(tab) }

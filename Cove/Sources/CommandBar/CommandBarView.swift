@@ -49,6 +49,7 @@ struct CommandBarOverlay: View {
         case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
         case .command(.newLittleCove): onOpenLittleCove()
         case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
+        case .command(.extensions): SettingsPane.show(.extensions, with: openSettings)
         case .command(.settings): openSettings()
         default: break
         }
@@ -151,7 +152,7 @@ private struct CommandBarPanel: View {
         switch result.kind {
         case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
-        case .url, .suggestion, .command, .space: nil
+        case .url, .suggestion, .command, .space, .extensionAction: nil
         }
     }
 
@@ -215,6 +216,8 @@ private struct CommandBarRow: View {
             SpaceIconView(icon: spaceIcon ?? .dot)
                 .font(.body.weight(.medium))
                 .foregroundStyle(.secondary)
+        case .extensionAction:
+            ExtensionIcon(image: icon, size: 16)
         }
     }
 

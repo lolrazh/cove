@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The glyph at the front of the URL pill and the address field: a lock,
 /// globe or search glyph. On a website it opens that site's controls, as
-/// Arc's does; on a start page it's only a glyph.
+/// Arc's does, with extensions' buttons beneath; on a start page it's only
+/// a glyph.
 ///
 /// Every tab layout has one of these on screen, and only that one presents
 /// the controls, so the Command Bar's Site Settings opens a single popover.
@@ -24,14 +25,18 @@ struct SiteControlsButton: View {
             .buttonStyle(ChromeButtonStyle(size: .accessory(side: Self.side)))
             .help("Site Settings")
             .popover(isPresented: isPresented, arrowEdge: .bottom) {
-                SiteControlsPanel(
-                    page: page,
-                    permissions: page.sitePermissions,
-                    boosts: page.boostStore,
-                    onEditBoost: editBoost,
-                    onClearData: tabManager.clearSiteData
-                )
+                VStack(spacing: 0) {
+                    SiteControlsPanel(
+                        page: page,
+                        permissions: page.sitePermissions,
+                        boosts: page.boostStore,
+                        onEditBoost: editBoost,
+                        onClearData: tabManager.clearSiteData
+                    )
+                    ExtensionShelf(tabManager: tabManager)
+                }
             }
+            .extensionPopoverAnchor(ExtensionWindow.siteControlsAnchorID, in: tabManager)
         }
     }
 

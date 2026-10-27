@@ -49,7 +49,8 @@ struct CoveApp: App {
             SettingsView(
                 settingsStore: appServices.settingsStore,
                 historyStore: appServices.historyStore,
-                spaceStore: appServices.spaceStore
+                spaceStore: appServices.spaceStore,
+                extensionLibrary: appServices.extensionLibrary
             )
         }
     }

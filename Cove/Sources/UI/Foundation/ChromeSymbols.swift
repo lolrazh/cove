@@ -51,11 +51,18 @@ enum ChromeSymbols {
         static let close = "xmark"
     }
 
+    enum Extensions {
+        static let extensions = "puzzlepiece.extension"
+        static let permission = "checkmark.circle"
+        static let overflow = "chevron.right.2"
+    }
+
     enum Settings {
         static let general = "gearshape"
         static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
         static let spaces = "square.stack"
+        static let extensions = "puzzlepiece.extension"
     }
 }

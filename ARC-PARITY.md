@@ -281,7 +281,11 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       Boosts but don't edit them.)*
 
 ### 5k. Extensions ⭑
-- [ ] WebExtensions per PRODUCT.md Phase 3. Large; scheduled last.
+- [x] WebExtensions per PRODUCT.md Phase 3, on WebKit's `WKWebExtension`
+      API: unpacked folders and .zip/.xpi archives, one controller per
+      profile, private windows by opt-in, buttons with badges and popups,
+      permission sheets, Settings › Extensions and the Command Bar. No
+      Chrome Web Store, native messaging or context menus (see the log).
 
 ### 5l. Easels, Notes, Capture ⭑
 Big, self-contained builds; scheduled after the core features.

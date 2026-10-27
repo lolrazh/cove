@@ -68,6 +68,8 @@ final class TabManager: ObservableObject {
     @Published var boostEditor: BoostEditor?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
+    /// The window as extensions see it.
+    let extensionWindow = ExtensionWindow()
 
     let settings: BrowserSettingsStore
     let services: TabSessionServices
@@ -163,6 +165,7 @@ final class TabManager: ObservableObject {
 
         restore(saved)
         session?.track(self, placement: saved?.placement)
+        extensionWindow.track(self)
     }
 
     /// Restored tabs start asleep; selecting the active one wakes it, so a

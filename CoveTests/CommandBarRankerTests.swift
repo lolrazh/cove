@@ -114,6 +114,15 @@ struct CommandBarRankerTests {
         #expect(!rank("home", sources).results.contains { $0.kind == .space(work.id) })
     }
 
+    @Test func `extensions' buttons are offered by name, and all of them with nothing typed`() {
+        let action = CommandBarRanker.ExtensionAction(id: "dark", name: "Dark Reader")
+        let sources = CommandBarRanker.Sources(extensionActions: [action])
+        #expect(rank("dark", sources).results.contains { $0.kind == .extensionAction("dark") && $0.title == "Dark Reader" })
+        #expect(rank("extension", sources).results.contains { $0.kind == .extensionAction("dark") })
+        #expect(!rank("light", sources).results.contains { $0.kind == .extensionAction("dark") })
+        #expect(rank("", sources).results.contains { $0.kind == .extensionAction("dark") })
+    }
+
     @Test func `suggestions repeat neither the query nor each other beyond the cap`() {
         let ranking = rank("swift", .init(suggestions: ["Swift", "swift lang", "swift ui", "swift 6", "swift book", "swiftly"]))
         let suggestions = ranking.sections.first { $0.title == "Suggestions" }?.results ?? []
