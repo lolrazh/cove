@@ -106,15 +106,20 @@ struct TabSplitTests {
         struct Tab: Identifiable { let id = UUID(); let name: Character }
         let tabs = "abcde".map(Tab.init)
         let split = TabSplit(panes: [tabs[3].id, tabs[1].id])
+        let note = UUID()
+        var today = tabs.map(TodayItem.tab)
+        today.insert(.document(note), at: 2)
 
-        let entries = tabs.entries(splits: [split])
+        let entries = today.entries(splits: [split])
         let names = entries.map { entry -> String in
             switch entry {
             case .tab(let tab): String(tab.name)
+            case .document: "note"
             case .split(_, let tabs): "[" + String(tabs.map(\.name)) + "]"
             }
         }
-        #expect(names == ["a", "[db]", "c", "e"])
+        #expect(names == ["a", "[db]", "note", "c", "e"])
         #expect(entries[1].id == split.id)
+        #expect(entries[2].id == note)
     }
 }

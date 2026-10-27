@@ -23,7 +23,7 @@ extension SidebarItem where Tab == Pin {
 }
 
 /// The sidebar's durable sections as one space shows them: Favorites, a row
-/// of pins, and Pinned, a tree of pins and folders. Pure, so the moves can be
+/// of pins, and Pinned, a tree of pins, notes, easels and folders. Pure, so the moves can be
 /// tested. `PinLayout` keeps every space's.
 struct Pins: Codable, Equatable {
     enum Section {
@@ -95,6 +95,18 @@ struct Pins: Codable, Equatable {
         case (.favorites, .pinned): move(id, to: .pinned, at: .after(target))
         case (.pinned, .favorites): move(id, to: .favorites, at: .before(target))
         }
+    }
+
+    // MARK: - Documents
+
+    /// Pins a note or easel. Documents go in Pinned only: Favorites are sites.
+    mutating func addDocument(_ id: UUID, at position: SidebarPosition = .end) {
+        pinned.insert(.document(id), at: position)
+    }
+
+    mutating func removeDocument(_ id: UUID) {
+        guard pinned.documents.contains(id) else { return }
+        pinned.remove(id)
     }
 
     // MARK: - Folders
@@ -178,6 +190,14 @@ struct PinLayout: Codable, Equatable {
         }
         for space in pinned.keys {
             pinned[space]?.update(tab: id, change)
+        }
+    }
+
+    /// Unpins a deleted note or easel, wherever it was pinned.
+    mutating func removeDocument(_ id: UUID) {
+        for space in pinned.keys {
+            pinned[space]?.remove(id)
+            if pinned[space]?.isEmpty == true { pinned[space] = nil }
         }
     }
 

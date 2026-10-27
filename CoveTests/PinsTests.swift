@@ -100,3 +100,43 @@ struct PinsTests {
         #expect(titles(pins.pinned.tabs) == "C")
     }
 }
+
+struct PinnedDocumentTests {
+    @Test func `notes pin into Pinned and its folders, never Favorites`() {
+        var pins = Pins()
+        let note = UUID()
+        let folder = SidebarFolder<Pin>(name: "Work")
+        pins.addFolder(folder)
+        pins.addDocument(note, at: .into(folder.id))
+        #expect(pins.pinned.documents == [note])
+        #expect(pins.section(of: note) == .pinned)
+        #expect(pins.pinned.tabs.isEmpty)
+
+        pins.move(note, to: .favorites, at: .end)
+        #expect(pins.favorites.isEmpty)
+        #expect(pins.pinned.documents == [note])
+
+        pins.removeDocument(note)
+        #expect(pins.pinned.documents.isEmpty)
+        #expect(pins.pinned.folder(folder.id) != nil)
+    }
+
+    @Test func `a deleted note is unpinned in every space, and empty spaces are dropped`() {
+        let note = UUID()
+        let other = PinScope(space: UUID(), profile: Profile.defaultID)
+        var layout = PinLayout()
+        layout[.default].addDocument(note)
+        layout[other].addDocument(note)
+        layout[other].add(Pin(id: UUID(), url: "https://example.com/", title: "Example"), to: .pinned)
+
+        layout.removeDocument(note)
+        #expect(layout[.default].pinned.isEmpty)
+        #expect(layout[other].pinned.documents.isEmpty)
+        #expect(layout[other].pinned.tabs.count == 1)
+        #expect(layout == {
+            var expected = PinLayout()
+            expected[other] = layout[other]
+            return expected
+        }())
+    }
+}
