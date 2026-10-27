@@ -43,7 +43,8 @@ final class TabManager: ObservableObject {
         settings: settings,
         historyStore: services.historyStore,
         faviconStore: services.faviconStore,
-        recentlyClosed: recentlyClosed
+        recentlyClosed: recentlyClosed,
+        archive: archive
     )
 
     var activeTab: TabSession? {

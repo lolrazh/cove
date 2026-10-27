@@ -6,6 +6,8 @@ struct CommandBarResult: Identifiable, Hashable {
     enum Kind: Hashable {
         /// An open tab in this window.
         case tab(UUID)
+        /// A tab in the archive, reopened with its back/forward list.
+        case archived(UUID)
         /// A page from history.
         case history
         /// The input taken as an address.
