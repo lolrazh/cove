@@ -24,9 +24,13 @@ struct SiteControlsButton: View {
             .buttonStyle(ChromeButtonStyle(size: .accessory(side: Self.side)))
             .help("Site Settings")
             .popover(isPresented: isPresented, arrowEdge: .bottom) {
-                SiteControlsPanel(page: page, permissions: page.sitePermissions) {
-                    tabManager.clearSiteData()
-                }
+                SiteControlsPanel(
+                    page: page,
+                    permissions: page.sitePermissions,
+                    boosts: page.boostStore,
+                    onEditBoost: editBoost,
+                    onClearData: tabManager.clearSiteData
+                )
             }
         }
     }
@@ -38,6 +42,12 @@ struct SiteControlsButton: View {
             get: { presentsControls && tabManager.isShowingSiteControls },
             set: { tabManager.isShowingSiteControls = $0 }
         )
+    }
+
+    /// Boosts are made and changed in normal windows only.
+    private var editBoost: (() -> Void)? {
+        guard tabManager.canBoost else { return nil }
+        return { tabManager.editBoost() }
     }
 
     private var glyphImage: some View {
@@ -55,11 +65,15 @@ struct SiteControlsButton: View {
 }
 
 /// Arc's site controls: who the site is and how it was reached, then what it
-/// may do here (blocking, zoom, the camera, microphone and location), then
-/// clearing what it stored.
+/// may do here (blocking, zoom, its Boost, the camera, microphone and
+/// location), then clearing what it stored.
 struct SiteControlsPanel: View {
     @ObservedObject var page: TabSession
     @ObservedObject var permissions: SitePermissions
+    /// Watched so the Boost row follows the site's Boost.
+    @ObservedObject var boosts: BoostStore
+    /// Nil where Boosts can't be edited: in a private window.
+    let onEditBoost: (() -> Void)?
     let onClearData: () -> Void
 
     @State private var zoom: Double = 1
@@ -82,6 +96,9 @@ struct SiteControlsPanel: View {
             VStack(spacing: 0) {
                 contentBlockingRow
                 zoomRow
+                if let onEditBoost {
+                    boostRow(onEdit: onEditBoost)
+                }
             }
             .padding(.vertical, 6)
 
@@ -195,6 +212,32 @@ struct SiteControlsPanel: View {
                 .help("Zoom In")
             }
             .buttonStyle(ChromeButtonStyle(size: .accessory(side: 22)))
+        }
+    }
+
+    /// The site's Boost, on or off, and a way into the editor; or, for a
+    /// site without one, an offer to make one.
+    @ViewBuilder
+    private func boostRow(onEdit: @escaping () -> Void) -> some View {
+        if let boost = page.boost {
+            row("Boost", symbol: ChromeSymbols.Navigation.boost) {
+                Button("Edit", action: onEdit)
+                    .buttonStyle(.link)
+                    .help("Edit the Boost for \(boost.domain)")
+                Toggle("Boost", isOn: Binding(get: { boost.isEnabled }, set: page.setBoostEnabled))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+            }
+        } else {
+            Button(action: onEdit) {
+                Label("Boost This Site", systemImage: ChromeSymbols.Navigation.boost)
+                    .padding(.horizontal, 6)
+                    .frame(height: Metrics.rowHeight)
+            }
+            .buttonStyle(ChromeButtonStyle(size: .row))
+            .help("Change how \(domain) looks with colors, fonts, hidden elements and code")
+            .padding(.horizontal, 6)
         }
     }
 

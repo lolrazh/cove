@@ -34,6 +34,8 @@ final class TabManager: ObservableObject {
     @Published private(set) var mediaTab: TabSession?
     /// Whether the active page's site controls are open.
     @Published var isShowingSiteControls = false
+    /// The Boost editor, open over the page it was opened from.
+    @Published var boostEditor: BoostEditor?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
 

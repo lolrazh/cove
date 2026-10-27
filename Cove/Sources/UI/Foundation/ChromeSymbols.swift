@@ -13,6 +13,7 @@ enum ChromeSymbols {
         static let secure = "lock.fill"
         static let link = "link"
         static let privateBrowsing = "hand.raised.fill"
+        static let boost = "paintbrush.pointed"
     }
 
     enum Tabs {

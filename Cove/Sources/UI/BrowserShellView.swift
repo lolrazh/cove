@@ -217,6 +217,11 @@ struct BrowserShellView<Content: View>: View {
                     FindBar(find: activeTab.findInPage)
                 }
             }
+            .overlay {
+                if let editor = tabManager.boostEditor, editor.page === activeTab {
+                    BoostEditorPanel(editor: editor, onClose: tabManager.closeBoostEditor)
+                }
+            }
             .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
