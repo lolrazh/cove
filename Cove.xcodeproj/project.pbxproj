@@ -110,6 +110,7 @@
 		CC2F542865C026BADEAB3ED6 /* TabIdlePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F0F5F5E5792846736B17EB /* TabIdlePolicyTests.swift */; };
 		CD0467EAAEDB5214FCA38ABD /* CodeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD71F8CC2EF6C1FDA7E1CE20 /* CodeEditor.swift */; };
 		CD0A025EF47EBB1B1BC6648A /* BrowserSettingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A3A6437663AD6DB35F772E6 /* BrowserSettingKeys.swift */; };
+		CDB048DBA5C8B07AA6D5E35E /* SpacesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20A315D3A67A6D51AD211C3 /* SpacesTests.swift */; };
 		D02E795342C0F0F0CB734A95 /* CommandBarField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E140A0D78EB1887750909DE /* CommandBarField.swift */; };
 		D22B71952FA8D30C8A121289 /* Pins.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADFA11F2352E6DF68F68F807 /* Pins.swift */; };
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
@@ -245,6 +246,7 @@
 		B8D7A958A672ABF5403E29A5 /* Space.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space.swift; sourceTree = "<group>"; };
 		B8F2DFCC94DC9CB6FDFFF7D3 /* ChromeTabSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTabSlot.swift; sourceTree = "<group>"; };
 		BC4045F2A420281D29A42EF3 /* PageToolsCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageToolsCommands.swift; sourceTree = "<group>"; };
+		C20A315D3A67A6D51AD211C3 /* SpacesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesTests.swift; sourceTree = "<group>"; };
 		C60DFEA40DB843CF5FDC13B9 /* BoostEditorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoostEditorPanel.swift; sourceTree = "<group>"; };
 		C727569DA84301B3DC2A1235 /* PrivateFaviconStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateFaviconStoreTests.swift; sourceTree = "<group>"; };
 		C7B5B47AE0DACB296CD104D9 /* BoostTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoostTests.swift; sourceTree = "<group>"; };
@@ -480,6 +482,7 @@
 				C727569DA84301B3DC2A1235 /* PrivateFaviconStoreTests.swift */,
 				391D5C04A652FD047ADEAF0B /* SidebarTreeTests.swift */,
 				AAE77F6E10F1036BE3F2809A /* SiteTests.swift */,
+				C20A315D3A67A6D51AD211C3 /* SpacesTests.swift */,
 				695B3D10886152D201A80999 /* TabArchiveTests.swift */,
 				95F0F5F5E5792846736B17EB /* TabIdlePolicyTests.swift */,
 				829CC2510A17E758182AA6CE /* TabOrderTests.swift */,
@@ -610,6 +613,7 @@
 				CBF6FD46EB056C2293A94B5C /* PrivateFaviconStoreTests.swift in Sources */,
 				F60B406A31496424B3AEE1B7 /* SidebarTreeTests.swift in Sources */,
 				893F1A0418F9514D565CF9D1 /* SiteTests.swift in Sources */,
+				CDB048DBA5C8B07AA6D5E35E /* SpacesTests.swift in Sources */,
 				78A6C56CB939C419F9144687 /* TabArchiveTests.swift in Sources */,
 				CC2F542865C026BADEAB3ED6 /* TabIdlePolicyTests.swift in Sources */,
 				23B3C7090C1956EB10BA14B7 /* TabOrderTests.swift in Sources */,
