@@ -83,4 +83,16 @@ struct TabArchiveTests {
         #expect(archive.lastClosed?.url == "https://private.example/")
         #expect(TabArchive(directory: nil).entries.isEmpty)
     }
+
+    @Test func `the Library's search keeps entries holding every typed word, newest first`() {
+        let entries = [
+            ArchivedTab(id: UUID(), url: "https://github.com/swiftlang/swift", title: "Swift", archivedAt: .now, reason: .closed),
+            ArchivedTab(id: UUID(), url: "https://webkit.org/", title: "WebKit", archivedAt: .now, reason: .idle),
+            ArchivedTab(id: UUID(), url: "https://swift.org/", title: "Swift.org", archivedAt: .now, reason: .idle),
+        ]
+        #expect(entries.matching("") == entries)
+        #expect(entries.matching("swift").map(\.title) == ["Swift", "Swift.org"])
+        #expect(entries.matching("github swift").map(\.title) == ["Swift"])
+        #expect(entries.matching("gecko").isEmpty)
+    }
 }
