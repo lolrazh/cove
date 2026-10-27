@@ -187,11 +187,22 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       also holds tabs closed by hand.)*
 
 ### 5d. Pinned tabs and Favorites ⭑
-- [ ] Pin a tab (⌘D): moves to Pinned, persists across launches.
-- [ ] Pinned tabs remember their pinned URL; navigating away shows a "back to
-      pinned URL" affordance; closing a pinned tab resets it.
-- [ ] Favorites: a grid of icon tiles above Pinned; drag in and out.
-- [ ] Folders in the sidebar, nestable, collapsible.
+- [x] Pin a tab (⌘D): moves to Pinned, persists across launches. *(Also
+      the context menu and the Command Bar. Pins live in `pins.plist`,
+      apart from the Today session; each keeps its live tab's page and
+      back/forward list. Pinned tabs sleep but are never archived. In top
+      mode they lead the strip as favicon-only tabs, like Safari's.)*
+- [x] Pinned tabs remember their pinned URL; navigating away shows a "back to
+      pinned URL" affordance; closing a pinned tab resets it. *(Closing puts
+      it back at its pinned page, asleep; the next tab takes its place.)*
+- [x] Favorites: a grid of icon tiles above Pinned; drag in and out. *(As
+      many tiles to a row as the sidebar's width allows; drag between
+      Favorites, Pinned and Today, and reorder within each. Shared across
+      the Spaces to come; Pinned will be per space.)*
+- [x] Folders in the sidebar, nestable, collapsible. *(In Pinned: New
+      Folder from the Command Bar or a folder's menu, New Folder with Tab
+      from a pinned tab's; rename in place; drop tabs on a folder; folding
+      is remembered. Private windows have no pins at all.)*
 
 ### 5e. Spaces and profiles ⭑
 - [ ] Spaces: each has a name, icon, theme color, its own Pinned and Today.
@@ -215,9 +226,10 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       on top; ⌘⇧L and the Command Bar. Closed tabs go to the archive, so
       Reopen Last Closed Tab brings back their history. The History window
       stays for every visit.)*
-- [ ] Bookmarks via Pinned/Favorites/folders (Arc's model), plus import from
-      Safari and Chrome. *(Safari and Chrome files parse into an imported
-      bookmark tree; the open panel and inserting into Pinned wait for 5d.)*
+- [x] Bookmarks via Pinned/Favorites/folders (Arc's model), plus import from
+      Safari and Chrome. *(File › Import Bookmarks… and the Command Bar:
+      the chosen file becomes a Pinned folder, "Imported from Safari" or
+      "Imported from Chrome", nesting kept.)*
 - [x] Downloads also show progress in the sidebar footer. *(A progress ring
       on the Library button; a bounce and a dot when one finishes.)*
 
