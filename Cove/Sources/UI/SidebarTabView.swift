@@ -20,8 +20,11 @@ struct SidebarTabView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var draggedTabID: UUID?
 
-    private var tabOrder: [UUID] {
-        tabManager.tabs.map(\.id)
+    /// Everything shown, in order, so moves between and within sections
+    /// animate alike; folding a folder moves its tabs out of the order.
+    private var sidebarOrder: [UUID] {
+        (tabManager.favorites + tabManager.pinned.visibleTabs + tabManager.tabs).map(\.id)
+            + tabManager.pinned.folders.map(\.id)
     }
 
     private var tabAnimation: Animation? {
@@ -108,15 +111,8 @@ struct SidebarTabView: View {
     private var sectionList: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: ChromeMetrics.sidebarSectionSpacing) {
-                if !tabManager.favorites.isEmpty {
-                    SidebarFavoritesGrid(tabs: tabManager.favorites, activeTabID: tabManager.activeTabID) {
-                        tabManager.selectTab($0)
-                    }
-                }
-
-                if !tabManager.pinned.isEmpty {
-                    tabRows(tabManager.pinned)
-                }
+                favorites
+                pinned
 
                 SidebarClearLine {
                     tabManager.clearTodayTabs()
@@ -127,7 +123,32 @@ struct SidebarTabView: View {
             .padding(.horizontal, ChromeMetrics.sidebarInset)
             .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
             .acceptsTabDrops(dragging: $draggedTabID)
-            .animation(tabAnimation, value: tabOrder)
+            .animation(tabAnimation, value: sidebarOrder)
+            .animation(tabAnimation, value: draggedTabID != nil)
+        }
+    }
+
+    /// An empty section shows only while a tab is being dragged, as somewhere
+    /// to drop it.
+    @ViewBuilder
+    private var favorites: some View {
+        if !tabManager.favorites.isEmpty {
+            SidebarFavoritesGrid(tabs: tabManager.favorites, tabManager: tabManager, draggedTabID: $draggedTabID)
+                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
+        } else if draggedTabID != nil {
+            SidebarDropZone(title: "Favorites")
+                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
+        }
+    }
+
+    @ViewBuilder
+    private var pinned: some View {
+        if !tabManager.pinned.isEmpty {
+            SidebarPinnedList(items: tabManager.pinned.items, tabManager: tabManager, draggedTabID: $draggedTabID)
+                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
+        } else if draggedTabID != nil {
+            SidebarDropZone(title: "Pinned")
+                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
         }
     }
 
@@ -139,22 +160,8 @@ struct SidebarTabView: View {
                 tabManager.newTab()
             }
 
-            tabRows(tabManager.tabs.reversed())
-        }
-    }
-
-    private func tabRows(_ tabs: [TabSession]) -> some View {
-        VStack(spacing: 2) {
-            ForEach(tabs) { tab in
-                ChromeTabItem(
-                    tab: tab,
-                    tabManager: tabManager,
-                    presentation: .sidebar,
-                    isActive: tab.id == tabManager.activeTabID,
-                    canClose: tabManager.tabs.count > 1
-                )
-                .reorderableTab(tab, in: tabManager, dragging: $draggedTabID)
-                .transition(.tabSlot(.vertical))
+            ForEach(tabManager.tabs.reversed()) { tab in
+                SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $draggedTabID)
             }
         }
     }
@@ -179,20 +186,50 @@ struct SidebarTabView: View {
     }
 }
 
-/// Arc's Favorites: a grid of large tiles showing only the favicon.
-private struct SidebarFavoritesGrid: View {
-    let tabs: [TabSession]
-    let activeTabID: UUID?
-    let onSelect: (UUID) -> Void
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+/// A tab's row in Pinned or Today.
+private struct SidebarTabRow: View {
+    let tab: TabSession
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 8) {
+        ChromeTabItem(
+            tab: tab,
+            tabManager: tabManager,
+            presentation: .sidebar,
+            isActive: tab.id == tabManager.activeTabID,
+            canClose: tabManager.canCloseTab(tab.id)
+        )
+        .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+        .transition(.tabSlot(.vertical))
+    }
+}
+
+// MARK: - Favorites
+
+/// Arc's Favorites: a grid of tiles showing only the favicon, as many to a
+/// row as the sidebar's width allows.
+private struct SidebarFavoritesGrid: View {
+    let tabs: [TabSession]
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+
+    private let columns = [GridItem(
+        .adaptive(minimum: ChromeMetrics.favoriteTileRange.lowerBound, maximum: ChromeMetrics.favoriteTileRange.upperBound),
+        spacing: 6
+    )]
+
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 6) {
             ForEach(tabs) { tab in
-                SidebarFavoriteTile(tab: tab, isActive: tab.id == activeTabID) {
-                    onSelect(tab.id)
+                SidebarFavoriteTile(tab: tab, isActive: tab.id == tabManager.activeTabID) {
+                    tabManager.selectTab(tab.id)
                 }
+                .contextMenu {
+                    TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: {}))
+                }
+                .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
+                .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
         }
     }
@@ -204,19 +241,165 @@ private struct SidebarFavoriteTile: View {
     let action: () -> Void
 
     var body: some View {
-        FaviconView(image: tab.favicon, size: 20)
+        FaviconView(image: tab.favicon, size: 16)
             .frame(maxWidth: .infinity)
             .aspectRatio(1, contentMode: .fit)
             .background {
                 if isActive {
-                    ConcentricRectangle.chrome(minimum: ChromeRadius.tile)
+                    ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
                         .fill(ChromePalette.raised)
                         .chromeShadow(.raised)
                 }
             }
-            .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)
+            .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tab)
+            .opacity(tab.isAsleep ? 0.7 : 1)
+            .animation(ChromeMotion.fade, value: tab.isAsleep)
             .help(tab.title)
             .onTapGesture(perform: action)
+    }
+}
+
+// MARK: - Pinned
+
+/// The Pinned section: tabs and folders, folders holding lists of their own.
+private struct SidebarPinnedList: View {
+    let items: [SidebarItem<TabSession>]
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+
+    var body: some View {
+        VStack(spacing: 2) {
+            ForEach(items) { item in
+                switch item {
+                case .tab(let tab):
+                    SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $draggedTabID)
+                case .folder(let folder):
+                    SidebarFolderRow(folder: folder, tabManager: tabManager, draggedTabID: $draggedTabID)
+                        .transition(.tabSlot(.vertical))
+
+                    if !folder.isCollapsed {
+                        SidebarPinnedList(items: folder.contents.items, tabManager: tabManager, draggedTabID: $draggedTabID)
+                            .padding(.leading, ChromeMetrics.sidebarFolderIndent)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A folder's row: click to fold or unfold, double-click to rename, drop a
+/// tab on it to file the tab inside.
+private struct SidebarFolderRow: View {
+    let folder: SidebarFolder<TabSession>
+    @ObservedObject var tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+
+    @State private var isHovered = false
+    @State private var isDropTarget = false
+    @State private var isRenaming = false
+    @State private var draftName = ""
+    @FocusState private var isNameFieldFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: ChromeSymbols.Tabs.folder)
+                .foregroundStyle(.secondary)
+                .frame(width: 16, height: 16)
+
+            nameView
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Image(systemName: ChromeSymbols.Tabs.collapsed)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .rotationEffect(.degrees(folder.isCollapsed ? 0 : 90))
+                .padding(.trailing, 4)
+        }
+        .font(.callout)
+        .padding(.leading, 8)
+        .padding(.trailing, ChromeMetrics.tabAccessoryInset)
+        .frame(height: ChromeMetrics.sidebarRowHeight)
+        .frame(maxWidth: .infinity)
+        .background {
+            if isDropTarget || isHovered {
+                ConcentricRectangle.chrome(minimum: ChromeRadius.tab).fill(ChromePalette.hover)
+            }
+        }
+        .contentShape(Rectangle())
+        .animation(ChromeMotion.hover, value: isHovered)
+        .animation(ChromeMotion.hover, value: isDropTarget)
+        .animation(ChromeMotion.tab, value: folder.isCollapsed)
+        .onHover { isHovered = $0 }
+        .onTapGesture { tabManager.toggleFolderCollapsed(folder.id) }
+        .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .contextMenu {
+            Button("Rename Folder…", action: beginRenaming)
+            Button("New Folder") {
+                tabManager.newFolder(in: folder.id)
+            }
+            Divider()
+            Button("Delete Folder") {
+                tabManager.deleteFolder(folder.id)
+            }
+        }
+        .draggableTab(folder.id, dragging: $draggedTabID)
+        .acceptsTabDrops(into: folder.id, in: tabManager, dragging: $draggedTabID, isTargeted: $isDropTarget)
+        // A folder just made asks for its name.
+        .onChange(of: tabManager.folderToName, initial: true) { _, id in
+            guard id == folder.id else { return }
+            tabManager.folderToName = nil
+            beginRenaming()
+        }
+    }
+
+    @ViewBuilder
+    private var nameView: some View {
+        if isRenaming {
+            TextField("Folder Name", text: $draftName)
+                .textFieldStyle(.plain)
+                .focused($isNameFieldFocused)
+                .onAppear { isNameFieldFocused = true }
+                .onSubmit(finishRenaming)
+                .onExitCommand { isRenaming = false }
+                .onChange(of: isNameFieldFocused) { _, isFocused in
+                    if !isFocused { finishRenaming() }
+                }
+        } else {
+            Text(folder.name)
+                .foregroundStyle(isHovered ? .primary : .secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func beginRenaming() {
+        draftName = folder.name
+        isRenaming = true
+    }
+
+    private func finishRenaming() {
+        guard isRenaming else { return }
+        isRenaming = false
+        tabManager.renameFolder(folder.id, to: draftName)
+    }
+}
+
+/// Where an empty section would be, while a tab is being dragged.
+private struct SidebarDropZone: View {
+    let title: String
+
+    var body: some View {
+        Text(title)
+            .font(.callout)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity)
+            .frame(height: ChromeMetrics.sidebarRowHeight)
+            .background {
+                ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
+                    .stroke(.tertiary, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .padding(0.5)
+            }
+            .contentShape(Rectangle())
+            .transition(.opacity)
     }
 }
 
