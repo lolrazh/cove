@@ -49,6 +49,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// Whether the page is playing sound, muted or not.
     @Published private(set) var isPlayingAudio = false
     @Published private(set) var isMuted = false
+    /// The media the page last played with sound, for the sidebar's player.
+    /// A sleeping page has none.
+    @Published private(set) var nowPlaying: NowPlaying?
     /// When the tab was last selected or last left; what idle time counts from.
     private(set) var lastUsedAt: Date
 
@@ -63,7 +66,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let onSelect: (@MainActor () -> Void)?
     private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
-    private var media: PageMedia?
+    /// The page's media, to play, pause and skip; nil while asleep.
+    private(set) var media: PageMedia?
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
     private var webViewCanGoForward = false
@@ -211,6 +215,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         loadFailure = nil
         hoveredLink = nil
         isPlayingAudio = false
+        nowPlaying = nil
         hasUnsavedInput = false
     }
 
@@ -388,8 +393,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         FormInput.install(in: webView.configuration.userContentController) { [weak self] hasInput in
             self?.hasUnsavedInput = hasInput
         }
-        media = PageMedia(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
-            self?.isPlayingAudio = isPlaying
+        media = PageMedia(webView: webView, isMuted: isMuted) { [weak self] status in
+            self?.isPlayingAudio = status.isAudible
+            self?.nowPlaying = status.nowPlaying
         }
     }
 
@@ -407,6 +413,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             releaseWebView(webView)
         }
         page = .asleep(interactionState: nil)
+        media = nil
 
         webViewCanGoBack = false
         webViewCanGoForward = false
@@ -417,6 +424,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         loadFailure = nil
         hoveredLink = nil
         isPlayingAudio = false
+        nowPlaying = nil
         faviconFetcher.reset()
         favicon = nil
     }
