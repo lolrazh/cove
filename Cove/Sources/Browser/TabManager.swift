@@ -44,8 +44,9 @@ final class TabManager: ObservableObject {
     /// long enough.
     @Published var activeTabID: UUID? {
         didSet {
-            // A Peek belongs to the page it was opened over.
+            // A Peek or a capture belongs to the page it was opened over.
             closePeek()
+            endCapture()
             oldValue.flatMap(tab)?.markUsed()
             activeTab?.markUsed()
             shownTabs.forEach { $0.wake() }
@@ -66,6 +67,8 @@ final class TabManager: ObservableObject {
     @Published var isShowingSiteControls = false
     /// The Boost editor, open over the page it was opened from.
     @Published var boostEditor: BoostEditor?
+    /// Capture, over the page it was started on.
+    @Published var capture: CaptureSession?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
     /// The window as extensions see it.
