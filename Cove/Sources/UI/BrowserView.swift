@@ -36,6 +36,7 @@ struct BrowserView: View {
             if let activeTab = tabManager.activeTab {
                 WindowChromeHost(showsTrafficLights: stripVisible) { window in
                     appServices.sessionStore.attach(window, to: tabManager)
+                    tabManager.extensionWindow.attach(window)
                 } content: {
                     BrowserShellView(
                         appServices: appServices,
@@ -63,6 +64,7 @@ struct BrowserView: View {
             }
         }
         .onDisappear {
+            tabManager.extensionWindow.close()
             guard !tabManager.isPrivate else { return }
             appServices.sessionStore.untrack(tabManager)
         }
