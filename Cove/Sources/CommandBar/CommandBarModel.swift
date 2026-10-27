@@ -165,6 +165,8 @@ final class CommandBarModel: ObservableObject {
             withAnimation(ChromeMotion.shell) { tabManager.setHideTabs(false) }
         case .reopenClosedTab:
             tabManager.reopenClosedTab()
+        case .showLibrary:
+            tabManager.library.present()
         case .newWindow, .newPrivateWindow, .showHistory, .settings:
             // Opening a SwiftUI scene needs the view's environment; the view
             // handles these before calling `open`.
@@ -194,7 +196,7 @@ final class CommandBarModel: ObservableObject {
             case .hideTabs: !tabManager.hideTabs
             case .showTabs: tabManager.hideTabs
             case .reopenClosedTab: archive.lastClosed != nil
-            case .newWindow, .newPrivateWindow, .showHistory, .settings: true
+            case .newWindow, .newPrivateWindow, .showLibrary, .showHistory, .settings: true
             }
         }
     }
