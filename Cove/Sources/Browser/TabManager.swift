@@ -51,6 +51,9 @@ final class TabManager: ObservableObject {
         archive: archive
     )
 
+    /// This window's Library. Lazy for the same reason.
+    private(set) lazy var library = LibraryModel(tabManager: self, services: services, archive: archive)
+
     var activeTab: TabSession? {
         tabs.first { $0.id == activeTabID }
     }
@@ -383,6 +386,11 @@ final class TabManager: ObservableObject {
     /// pasteboard, the active tab's unless another is given.
     func copyURL(of tab: TabSession? = nil) {
         guard let url = (tab ?? activeTab)?.currentURL, !url.isEmpty else { return }
+        copyLink(url)
+    }
+
+    /// Any page's address to the pasteboard, like the Library's Copy Link.
+    func copyLink(_ url: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url, forType: .string)
         toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)

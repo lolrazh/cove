@@ -80,11 +80,18 @@ final class DownloadItem: ObservableObject, Identifiable {
 @MainActor
 final class DownloadManager: NSObject, ObservableObject {
     @Published var items: [DownloadItem] = []
+    /// A download finished since the Library last showed Downloads: the
+    /// Library button wears a dot until then.
+    @Published private(set) var hasUnseenDownloads = false
     private let settings: BrowserSettingsStore
     private var itemCancellables: [UUID: AnyCancellable] = [:]
 
     var hasActiveDownloads: Bool {
         items.contains { $0.state == .downloading }
+    }
+
+    var completedCount: Int {
+        items.count { $0.state == .completed }
     }
 
     // Aggregate progress across all active downloads (0.0–1.0)
@@ -118,6 +125,15 @@ final class DownloadManager: NSObject, ObservableObject {
         let removed = items.filter { $0.state != .downloading }
         for item in removed { itemCancellables.removeValue(forKey: item.id) }
         items.removeAll { $0.state != .downloading }
+    }
+
+    func markDownloadsSeen() {
+        hasUnseenDownloads = false
+    }
+
+    func open(_ item: DownloadItem) {
+        guard item.state == .completed, let url = item.fileURL else { return }
+        NSWorkspace.shared.open(url)
     }
 
     func revealInFinder(_ item: DownloadItem) {
@@ -164,6 +180,7 @@ extension DownloadManager: WKDownloadDelegate {
         Task { @MainActor in
             guard let item = self.downloadToItem.removeValue(forKey: download) else { return }
             item.markCompleted()
+            self.hasUnseenDownloads = true
         }
     }
 

@@ -2,11 +2,11 @@ import SwiftUI
 
 /// Arc's sidebar: a header with the window controls and navigation, the URL
 /// pill, then Favorites, Pinned, a Clear line, and Today, with the media
-/// player and a footer.
+/// player and a footer. The Library takes the place of all above the media
+/// player while it's open.
 struct SidebarTabView: View {
     @ObservedObject var tabManager: TabManager
     @ObservedObject var activeTab: TabSession
-    let downloadManager: DownloadManager
     /// Height of the row that holds the traffic lights. Set so the row's center
     /// lands on the traffic lights' centerline wherever the sidebar is placed.
     let headerHeight: CGFloat
@@ -30,7 +30,9 @@ struct SidebarTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            sections
+            SidebarContent(library: tabManager.library, headerHeight: headerHeight, headerLeadingInset: headerLeadingInset) {
+                sections
+            }
             MediaPlayer(tabManager: tabManager, style: .card)
                 .padding(.horizontal, ChromeMetrics.sidebarInset)
             footer
@@ -159,11 +161,11 @@ struct SidebarTabView: View {
 
     // MARK: - Footer
 
-    /// Library (downloads for now) leading, the space dots centered. The new
-    /// space button arrives with Spaces.
+    /// The Library leading, the space dots centered. The new space button
+    /// arrives with Spaces.
     private var footer: some View {
         HStack {
-            DownloadsStatusButton(downloadManager: downloadManager, popoverEdge: .top)
+            LibraryButton(library: tabManager.library)
             Spacer()
         }
         .overlay {
@@ -265,5 +267,35 @@ private struct SidebarNewTabItem: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .chromeHoverSurface(minimumRadius: ChromeRadius.tab)
         .onTapGesture(perform: action)
+    }
+}
+
+/// The tabs, or the Library pushed in from the trailing edge in their place,
+/// as in Arc. Back slides the tabs in again.
+private struct SidebarContent<Tabs: View>: View {
+    @ObservedObject var library: LibraryModel
+    let headerHeight: CGFloat
+    let headerLeadingInset: CGFloat
+    @ViewBuilder let tabs: Tabs
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            if library.isPresented {
+                SidebarLibrary(model: library, headerHeight: headerHeight, headerLeadingInset: headerLeadingInset)
+                    .transition(push(from: .trailing))
+            } else {
+                tabs
+                    .transition(push(from: .leading))
+            }
+        }
+        .frame(maxHeight: .infinity)
+        .clipped()
+        .animation(reduceMotion ? ChromeMotion.fade : ChromeMotion.shell, value: library.isPresented)
+    }
+
+    private func push(from edge: Edge) -> AnyTransition {
+        reduceMotion ? .opacity : .move(edge: edge).combined(with: .opacity)
     }
 }
