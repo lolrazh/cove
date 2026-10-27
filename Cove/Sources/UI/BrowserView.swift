@@ -18,6 +18,7 @@ struct BrowserView: View {
                 settings: appServices.settingsStore,
                 services: appServices.tabSessionServices,
                 recentlyClosed: appServices.recentlyClosedTabs,
+                archive: appServices.tabArchive,
                 session: appServices.sessionStore
             )
         )

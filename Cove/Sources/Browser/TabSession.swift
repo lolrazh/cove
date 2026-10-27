@@ -49,6 +49,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// Whether the page is playing sound, muted or not.
     @Published private(set) var isPlayingAudio = false
     @Published private(set) var isMuted = false
+    /// When the tab was last selected or last left; what idle time counts from.
+    private(set) var lastUsedAt: Date
 
     /// The find bar's state. Follows the web view when it's replaced, and
     /// wakes the page if it has to.
@@ -67,6 +69,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var webViewCanGoForward = false
     private var hasSyntheticStartPageEntry: Bool
     private var syntheticForwardToWebContent = false
+    /// The page holds typed input, as `FormInput` last reported.
+    private var hasUnsavedInput = false
     /// A page recorded in history before its title was known (example.com sets
     /// it after `didFinish`). Its visit gets the title when it arrives.
     private var visitAwaitingTitle: String?
@@ -94,6 +98,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.faviconFetcher = FaviconFetcher(store: services.faviconStore)
         self.page = .asleep(interactionState: saved?.interactionState)
         self.customTitle = saved?.customTitle
+        self.lastUsedAt = saved?.lastUsedAt ?? .now
         super.init()
 
         refreshNavigationState()
@@ -123,6 +128,21 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         if case .awake(let webView) = page { webView } else { nil }
     }
 
+    /// Whether the page is doing something a reload would interrupt: playing
+    /// audio, using the camera or microphone, or holding typed input.
+    var isInUse: Bool {
+        guard case .awake(let webView) = page else { return false }
+        return hasUnsavedInput
+            || isPlayingAudio
+            || webView.cameraCaptureState != .none
+            || webView.microphoneCaptureState != .none
+    }
+
+    /// The tab was selected, or was just left: either way it's in use now.
+    func markUsed() {
+        lastUsedAt = .now
+    }
+
     /// The tab as saved for the next launch. A start page saves no URL.
     var savedTab: SavedTab {
         let interactionState: Data? = switch page {
@@ -133,7 +153,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             url: isNewTabPage ? "" : currentURL,
             title: isNewTabPage ? "" : pageTitle,
             customTitle: customTitle,
-            interactionState: isNewTabPage ? nil : interactionState
+            interactionState: isNewTabPage ? nil : interactionState,
+            lastUsedAt: lastUsedAt
         )
     }
 
@@ -190,6 +211,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         loadFailure = nil
         hoveredLink = nil
         isPlayingAudio = false
+        hasUnsavedInput = false
     }
 
     func navigate(_ input: String) {
@@ -363,6 +385,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
+        FormInput.install(in: webView.configuration.userContentController) { [weak self] hasInput in
+            self?.hasUnsavedInput = hasInput
+        }
         audio = PageAudio(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
             self?.isPlayingAudio = isPlaying
         }
@@ -450,6 +475,7 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         loadFailure = nil
         hoveredLink = nil
+        hasUnsavedInput = false
         // URL changes were ignored while the failure showed.
         handleURLChange(webView.url)
     }
