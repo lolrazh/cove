@@ -59,8 +59,8 @@ final class TabManager: ObservableObject {
     /// The background tab the media player controls.
     @Published private(set) var mediaTab: TabSession?
     /// A link opened over the page, as in Arc's Peek: a tab of its own, in no
-    /// list, until it's closed or expanded into Today.
-    /// Set through `openPeek`, `closePeek` and `expandPeek`.
+    /// list, until it's closed or expanded into Today. Set through
+    /// `openPeek`, `closePeek` and `expandPeek`.
     @Published var peek: Peek?
     /// Whether the active page's site controls are open.
     @Published var isShowingSiteControls = false
