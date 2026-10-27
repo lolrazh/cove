@@ -40,6 +40,7 @@ final class AppServices {
             faviconStore: faviconStore,
             downloadManager: downloadManager,
             webKitEnvironment: webKitEnvironment,
+            contentBlocker: contentBlockerManager,
             sitePermissions: sitePermissions,
             siteZoom: siteZoom
         )

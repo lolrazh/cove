@@ -14,6 +14,7 @@ struct TabSessionServices {
     let faviconStore: FaviconStore
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
+    let contentBlocker: ContentBlockerManager
     let sitePermissions: SitePermissions
     let siteZoom: SiteZoomStore
 }
@@ -540,6 +541,10 @@ extension TabSession: WKNavigationDelegate {
     ) async -> WKNavigationActionPolicy {
         if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
+            services.contentBlocker.update(
+                webView.configuration.userContentController,
+                for: navigationAction.request.url
+            )
         }
         return .allow
     }
