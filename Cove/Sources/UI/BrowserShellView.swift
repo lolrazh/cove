@@ -73,6 +73,15 @@ struct BrowserShellView<Content: View>: View {
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
         }
+        // Site controls open from the URL pill, so a hidden sidebar comes out
+        // for them and stays out until they close.
+        .onChange(of: tabManager.isShowingSiteControls) { _, isShowing in
+            if isShowing && isSidebarHideable {
+                reveal()
+            } else if !isShowing {
+                scheduleHide(after: .milliseconds(600))
+            }
+        }
     }
 
     // MARK: - Tabs
@@ -128,6 +137,7 @@ struct BrowserShellView<Content: View>: View {
             downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
+            presentsSiteControls: showsDockedSidebar,
             onToggleDocked: toggleDocked
         )
         .frame(width: sidebarWidth)
@@ -171,6 +181,7 @@ struct BrowserShellView<Content: View>: View {
             downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
+            presentsSiteControls: isSidebarHideable,
             onToggleDocked: toggleDocked
         )
         .frame(width: sidebarWidth)
@@ -224,7 +235,8 @@ struct BrowserShellView<Content: View>: View {
             NavigationBar(
                 session: activeTab,
                 tabManager: tabManager,
-                downloadManager: appServices.downloadManager
+                downloadManager: appServices.downloadManager,
+                presentsSiteControls: isTopMode
             )
 
             Divider()
@@ -307,7 +319,9 @@ struct BrowserShellView<Content: View>: View {
 
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, !isHoveringChrome, tabManager.hideTabs else { return }
+            guard !Task.isCancelled, !isHoveringChrome, !tabManager.isShowingSiteControls, tabManager.hideTabs else {
+                return
+            }
             areTabsVisible = false
         }
     }

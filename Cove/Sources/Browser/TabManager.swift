@@ -29,6 +29,8 @@ final class TabManager: ObservableObject {
     @Published private(set) var hideTabs: Bool
     /// The background tab the media player controls.
     @Published private(set) var mediaTab: TabSession?
+    /// Whether the active page's site controls are open.
+    @Published var isShowingSiteControls = false
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
 

@@ -156,6 +156,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.viewSource()
         case .pictureInPicture:
             tabManager.togglePictureInPicture()
+        case .siteSettings:
+            tabManager.showSiteControls()
         case .showTabsInSidebar:
             withAnimation(ChromeMotion.shell) { tabManager.setLayout(.sidebar) }
         case .showTabsOnTop:
@@ -189,6 +191,7 @@ final class CommandBarModel: ObservableObject {
             case .zoomIn: tabManager.activePage.map { PageZoom.zoomedIn(from: $0.pageZoom) != nil } ?? false
             case .zoomOut: tabManager.activePage.map { PageZoom.zoomedOut(from: $0.pageZoom) != nil } ?? false
             case .actualSize: tabManager.activePage.map { $0.pageZoom != 1 } ?? false
+            case .siteSettings: tabManager.activePage?.siteURL != nil
             case .showTabsInSidebar: tabManager.tabLayout == .horizontal
             case .showTabsOnTop: tabManager.tabLayout == .sidebar
             case .hideTabs: !tabManager.hideTabs

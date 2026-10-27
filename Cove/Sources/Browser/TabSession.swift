@@ -61,7 +61,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private(set) lazy var findInPage = FindInPage { [unowned self] in wake() }
 
     private let settings: BrowserSettingsStore
-    private let services: TabSessionServices
+    let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private let onSelect: (@MainActor () -> Void)?
