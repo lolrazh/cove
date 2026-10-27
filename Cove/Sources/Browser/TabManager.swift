@@ -40,6 +40,13 @@ final class TabManager: ObservableObject {
         tabs.first { $0.id == activeTabID }
     }
 
+    /// The tabs as they're shown: top to bottom in the sidebar, where Today
+    /// lists the newest first, or left to right in the strip. Switching with
+    /// the keyboard, dragging, and Close Tabs Below all follow this order.
+    var tabsInDisplayOrder: [TabSession] {
+        tabLayout == .sidebar ? tabs.reversed() : tabs
+    }
+
     init(
         settings: BrowserSettingsStore,
         services: TabSessionServices,
@@ -224,6 +231,18 @@ final class TabManager: ObservableObject {
 
     func selectTab(_ id: UUID) {
         activeTabID = id
+    }
+
+    /// ⌃Tab and ⌃⇧Tab: the next or previous tab as shown, wrapping around.
+    func selectAdjacentTab(_ offset: Int) {
+        guard let activeTabID, let tab = tabsInDisplayOrder.element(offset, from: activeTabID) else { return }
+        selectTab(tab.id)
+    }
+
+    /// ⌘1 to ⌘8 select a tab by its place, ⌘9 the last one.
+    func selectTab(forShortcut number: Int) {
+        guard let tab = tabsInDisplayOrder.element(forShortcut: number) else { return }
+        selectTab(tab.id)
     }
 
     func closeActiveTab() {
