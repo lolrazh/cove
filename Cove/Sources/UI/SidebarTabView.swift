@@ -302,7 +302,6 @@ private struct SidebarFolderRow: View {
     @State private var isDropTarget = false
     @State private var isRenaming = false
     @State private var draftName = ""
-    @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -359,15 +358,7 @@ private struct SidebarFolderRow: View {
     @ViewBuilder
     private var nameView: some View {
         if isRenaming {
-            TextField("Folder Name", text: $draftName)
-                .textFieldStyle(.plain)
-                .focused($isNameFieldFocused)
-                .onAppear { isNameFieldFocused = true }
-                .onSubmit(finishRenaming)
-                .onExitCommand { isRenaming = false }
-                .onChange(of: isNameFieldFocused) { _, isFocused in
-                    if !isFocused { finishRenaming() }
-                }
+            RenameField(prompt: "Folder Name", text: $draftName, onCommit: finishRenaming) { isRenaming = false }
         } else {
             Text(folder.name)
                 .foregroundStyle(isHovered ? .primary : .secondary)

@@ -22,7 +22,6 @@ struct ChromeTabItem: View {
     @State private var isHovered = false
     @State private var isRenaming = false
     @State private var draftTitle = ""
-    @FocusState private var isTitleFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -78,16 +77,8 @@ struct ChromeTabItem: View {
     @ViewBuilder
     private var titleView: some View {
         if isRenaming {
-            TextField("Tab Name", text: $draftTitle)
-                .textFieldStyle(.plain)
+            RenameField(prompt: "Tab Name", text: $draftTitle, onCommit: finishRenaming) { isRenaming = false }
                 .font(.callout)
-                .focused($isTitleFieldFocused)
-                .onAppear { isTitleFieldFocused = true }
-                .onSubmit(finishRenaming)
-                .onExitCommand { isRenaming = false }
-                .onChange(of: isTitleFieldFocused) { _, isFocused in
-                    if !isFocused { finishRenaming() }
-                }
         } else {
             Text(title)
                 .font(.callout)

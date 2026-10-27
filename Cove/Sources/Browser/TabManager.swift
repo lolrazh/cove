@@ -77,17 +77,10 @@ final class TabManager: ObservableObject {
     }
 
     /// The tabs as they're shown: Favorites, then Pinned, then Today, top to
-    /// bottom in the sidebar, where Today lists the newest first, or left to
-    /// right in the strip. Switching with the keyboard, dragging, and Close
-    /// Tabs Below all follow this order.
+    /// bottom in the sidebar or left to right in the strip. Switching with
+    /// the keyboard, dragging, and Close Tabs Below all follow this order.
     var tabsInDisplayOrder: [TabSession] {
-        favorites + shownPinnedTabs + (tabLayout == .sidebar ? tabs.reversed() : tabs)
-    }
-
-    /// The pinned tabs on screen: the strip shows them all, the sidebar keeps
-    /// collapsed folders' tabs out of sight.
-    var shownPinnedTabs: [TabSession] {
-        tabLayout == .sidebar ? pinned.visibleTabs : pinned.tabs
+        tabLayout.displayOrder(favorites: favorites, pinned: pinned, today: tabs)
     }
 
     /// A private window passes an in-memory archive and no session, so

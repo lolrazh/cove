@@ -1,3 +1,22 @@
+import Foundation
+
+extension TabLayout {
+    /// The tabs as they're shown in this layout: Favorites, then Pinned, then
+    /// Today. The sidebar keeps collapsed folders' tabs out of sight and lists
+    /// Today newest first; the strip flattens the folders and runs oldest
+    /// first. ⌃Tab, ⌘1–9, dragging and Close Tabs Below all follow this.
+    func displayOrder<Tab: Identifiable>(
+        favorites: [Tab],
+        pinned: SidebarTree<Tab>,
+        today: [Tab]
+    ) -> [Tab] where Tab.ID == UUID {
+        switch self {
+        case .sidebar: favorites + pinned.visibleTabs + today.reversed()
+        case .horizontal: favorites + pinned.tabs + today
+        }
+    }
+}
+
 /// Moving through and rearranging tabs in the order they're shown, which is
 /// what keyboard switching, drag and drop and Close Tabs Below all follow.
 extension Array where Element: Identifiable {
