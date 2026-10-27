@@ -82,6 +82,12 @@ struct BrowserShellView<Content: View>: View {
                 scheduleHide(after: .milliseconds(600))
             }
         }
+        // The Library opens in the sidebar, so a hidden one comes out for it.
+        .onReceive(tabManager.library.$isPresented) { isPresented in
+            guard isPresented, isSidebarHideable else { return }
+            hideTask?.cancel()
+            areTabsVisible = true
+        }
     }
 
     // MARK: - Tabs
@@ -134,7 +140,6 @@ struct BrowserShellView<Content: View>: View {
         SidebarTabView(
             tabManager: tabManager,
             activeTab: activeTab,
-            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
             presentsSiteControls: showsDockedSidebar,
@@ -178,7 +183,6 @@ struct BrowserShellView<Content: View>: View {
         SidebarTabView(
             tabManager: tabManager,
             activeTab: activeTab,
-            downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
             // Only once it's out: a popover can't open from offscreen.
@@ -236,7 +240,6 @@ struct BrowserShellView<Content: View>: View {
             NavigationBar(
                 session: activeTab,
                 tabManager: tabManager,
-                downloadManager: appServices.downloadManager,
                 presentsSiteControls: isTopMode
             )
 
@@ -320,7 +323,8 @@ struct BrowserShellView<Content: View>: View {
 
         hideTask = Task { @MainActor in
             try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, !isHoveringChrome, !tabManager.isShowingSiteControls, tabManager.hideTabs else {
+            guard !Task.isCancelled, !isHoveringChrome, !tabManager.isShowingSiteControls, !tabManager.library.isPresented,
+                  tabManager.hideTabs else {
                 return
             }
             areTabsVisible = false

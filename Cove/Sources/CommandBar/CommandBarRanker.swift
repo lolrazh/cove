@@ -182,8 +182,9 @@ struct CommandBarRanker {
     }
 }
 
-/// The typed words, and how well a page or command answers them.
-private struct QueryMatch {
+/// The typed words, and how well a page or command answers them. The Library
+/// filters its archive the same way.
+struct QueryMatch {
     let text: String
     let tokens: [String]
 

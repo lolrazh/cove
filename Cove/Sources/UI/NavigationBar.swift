@@ -1,24 +1,21 @@
 import SwiftUI
 
 /// The toolbar in the page card, in top-tab mode: navigation, the address
-/// field, the media player and downloads. The field only shows the URL behind
+/// field, the media player and the Library. The field only shows the URL behind
 /// the site controls glyph; clicking the URL opens the Command Bar, where all
 /// editing happens.
 struct NavigationBar: View {
     @ObservedObject var session: TabSession
     private let tabManager: TabManager
-    @ObservedObject private var downloadManager: DownloadManager
     private let presentsSiteControls: Bool
 
     init(
         session: TabSession,
         tabManager: TabManager,
-        downloadManager: DownloadManager,
         presentsSiteControls: Bool
     ) {
         self._session = ObservedObject(wrappedValue: session)
         self.tabManager = tabManager
-        self._downloadManager = ObservedObject(wrappedValue: downloadManager)
         self.presentsSiteControls = presentsSiteControls
     }
 
@@ -30,7 +27,7 @@ struct NavigationBar: View {
                 PrivateBadge()
             }
             MediaPlayer(tabManager: tabManager, style: .compact)
-            DownloadsStatusButton(downloadManager: downloadManager)
+            LibraryButton(library: tabManager.library, popoverEdge: .bottom)
         }
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.navigationBarHeight)

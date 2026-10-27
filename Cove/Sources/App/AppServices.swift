@@ -9,7 +9,6 @@ final class AppServices {
     let contentBlockerManager: ContentBlockerManager
     let webKitEnvironment: WebKitEnvironment
     let externalURLRouter: ExternalURLRouter
-    let recentlyClosedTabs = RecentlyClosedTabs()
     let tabArchive = TabArchive()
     /// What normal windows browse with; private windows make their own.
     let browsingContext: BrowsingContext

@@ -2,11 +2,11 @@ import SwiftUI
 import AppKit
 
 /// The History menu: Safari's navigation items, plus Dia's Recently Visited and
-/// Recently Closed sections.
+/// Recently Closed sections. Closed tabs live in the archive.
 struct HistoryMenu: View {
     let tabManager: TabManager?
     @ObservedObject var historyStore: HistoryStore
-    @ObservedObject var recentlyClosed: RecentlyClosedTabs
+    @ObservedObject var archive: TabArchive
     let faviconStore: FaviconStore
     let onShowAllHistory: () -> Void
 
@@ -29,7 +29,7 @@ struct HistoryMenu: View {
             tabManager?.reopenClosedTab()
         }
         .keyboardShortcut("t", modifiers: [.command, .shift])
-        .disabled(tabManager == nil || recentlyClosed.entries.isEmpty)
+        .disabled(tabManager == nil || archive.lastClosed == nil)
 
         if !historyStore.recentlyVisited.isEmpty {
             Section("Recently Visited") {
@@ -44,11 +44,11 @@ struct HistoryMenu: View {
             .disabled(tabManager == nil)
         }
 
-        if !recentlyClosed.entries.isEmpty {
+        if !recentlyClosed.isEmpty {
             Section("Recently Closed") {
-                ForEach(recentlyClosed.entries) { entry in
+                ForEach(recentlyClosed) { entry in
                     Button {
-                        tabManager?.reopenClosedTab(entry.id)
+                        tabManager?.reopenArchivedTab(entry.id)
                     } label: {
                         pageLabel(title: entry.title, url: entry.url)
                     }
@@ -65,6 +65,11 @@ struct HistoryMenu: View {
             Label("Show All History…", systemImage: ChromeSymbols.Navigation.history)
         }
         .keyboardShortcut("y", modifiers: .command)
+    }
+
+    /// The last ten tabs closed by hand, newest first.
+    private var recentlyClosed: [ArchivedTab] {
+        Array(archive.entries.lazy.filter { $0.reason == .closed }.prefix(10))
     }
 
     private func pageLabel(title: String, url: String) -> some View {

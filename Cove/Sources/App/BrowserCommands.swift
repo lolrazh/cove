@@ -43,7 +43,7 @@ struct BrowserViewCommands: Commands {
             HistoryMenu(
                 tabManager: tabManager,
                 historyStore: appServices.historyStore,
-                recentlyClosed: tabManager?.recentlyClosed ?? appServices.recentlyClosedTabs,
+                archive: tabManager?.archive ?? appServices.tabArchive,
                 faviconStore: appServices.faviconStore,
                 onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
             )
@@ -66,6 +66,12 @@ struct BrowserViewCommands: Commands {
                 tabManager?.copyURL()
             }
             .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled(tabManager == nil)
+
+            Button("Library") {
+                tabManager?.library.toggle()
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
             .disabled(tabManager == nil)
 
             Divider()
