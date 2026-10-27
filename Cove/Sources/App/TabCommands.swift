@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The Tab menu: switching between tabs.
+/// The Tab menu: switching between tabs and acting on the active one. The same
+/// actions are in each tab's context menu, for any tab.
 struct TabCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
 
@@ -8,6 +9,11 @@ struct TabCommands: Commands {
         CommandMenu("Tab") {
             switching
                 .disabled(tabManager == nil)
+
+            if let tabManager, let tab = tabManager.activeTab {
+                Divider()
+                TabActions(tab: tab, tabManager: tabManager, placement: .menuBar)
+            }
         }
     }
 

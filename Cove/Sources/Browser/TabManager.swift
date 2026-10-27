@@ -245,9 +245,35 @@ final class TabManager: ObservableObject {
         selectTab(tab.id)
     }
 
+    /// A copy of the tab beside it, back and forward history included.
+    func duplicateTab(_ id: UUID) {
+        guard let tab = tabs.first(where: { $0.id == id }) else { return }
+        open(makeTab(restoring: tab.savedTab), nextTo: id)
+    }
+
     func closeActiveTab() {
         guard let activeTabID else { return }
         closeTab(activeTabID)
+    }
+
+    /// Closes every tab but this one, which stays as the active tab.
+    func closeOtherTabs(keeping id: UUID) {
+        selectTab(id)
+        for tab in tabs where tab.id != id {
+            closeTab(tab.id)
+        }
+    }
+
+    /// Closes the tabs shown after this one: below it in the sidebar, to its
+    /// right in the strip. It becomes active if the active tab is among them.
+    func closeTabs(below id: UUID) {
+        let closing = tabsInDisplayOrder.elements(after: id)
+        if closing.contains(where: { $0.id == activeTabID }) {
+            selectTab(id)
+        }
+        for tab in closing {
+            closeTab(tab.id)
+        }
     }
 
     /// Arc's Clear: closes everything in Today and leaves a fresh tab.
@@ -259,9 +285,10 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// ⌘⇧C and the Command Bar: the page's address to the pasteboard.
-    func copyURL() {
-        guard let url = activeTab?.currentURL, !url.isEmpty else { return }
+    /// ⌘⇧C, the Command Bar and a tab's Copy Link: the page's address to the
+    /// pasteboard, the active tab's unless another is given.
+    func copyURL(of tab: TabSession? = nil) {
+        guard let url = (tab ?? activeTab)?.currentURL, !url.isEmpty else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url, forType: .string)
         toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)

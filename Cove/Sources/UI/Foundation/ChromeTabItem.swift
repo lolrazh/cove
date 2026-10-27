@@ -6,8 +6,8 @@ enum ChromeTabPresentation {
 }
 
 /// One tab, in the top strip or in the sidebar. Everything about a tab is shared
-/// between the two, renaming included; a presentation only decides the tab's
-/// height and how the active tab is drawn.
+/// between the two, its context menu and renaming included; a presentation
+/// only decides the tab's height and how the active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
     let tabManager: TabManager
@@ -50,6 +50,9 @@ struct ChromeTabItem: View {
         // Alongside the single click, so selecting a tab never waits to see
         // whether a second click follows.
         .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .contextMenu {
+            TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: beginRenaming))
+        }
     }
 
     // MARK: - Title
