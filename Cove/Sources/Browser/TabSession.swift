@@ -299,13 +299,16 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         media?.setMuted(isMuted)
     }
 
-    /// The page's zoom, remembered for its site.
+    /// The page's zoom, remembered for its site, except in a private window,
+    /// which would leave the site's name behind.
     var pageZoom: Double {
         get { webView.map { Double($0.pageZoom) } ?? services.siteZoom.zoom(for: URL(string: currentURL)) }
         set {
             let webView = wake()
             webView.pageZoom = newValue
-            services.siteZoom.setZoom(newValue, for: webView.url)
+            if !services.context.isPrivate {
+                services.siteZoom.setZoom(newValue, for: webView.url)
+            }
         }
     }
 
