@@ -23,6 +23,9 @@ final class ExtensionHost: NSObject, ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private static let logger = Logger(subsystem: "com.cove.browser", category: "Extensions")
 
+    /// The scheme of every extension's addresses, `webkit-extension://<id>/`.
+    static let pageScheme = "webkit-extension"
+
     /// `storageID` keeps a profile's extension data apart; nil is the
     /// default profile's, in WebKit's default place.
     init(storageID: UUID?, dataStore: WKWebsiteDataStore, library: ExtensionLibrary) {
@@ -51,6 +54,37 @@ final class ExtensionHost: NSObject, ObservableObject {
         contexts.first { $0.uniqueIdentifier == id }
     }
 
+    /// The added extension a page at one of its addresses belongs to,
+    /// running or not.
+    func installedExtension(forPage url: URL) -> InstalledExtension? {
+        Self.extensionID(ofPage: url).flatMap(library.record)
+    }
+
+    /// The ID of the added extension whose address `url` is: its host.
+    static func extensionID(ofPage url: URL) -> UUID? {
+        guard url.scheme == pageScheme else { return nil }
+        return url.host().flatMap(UUID.init(uuidString:))
+    }
+
+    /// What an extension's page goes by in the address field: its
+    /// extension's name.
+    func pageName(for url: URL) -> String? {
+        guard url.scheme == Self.pageScheme else { return nil }
+        return extensionContext(for: url)?.webExtension.displayName
+            ?? installedExtension(forPage: url)?.name
+            ?? "Extension"
+    }
+
+    /// Why an extension's page can't open while its extension isn't running.
+    func unavailableMessage(forPage url: URL) -> String {
+        guard let record = installedExtension(forPage: url) else {
+            return "The extension this page belongs to was removed."
+        }
+        return record.isEnabled
+            ? "“\(record.name)” couldn’t start."
+            : "“\(record.name)” is turned off. Turn it on in Settings › Extensions to open this page."
+    }
+
     // MARK: - Running the library's extensions
 
     /// Starts the enabled extensions that aren't running, stops the ones
@@ -76,7 +110,7 @@ final class ExtensionHost: NSObject, ObservableObject {
         let context = WKWebExtensionContext(for: webExtension)
         // Fixed, so the extension finds its storage again on every launch.
         context.uniqueIdentifier = record.id.uuidString
-        context.baseURL = URL(string: "webkit-extension://\(record.id.uuidString.lowercased())/")!
+        context.baseURL = URL(string: "\(Self.pageScheme)://\(record.id.uuidString.lowercased())/")!
         context.isInspectable = true
         context.inspectionName = record.name
         apply(record, to: context)

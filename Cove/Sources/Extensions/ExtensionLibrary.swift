@@ -23,6 +23,9 @@ final class ExtensionLibrary: ObservableObject {
     @Published private(set) var extensions: [UUID: WKWebExtension] = [:]
     /// Why an extension couldn't be read, by ID.
     @Published private(set) var failures: [UUID: String] = [:]
+    /// Whether the extensions added before launch have been read, so the
+    /// ones not running now are off, gone or broken rather than on their way.
+    @Published private(set) var hasLoaded = false
     /// Opens a browser window, private or not, for an extension's
     /// `windows.create`; set by the app, which alone can open scenes.
     var openBrowserWindow: ((_ isPrivate: Bool) -> Void)?
@@ -50,6 +53,7 @@ final class ExtensionLibrary: ObservableObject {
     /// Reads every added extension from its files, at launch, and removes
     /// files nothing refers to, like a candidate left when Cove quit.
     func loadInstalled() async {
+        defer { hasLoaded = true }
         guard let directory else { return }
         let kept = Set(installed.map(\.fileName) + [Self.listURL(in: directory).lastPathComponent])
         let files = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []

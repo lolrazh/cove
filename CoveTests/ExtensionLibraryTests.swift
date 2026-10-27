@@ -93,6 +93,21 @@ struct ExtensionLibraryTests {
         watch.cancel()
     }
 
+    @Test func `the library says when it has read what was added before launch`() async throws {
+        let library = ExtensionLibrary(directory: directory)
+        #expect(!library.hasLoaded)
+        await library.loadInstalled()
+        #expect(library.hasLoaded)
+    }
+
+    @Test func `an extension's page names its extension by its host`() throws {
+        let id = UUID()
+        let page = try #require(URL(string: "webkit-extension://\(id.uuidString.lowercased())/options.html"))
+        #expect(ExtensionHost.extensionID(ofPage: page) == id)
+        #expect(ExtensionHost.extensionID(ofPage: URL(string: "https://\(id.uuidString)/")!) == nil)
+        #expect(ExtensionHost.extensionID(ofPage: URL(string: "webkit-extension://dashboard/")!) == nil)
+    }
+
     /// A zip of a folder, the way Finder's Compress makes one.
     private func zip(_ folder: URL) throws -> URL {
         var archive: URL?

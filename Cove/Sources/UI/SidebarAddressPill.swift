@@ -40,7 +40,7 @@ struct SidebarAddressPill: View {
     private var domain: String {
         guard let url else { return "Search or enter URL" }
         // An extension's own page goes by the extension's name.
-        if let name = session.services.context.extensions.extensionContext(for: url)?.webExtension.displayName {
+        if let name = session.services.context.extensions.pageName(for: url) {
             return name
         }
         return Site(url)?.domain ?? url.absoluteString

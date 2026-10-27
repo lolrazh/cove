@@ -111,6 +111,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// A page recorded in history before its title was known (example.com sets
     /// it after `didFinish`). Its visit gets the title when it arrives.
     private var visitAwaitingTitle: String?
+    /// Waits for the extension whose page the tab shows to start.
+    private var extensionWait: AnyCancellable?
 
     init(
         id: UUID = UUID(),
@@ -294,6 +296,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// again. Whether the page may sleep is `TabIdlePolicy`'s call.
     func sleep() {
         guard case .awake(let webView) = page else { return }
+        extensionWait = nil
         let interactionState = loadFailure == nil ? webView.interactionState as? Data : nil
         releaseWebView(webView)
         page = .asleep(interactionState: interactionState)
@@ -574,6 +577,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        extensionWait = nil
         loadFailure = nil
         hoveredLink = nil
         hasUnsavedInput = false
@@ -640,6 +644,13 @@ extension TabSession: WKNavigationDelegate {
         }
         if navigationAction.targetFrame?.isMainFrame == true,
            let url = navigationAction.request.url,
+           url.scheme == ExtensionHost.pageScheme,
+           services.context.extensions.extensionContext(for: url) == nil {
+            waitForExtension(of: url)
+            return .cancel
+        }
+        if navigationAction.targetFrame?.isMainFrame == true,
+           let url = navigationAction.request.url,
            services.context.extensions.extensionContext(for: url) !== pageExtension {
             // Into or out of an extension's pages, in a web view made for them,
             // once this one has finished asking.
@@ -656,6 +667,27 @@ extension TabSession: WKNavigationDelegate {
             services.boosts.update(webView, for: navigationAction.request.url)
         }
         return .allow
+    }
+
+    /// A page of an extension that isn't running, as when a restored tab
+    /// wakes before its extension has started. It opens once the extension
+    /// starts; if the extension is off or gone once the library has read
+    /// them all, an error page says so.
+    private func waitForExtension(of url: URL) {
+        currentURL = url.absoluteString
+        let extensions = services.context.extensions
+        extensionWait = extensions.library.$hasLoaded.combineLatest(extensions.$contexts)
+            // `@Published` announces changes before making them.
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] hasLoaded, _ in
+                guard let self else { return }
+                if extensions.extensionContext(for: url) != nil {
+                    extensionWait = nil
+                    loadRequest(URLRequest(url: url))
+                } else if hasLoaded {
+                    loadFailure = LoadFailure(url: url, message: extensions.unavailableMessage(forPage: url))
+                }
+            }
     }
 
     func webView(
