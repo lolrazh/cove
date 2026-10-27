@@ -58,6 +58,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case duplicateTab
     case muteTab
     case unmuteTab
+    case pauseMedia
+    case playMedia
     case closeOtherTabs
     case findInPage
     case zoomIn
@@ -82,6 +84,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .duplicateTab: "Duplicate Tab"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
+        case .pauseMedia: "Pause Media"
+        case .playMedia: "Play Media"
         case .closeOtherTabs: "Close Other Tabs"
         case .findInPage: "Find on Page"
         case .zoomIn: "Zoom In"
@@ -108,6 +112,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .duplicateTab: "plus.square.on.square"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
+        case .pauseMedia: ChromeSymbols.Media.pause
+        case .playMedia: ChromeSymbols.Media.play
         case .closeOtherTabs: "xmark.square"
         case .findInPage: ChromeSymbols.Navigation.search
         case .zoomIn: "plus.magnifyingglass"
@@ -133,6 +139,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .copyURL: ["link", "address"]
         case .duplicateTab: ["copy", "clone"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
+        case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]
         case .closeOtherTabs: ["clean", "tidy"]
         case .findInPage: ["search", "text"]
         case .zoomIn: ["bigger", "larger", "magnify"]

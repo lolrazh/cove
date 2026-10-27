@@ -134,6 +134,10 @@ final class CommandBarModel: ObservableObject {
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .muteTab, .unmuteTab:
             tabManager.activeTab?.toggleMuted()
+        case .pauseMedia:
+            tabManager.mediaTab?.media?.perform(.pause)
+        case .playMedia:
+            tabManager.mediaTab?.media?.perform(.play)
         case .closeOtherTabs:
             if let id = tabManager.activeTabID { tabManager.closeOtherTabs(keeping: id) }
         case .findInPage:
@@ -178,6 +182,8 @@ final class CommandBarModel: ObservableObject {
             case .duplicateTab: true
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
+            case .pauseMedia: tabManager.mediaTab?.nowPlaying?.isPlaying == true
+            case .playMedia: tabManager.mediaTab?.nowPlaying?.isPlaying == false
             case .closeOtherTabs: tabManager.tabs.count > 1
             case .findInPage, .printPage, .savePage, .viewSource, .pictureInPicture: tabManager.activePage != nil
             case .zoomIn: tabManager.activePage.map { PageZoom.zoomedIn(from: $0.pageZoom) != nil } ?? false
