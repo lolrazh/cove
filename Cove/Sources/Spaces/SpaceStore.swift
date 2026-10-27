@@ -20,9 +20,7 @@ final class SpaceStore: ObservableObject {
     ) {
         self.fileURL = fileURL
         self.makeContext = makeContext
-        spaces = fileURL
-            .flatMap { try? Data(contentsOf: $0) }
-            .flatMap { try? PropertyListDecoder().decode(Spaces.self, from: $0) }
+        spaces = StoreFile.read(fileURL) { try? PropertyListDecoder().decode(Spaces.self, from: $0) }
             ?? Spaces(theme: initialTheme)
     }
 

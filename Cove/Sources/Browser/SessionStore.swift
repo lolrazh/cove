@@ -112,8 +112,7 @@ final class SessionStore {
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         fileURL = appSupport.appendingPathComponent("Cove/session.plist")
-        restorableWindows = (try? Data(contentsOf: fileURL))
-            .flatMap { try? PropertyListDecoder().decode([SavedWindow].self, from: $0) } ?? []
+        restorableWindows = StoreFile.read(fileURL) { try? PropertyListDecoder().decode([SavedWindow].self, from: $0) } ?? []
 
         // A change in the last second before quitting would miss the debounce.
         terminationObserver = NotificationCenter.default.addObserver(

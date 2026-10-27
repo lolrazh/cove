@@ -11,10 +11,7 @@ final class BoostStore: ObservableObject {
 
     init(fileURL: URL? = BoostStore.defaultFileURL) {
         self.fileURL = fileURL
-        boosts = fileURL
-            .flatMap { try? Data(contentsOf: $0) }
-            .flatMap { try? JSONDecoder().decode([Boost].self, from: $0) }
-            ?? []
+        boosts = StoreFile.read(fileURL) { try? JSONDecoder().decode([Boost].self, from: $0) } ?? []
     }
 
     static var defaultFileURL: URL {

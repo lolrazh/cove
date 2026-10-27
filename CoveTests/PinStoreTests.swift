@@ -63,3 +63,26 @@ struct PinStoreTests {
         #expect(PinStore(fileURL: nil).layout == PinLayout())
     }
 }
+
+struct StoreFileTests {
+    @Test func `an unreadable file is moved aside, not left to be overwritten`() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("CoveTests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("pins.plist")
+        try Data("from a newer Cove".utf8).write(to: url)
+
+        let value: Int? = StoreFile.read(url) { _ in nil }
+
+        #expect(value == nil)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+        let aside = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        #expect(aside.count == 1 && aside[0].hasPrefix("pins.plist.unreadable-"))
+        #expect(try Data(contentsOf: directory.appendingPathComponent(aside[0])) == Data("from a newer Cove".utf8))
+    }
+
+    @Test func `a missing file is simply nothing`() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("CoveTests-\(UUID().uuidString).plist")
+        let value: Int? = StoreFile.read(url) { _ in 1 }
+        #expect(value == nil)
+    }
+}

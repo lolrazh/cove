@@ -36,10 +36,11 @@ final class PinStore: ObservableObject {
 
     init(fileURL: URL? = PinStore.defaultFileURL) {
         self.fileURL = fileURL
-        let data = fileURL.flatMap { try? Data(contentsOf: $0) }
         let decoder = PropertyListDecoder()
-        let saved = data.flatMap { try? decoder.decode(SavedPins.self, from: $0) }
-            ?? data.flatMap { try? decoder.decode(UnscopedPins.self, from: $0) }?.scoped
+        let saved = StoreFile.read(fileURL) { data in
+            (try? decoder.decode(SavedPins.self, from: data))
+                ?? (try? decoder.decode(UnscopedPins.self, from: data))?.scoped
+        }
         layout = saved?.layout ?? PinLayout()
         tabs = saved?.tabs ?? [:]
 
