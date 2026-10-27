@@ -31,6 +31,11 @@ enum ChromeSymbols {
         static let collapsed = "chevron.right"
     }
 
+    enum Spaces {
+        static let newSpace = "plus"
+        static let profile = "person.crop.circle"
+    }
+
     enum Media {
         static let play = "play.fill"
         static let pause = "pause.fill"
@@ -46,5 +51,6 @@ enum ChromeSymbols {
         static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
+        static let spaces = "square.stack"
     }
 }
