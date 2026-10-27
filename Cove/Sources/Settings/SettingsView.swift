@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settingsStore: BrowserSettingsStore
     let historyStore: HistoryStore
+    let spaceStore: SpaceStore
 
     var body: some View {
         TabView {
@@ -11,6 +12,9 @@ struct SettingsView: View {
             }
             Tab("Appearance", systemImage: ChromeSymbols.Settings.appearance) {
                 AppearanceSettingsPane(settings: settingsStore)
+            }
+            Tab("Spaces", systemImage: ChromeSymbols.Settings.spaces) {
+                SpacesSettingsPane(store: spaceStore)
             }
             Tab("Privacy", systemImage: ChromeSymbols.Settings.privacy) {
                 PrivacySettingsPane(settings: settingsStore, historyStore: historyStore)
@@ -75,65 +79,14 @@ private struct AppearanceSettingsPane: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("Frame color") {
-                    HStack(spacing: 10) {
-                        ForEach(ChromeTheme.presets, id: \.rawValue) { theme in
-                            ThemeSwatch(theme: theme, isSelected: theme == settings.theme) {
-                                settings.setTheme(theme)
-                            }
-                        }
-                    }
-                }
-
-                ColorPicker("Custom color", selection: customTint, supportsOpacity: false)
-            } header: {
-                Text("Theme")
-            } footer: {
-                Text("Tints the frame around the page. The page itself is never tinted.")
-            }
-
-            Section("Tabs") {
                 Toggle("Show Tabs in Sidebar", isOn: settings.binding(\.showsTabsInSidebar, set: settings.setShowsTabsInSidebar))
                 Toggle("Hide Tabs", isOn: settings.binding(\.hideTabs, set: settings.setHideTabs))
+            } header: {
+                Text("Tabs")
+            } footer: {
+                Text("Each space has its own frame color, set in Spaces.")
             }
         }
-    }
-
-    private var customTint: Binding<Color> {
-        Binding(
-            get: { settings.theme.tint ?? Color(nsColor: .underPageBackgroundColor) },
-            set: { settings.setTheme(ChromeTheme(tint: $0)) }
-        )
-    }
-}
-
-/// One theme to pick: its tint as a disc, the system gray for none, with a
-/// ring in the accent color around the selected one.
-private struct ThemeSwatch: View {
-    let theme: ChromeTheme
-    let isSelected: Bool
-    let action: () -> Void
-
-    private let side: CGFloat = 22
-
-    var body: some View {
-        Button(action: action) {
-            Circle()
-                .fill(theme.tint ?? Color(nsColor: .underPageBackgroundColor))
-                .overlay {
-                    Circle().strokeBorder(.separator)
-                }
-                .padding(3)
-                .overlay {
-                    Circle()
-                        .strokeBorder(.tint, lineWidth: 2)
-                        .opacity(isSelected ? 1 : 0)
-                }
-                .frame(width: side + 6, height: side + 6)
-                .animation(ChromeMotion.hover, value: isSelected)
-        }
-        .buttonStyle(.plain)
-        .help(theme.tint == nil ? "System" : "Color \(theme.rawValue)")
     }
 }
 
