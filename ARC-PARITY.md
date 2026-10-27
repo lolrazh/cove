@@ -289,10 +289,10 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
 
 ### 5l. Easels, Notes, Capture ⭑
 Big, self-contained builds; scheduled after the core features.
-- [ ] Capture (⌘⇧2): select a region or element of the page; copy, save, or
+- [x] Capture (⌘⇧2): select a region or element of the page; copy, save, or
       send it to a Note or an Easel.
-- [ ] Notes: rich-text notes that live in the sidebar like tabs, pinnable.
-- [ ] Easels: a freeform canvas of text, images, drawings and live web
+- [x] Notes: rich-text notes that live in the sidebar like tabs, pinnable.
+- [x] Easels: a freeform canvas of text, images, drawings and live web
       clippings (a selected page region that stays live).
 
 ### Later: Air Traffic Control
