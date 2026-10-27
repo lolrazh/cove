@@ -75,6 +75,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case viewSource
     case pictureInPicture
     case siteSettings
+    case boostSite
     case showTabsInSidebar
     case showTabsOnTop
     case hideTabs
@@ -109,6 +110,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .viewSource: "View Source"
         case .pictureInPicture: "Picture in Picture"
         case .siteSettings: "Site Settings"
+        case .boostSite: "Boost This Site"
         case .showTabsInSidebar: "Show Tabs in Sidebar"
         case .showTabsOnTop: "Show Tabs on Top"
         case .hideTabs: "Hide Tabs"
@@ -145,6 +147,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .viewSource: "chevron.left.forwardslash.chevron.right"
         case .pictureInPicture: "pip.enter"
         case .siteSettings: "switch.2"
+        case .boostSite: ChromeSymbols.Navigation.boost
         case .showTabsInSidebar, .showTabsOnTop: ChromeSymbols.Tabs.sidebarLayout
         case .hideTabs: "eye.slash"
         case .showTabs: "eye"
@@ -179,6 +182,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .viewSource: ["html", "code", "developer"]
         case .pictureInPicture: ["pip", "video", "float"]
         case .siteSettings: ["permissions", "camera", "microphone", "location", "cookies", "clear", "blocking", "security"]
+        case .boostSite: ["customize", "style", "css", "javascript", "zap", "hide", "theme", "font", "color"]
         case .showTabsInSidebar, .showTabsOnTop: ["toggle", "layout", "vertical", "horizontal"]
         case .hideTabs, .showTabs: ["toggle", "sidebar", "immersive"]
         case .reopenClosedTab: ["restore", "undo"]
