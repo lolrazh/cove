@@ -87,6 +87,21 @@ struct TabSplitTests {
         #expect(try PropertyListDecoder().decode([TabSplit<Int>].self, from: data) == [split])
     }
 
+    @Test func `splits are saved with their space, and older spaces have none`() throws {
+        let tab = SavedTab(url: "https://example.com", title: "", customTitle: nil, interactionState: nil, lastUsedAt: nil)
+        let split = TabSplit<Int>(panes: [1, 0], fractions: [0.6, 0.4], axis: .vertical)
+        let window = SavedWindow(
+            spaces: [
+                SavedSpace(spaceID: UUID(), tabs: [tab, tab], activeTabIndex: 0, activePinID: nil, splits: [split]),
+                SavedSpace(spaceID: UUID(), tabs: [tab], activeTabIndex: 0, activePinID: nil),
+            ],
+            activeSpaceID: UUID()
+        )
+        let decoded = try PropertyListDecoder().decode(SavedWindow.self, from: PropertyListEncoder().encode(window))
+        #expect(decoded.spaces[0].splits == [split])
+        #expect(decoded.spaces[1].splits == nil)
+    }
+
     @Test func `entries show a split once, where its first tab is, in the split's order`() {
         struct Tab: Identifiable { let id = UUID(); let name: Character }
         let tabs = "abcde".map(Tab.init)

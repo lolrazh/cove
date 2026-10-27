@@ -11,8 +11,8 @@ struct LittleCoveView: View {
         WindowChromeHost(showsTrafficLights: true, onAttach: { _ in }) {
             LittleCoveContent(tab: tab, appServices: appServices, onOpenInCove: onOpenInCove)
         }
+        // In no space, so in the system's frame color.
         .background(ChromePalette.shell)
-        .environment(\.chromeTheme, appServices.settingsStore.theme)
     }
 }
 

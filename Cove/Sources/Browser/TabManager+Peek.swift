@@ -17,7 +17,8 @@ extension TabManager {
             initialRequest: request,
             showsStartPage: false,
             settings: settings,
-            services: services,
+            // The opener's profile, so the page sees the same cookies.
+            services: tab(openerID)?.services ?? services,
             // Already on screen; pages it opens go beside its opener.
             host: TabSession.Host(
                 select: {},

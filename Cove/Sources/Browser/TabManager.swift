@@ -280,12 +280,15 @@ final class TabManager: ObservableObject {
     }
 
     /// Takes in a live tab from a Peek or Little Cove, page and history
-    /// included: beside the tab that opened it, or at the top of Today, in
-    /// place of an untouched start page. It's selected.
+    /// included: beside the tab that opened it, or at the top of the space's
+    /// Today, in place of an untouched start page. It's selected. A page
+    /// from another profile than the space's starts again on the space's.
     func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         let startPage = untouchedStartPage
-        tab.host = host(for: tab.id)
-        open(tab, nextTo: openerID)
+        var adopted = [tab]
+        rehome(&adopted, in: activeSpace)
+        adopted[0].host = host(for: tab.id)
+        open(adopted[0], nextTo: openerID)
         startPage.map { closeTab($0.id) }
     }
 
