@@ -176,10 +176,14 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
 - [x] Restore windows and tabs (with back/forward history via
       `interactionState`) on relaunch. *(Done with the bug fixes:
       `SessionStore`.)*
-- [ ] Sleep background tabs after inactivity: release the `WKWebView`, keep
-      title, favicon, URL and interaction state; wake on select.
-- [ ] Auto-archive Today tabs after 12h / 24h / 7d / 30d (setting); the
-      archive is searchable in the Library and the Command Bar.
+- [x] Sleep background tabs after inactivity: release the `WKWebView`, keep
+      title, favicon, URL and interaction state; wake on select. *(After 30
+      minutes by default, 5 minutes to an hour or never in Settings, and at
+      once under memory pressure. Never a tab playing audio, capturing, or
+      holding typed input. Restored tabs start asleep.)*
+- [x] Auto-archive Today tabs after 12h / 24h / 7d / 30d (setting); the
+      archive is searchable in the Library and the Command Bar. *(The
+      Command Bar's Archive group; the Library's list arrives with 5g.)*
 
 ### 5d. Pinned tabs and Favorites ⭑
 - [ ] Pin a tab (⌘D): moves to Pinned, persists across launches.
