@@ -106,6 +106,14 @@ struct CommandBarRankerTests {
         #expect(!rank("xyz", sources).results.contains { if case .command = $0.kind { true } else { false } })
     }
 
+    @Test func `other spaces are offered by name`() {
+        let work = CommandBarRanker.OtherSpace(id: UUID(), name: "Work")
+        let sources = CommandBarRanker.Sources(spaces: [work])
+        #expect(rank("work", sources).results.contains { $0.kind == .space(work.id) && $0.title == "Switch to Work" })
+        #expect(rank("space", sources).results.contains { $0.kind == .space(work.id) })
+        #expect(!rank("home", sources).results.contains { $0.kind == .space(work.id) })
+    }
+
     @Test func `suggestions repeat neither the query nor each other beyond the cap`() {
         let ranking = rank("swift", .init(suggestions: ["Swift", "swift lang", "swift ui", "swift 6", "swift book", "swiftly"]))
         let suggestions = ranking.sections.first { $0.title == "Suggestions" }?.results ?? []
