@@ -45,6 +45,7 @@ struct CommandBarOverlay: View {
     private func open(_ result: CommandBarResult, inNewTab: Bool) {
         switch result.kind {
         case .command(.newWindow): openWindow(id: BrowserView.windowID)
+        case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
         case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
         case .command(.settings): openSettings()
         default: break

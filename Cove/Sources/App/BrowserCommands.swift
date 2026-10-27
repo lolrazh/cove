@@ -17,6 +17,11 @@ struct BrowserViewCommands: Commands {
                 openWindow(id: BrowserView.windowID)
             }
             .keyboardShortcut("n", modifiers: .command)
+
+            Button("New Private Window") {
+                openWindow(id: BrowserView.privateWindowID)
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
         }
 
         // Replaces File > Close, which also claimed Command-W and, coming
@@ -38,7 +43,7 @@ struct BrowserViewCommands: Commands {
             HistoryMenu(
                 tabManager: tabManager,
                 historyStore: appServices.historyStore,
-                recentlyClosed: appServices.recentlyClosedTabs,
+                recentlyClosed: tabManager?.recentlyClosed ?? appServices.recentlyClosedTabs,
                 faviconStore: appServices.faviconStore,
                 onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
             )

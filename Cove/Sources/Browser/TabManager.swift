@@ -29,13 +29,17 @@ final class TabManager: ObservableObject {
     @Published private(set) var hideTabs: Bool
     /// The background tab the media player controls.
     @Published private(set) var mediaTab: TabSession?
+    /// Whether the active page's site controls are open.
+    @Published var isShowingSiteControls = false
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
-    private let recentlyClosed: RecentlyClosedTabs
-    private let archive: TabArchive
+    /// This window's closed tabs: the shared list, or a private window's own.
+    let recentlyClosed: RecentlyClosedTabs
+    /// Nil in a private window, whose tabs are never archived.
+    private let archive: TabArchive?
     private let sweepClock = TabSweepClock()
     private var cancellables: Set<AnyCancellable> = []
 
@@ -60,12 +64,14 @@ final class TabManager: ObservableObject {
         tabLayout == .sidebar ? tabs.reversed() : tabs
     }
 
+    /// A private window passes no archive and no session, so nothing of it
+    /// is written down or comes back.
     init(
         settings: BrowserSettingsStore,
         services: TabSessionServices,
         recentlyClosed: RecentlyClosedTabs,
-        archive: TabArchive,
-        session: SessionStore
+        archive: TabArchive?,
+        session: SessionStore?
     ) {
         self.settings = settings
         self.services = services
@@ -81,14 +87,18 @@ final class TabManager: ObservableObject {
 
         // Restored tabs start asleep; selecting the active one wakes it, so a
         // launch loads one page per window instead of every page.
-        let saved = session.takeRestorableWindow()
+        let saved = session?.takeRestorableWindow()
         if let saved, !saved.tabs.isEmpty {
             tabs = saved.tabs.map { makeTab(restoring: $0) }
             selectTab(tabs[min(saved.activeTabIndex, tabs.count - 1)].id)
         } else {
             addTab()
         }
-        session.track(self, placement: saved?.placement)
+        session?.track(self, placement: saved?.placement)
+    }
+
+    var isPrivate: Bool {
+        services.context.isPrivate
     }
 
     var savedWindow: SavedWindow {
@@ -280,7 +290,7 @@ final class TabManager: ObservableObject {
     func sweepIdleTabs(underMemoryPressure: Bool = false, now: Date = .now) {
         var policy = TabIdlePolicy(
             sleepAfter: settings.sleepTabsAfter.interval,
-            archiveAfter: settings.archiveTabsAfter.interval
+            archiveAfter: archive == nil ? nil : settings.archiveTabsAfter.interval
         )
         if underMemoryPressure {
             policy = policy.underMemoryPressure
@@ -298,7 +308,7 @@ final class TabManager: ObservableObject {
     /// Moves a background tab out of Today and into the archive, with its
     /// back/forward list, so it can come back whole.
     private func archiveTab(_ id: UUID) {
-        guard id != activeTabID, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        guard let archive, id != activeTabID, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         let archived = tabs.remove(at: index)
         archived.close()
         archive.add(archived.savedTab)
@@ -306,7 +316,7 @@ final class TabManager: ObservableObject {
 
     /// Brings an archived tab back into Today, selected.
     func reopenArchivedTab(_ id: UUID) {
-        guard let saved = archive.take(id) else { return }
+        guard let saved = archive?.take(id) else { return }
         open(makeTab(restoring: saved))
     }
 

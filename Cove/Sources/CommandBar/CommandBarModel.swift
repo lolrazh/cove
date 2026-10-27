@@ -26,7 +26,7 @@ final class CommandBarModel: ObservableObject {
     private let historyStore: HistoryStore
     private let faviconStore: FaviconStore
     private let recentlyClosed: RecentlyClosedTabs
-    private let archive: TabArchive
+    private let archive: TabArchive?
     private let ranker = CommandBarRanker()
     private let suggestions = SearchSuggestions()
     private var suggestionTask: Task<Void, Never>?
@@ -40,7 +40,7 @@ final class CommandBarModel: ObservableObject {
         historyStore: HistoryStore,
         faviconStore: FaviconStore,
         recentlyClosed: RecentlyClosedTabs,
-        archive: TabArchive
+        archive: TabArchive?
     ) {
         self.tabManager = tabManager
         self.settings = settings
@@ -156,6 +156,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.viewSource()
         case .pictureInPicture:
             tabManager.togglePictureInPicture()
+        case .siteSettings:
+            tabManager.showSiteControls()
         case .showTabsInSidebar:
             withAnimation(ChromeMotion.shell) { tabManager.setLayout(.sidebar) }
         case .showTabsOnTop:
@@ -166,7 +168,7 @@ final class CommandBarModel: ObservableObject {
             withAnimation(ChromeMotion.shell) { tabManager.setHideTabs(false) }
         case .reopenClosedTab:
             tabManager.reopenClosedTab()
-        case .newWindow, .showHistory, .settings:
+        case .newWindow, .newPrivateWindow, .showHistory, .settings:
             // Opening a SwiftUI scene needs the view's environment; the view
             // handles these before calling `open`.
             break
@@ -189,12 +191,13 @@ final class CommandBarModel: ObservableObject {
             case .zoomIn: tabManager.activePage.map { PageZoom.zoomedIn(from: $0.pageZoom) != nil } ?? false
             case .zoomOut: tabManager.activePage.map { PageZoom.zoomedOut(from: $0.pageZoom) != nil } ?? false
             case .actualSize: tabManager.activePage.map { $0.pageZoom != 1 } ?? false
+            case .siteSettings: tabManager.activePage?.siteURL != nil
             case .showTabsInSidebar: tabManager.tabLayout == .horizontal
             case .showTabsOnTop: tabManager.tabLayout == .sidebar
             case .hideTabs: !tabManager.hideTabs
             case .showTabs: tabManager.hideTabs
             case .reopenClosedTab: !recentlyClosed.entries.isEmpty
-            case .newWindow, .showHistory, .settings: true
+            case .newWindow, .newPrivateWindow, .showHistory, .settings: true
             }
         }
     }
@@ -216,7 +219,7 @@ final class CommandBarModel: ObservableObject {
             query: query,
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
-                archive: archive.entries,
+                archive: archive?.entries ?? [],
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),
                 commands: availableCommands

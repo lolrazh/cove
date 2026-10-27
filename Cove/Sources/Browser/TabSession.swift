@@ -14,7 +14,8 @@ struct TabSessionServices {
     let faviconStore: FaviconStore
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
-    let sitePermissions: SitePermissions
+    let contentBlocker: ContentBlockerManager
+    let context: BrowsingContext
     let siteZoom: SiteZoomStore
 }
 
@@ -60,7 +61,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private(set) lazy var findInPage = FindInPage { [unowned self] in wake() }
 
     private let settings: BrowserSettingsStore
-    private let services: TabSessionServices
+    let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
     private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
     private let onSelect: (@MainActor () -> Void)?
@@ -188,7 +189,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         case .awake(let webView):
             return webView
         case .asleep(let interactionState):
-            let webView = services.webKitEnvironment.makeWebView()
+            let webView = services.webKitEnvironment.makeWebView(in: services.context)
             page = .awake(webView)
             configureWebView(webView)
             setupObservers(for: webView)
@@ -298,13 +299,16 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         media?.setMuted(isMuted)
     }
 
-    /// The page's zoom, remembered for its site.
+    /// The page's zoom, remembered for its site, except in a private window,
+    /// which would leave the site's name behind.
     var pageZoom: Double {
         get { webView.map { Double($0.pageZoom) } ?? services.siteZoom.zoom(for: URL(string: currentURL)) }
         set {
             let webView = wake()
             webView.pageZoom = newValue
-            services.siteZoom.setZoom(newValue, for: webView.url)
+            if !services.context.isPrivate {
+                services.siteZoom.setZoom(newValue, for: webView.url)
+            }
         }
     }
 
@@ -506,8 +510,10 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
-        services.historyStore.recordVisit(url: url, title: title)
-        visitAwaitingTitle = title.isEmpty ? url : nil
+        if !services.context.isPrivate {
+            services.historyStore.recordVisit(url: url, title: title)
+            visitAwaitingTitle = title.isEmpty ? url : nil
+        }
         faviconFetcher.upgradeFromPage(webView, currentImage: favicon) { [weak self] image in
             self?.favicon = image
         }
@@ -540,6 +546,10 @@ extension TabSession: WKNavigationDelegate {
     ) async -> WKNavigationActionPolicy {
         if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
+            services.contentBlocker.update(
+                webView.configuration.userContentController,
+                for: navigationAction.request.url
+            )
         }
         return .allow
     }
@@ -662,7 +672,7 @@ extension TabSession: WKUIDelegate {
         origin: WKSecurityOrigin
     ) async -> WKPermissionDecision {
         guard let window = await dialogWindow() else { return .deny }
-        return await services.sitePermissions.decide(devices, for: origin) {
+        return await services.context.sitePermissions.decide(devices, for: origin) {
             await PageDialogs.allow(devices, for: origin, in: window)
         }
     }

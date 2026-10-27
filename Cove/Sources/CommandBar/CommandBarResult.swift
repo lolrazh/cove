@@ -69,12 +69,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case savePage
     case viewSource
     case pictureInPicture
+    case siteSettings
     case showTabsInSidebar
     case showTabsOnTop
     case hideTabs
     case showTabs
     case reopenClosedTab
     case newWindow
+    case newPrivateWindow
     case showHistory
     case settings
 
@@ -95,12 +97,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .savePage: "Save Page As"
         case .viewSource: "View Source"
         case .pictureInPicture: "Picture in Picture"
+        case .siteSettings: "Site Settings"
         case .showTabsInSidebar: "Show Tabs in Sidebar"
         case .showTabsOnTop: "Show Tabs on Top"
         case .hideTabs: "Hide Tabs"
         case .showTabs: "Show Tabs"
         case .reopenClosedTab: "Reopen Last Closed Tab"
         case .newWindow: "New Window"
+        case .newPrivateWindow: "New Private Window"
         case .showHistory: "Show All History"
         case .settings: "Settings"
         }
@@ -123,11 +127,13 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .savePage: "square.and.arrow.down"
         case .viewSource: "chevron.left.forwardslash.chevron.right"
         case .pictureInPicture: "pip.enter"
+        case .siteSettings: "switch.2"
         case .showTabsInSidebar, .showTabsOnTop: ChromeSymbols.Tabs.sidebarLayout
         case .hideTabs: "eye.slash"
         case .showTabs: "eye"
         case .reopenClosedTab: "arrow.uturn.backward"
         case .newWindow: "macwindow.badge.plus"
+        case .newPrivateWindow: ChromeSymbols.Navigation.privateBrowsing
         case .showHistory: ChromeSymbols.Navigation.history
         case .settings: ChromeSymbols.Settings.general
         }
@@ -149,10 +155,12 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .savePage: ["download", "archive", "html"]
         case .viewSource: ["html", "code", "developer"]
         case .pictureInPicture: ["pip", "video", "float"]
+        case .siteSettings: ["permissions", "camera", "microphone", "location", "cookies", "clear", "blocking", "security"]
         case .showTabsInSidebar, .showTabsOnTop: ["toggle", "layout", "vertical", "horizontal"]
         case .hideTabs, .showTabs: ["toggle", "sidebar", "immersive"]
         case .reopenClosedTab: ["restore", "undo"]
         case .newWindow: []
+        case .newPrivateWindow: ["incognito", "private browsing"]
         case .showHistory: ["recent", "visited"]
         case .settings: ["preferences", "options"]
         }

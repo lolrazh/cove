@@ -11,8 +11,9 @@ final class WebKitEnvironment {
         self.browserUserAgent = Self.makeBrowserUserAgent()
     }
 
-    func makeWebView() -> WKWebView {
+    func makeWebView(in context: BrowsingContext) -> WKWebView {
         let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = context.dataStore
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         configuration.preferences.isElementFullscreenEnabled = true
         // Inspect Element in the page's context menu. WebKit has no public switch

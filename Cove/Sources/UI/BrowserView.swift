@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BrowserView: View {
     static let windowID = "browser"
+    static let privateWindowID = "private"
 
     private let appServices: AppServices
     @ObservedObject private var settings: BrowserSettingsStore
@@ -10,17 +11,23 @@ struct BrowserView: View {
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.openWindow) private var openWindow
 
-    init(appServices: AppServices) {
+    init(appServices: AppServices, isPrivate: Bool = false) {
         self.appServices = appServices
         self._settings = ObservedObject(wrappedValue: appServices.settingsStore)
-        self._tabManager = StateObject(
-            wrappedValue: TabManager(
-                settings: appServices.settingsStore,
-                services: appServices.tabSessionServices,
-                recentlyClosed: appServices.recentlyClosedTabs,
-                archive: appServices.tabArchive,
-                session: appServices.sessionStore
-            )
+        self._tabManager = StateObject(wrappedValue: Self.makeTabManager(appServices: appServices, isPrivate: isPrivate))
+    }
+
+    /// A normal window browses with the shared context and is saved with the
+    /// session. A private window gets a context of its own and keeps nothing:
+    /// no session, no archive, and its own list of closed tabs.
+    private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
+        let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
+        return TabManager(
+            settings: appServices.settingsStore,
+            services: appServices.tabSessionServices(in: context),
+            recentlyClosed: isPrivate ? RecentlyClosedTabs() : appServices.recentlyClosedTabs,
+            archive: isPrivate ? nil : appServices.tabArchive,
+            session: isPrivate ? nil : appServices.sessionStore
         )
     }
 
@@ -45,28 +52,31 @@ struct BrowserView: View {
             }
         }
         .background(ChromePalette.shell)
-        .environment(\.chromeTheme, settings.theme)
+        .environment(\.chromeTheme, tabManager.isPrivate ? .privateBrowsing : settings.theme)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
+            guard !tabManager.isPrivate else { return }
             for _ in 0..<appServices.sessionStore.takeWindowsToReopen() {
                 openWindow(id: Self.windowID)
             }
         }
         .onDisappear {
+            guard !tabManager.isPrivate else { return }
             appServices.sessionStore.untrack(tabManager)
         }
         // Tells the router which window was active last, so links from other
-        // apps and from History land here only if this is it.
+        // apps and from History land here only if this is it. They never land
+        // in a private window.
         .onChange(of: appearsActive, initial: true) { _, active in
-            guard active, let window = NSApp.keyWindow else { return }
+            guard active, !tabManager.isPrivate, let window = NSApp.keyWindow else { return }
             appServices.externalURLRouter.activate(tabManager, in: window)
         }
         // Links from other apps come to an open window instead of each opening
         // a new one (SwiftUI opens one only if none exists), then go through
         // the router like everything else.
-        .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
+        .handlesExternalEvents(preferring: externalEvents, allowing: externalEvents)
         .onOpenURL { url in
             appServices.externalURLRouter.open([url])
         }
@@ -80,6 +90,10 @@ struct BrowserView: View {
                 areTabsVisible = !tabManager.hideTabs
             }
         }
+    }
+
+    private var externalEvents: Set<String> {
+        tabManager.isPrivate ? [] : ["*"]
     }
 
     private var stripVisible: Bool {

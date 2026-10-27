@@ -17,16 +17,21 @@ struct CoveApp: App {
             BrowserView(appServices: appServices)
                 .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unifiedCompact)
-        .windowBackgroundDragBehavior(.enabled)
-        // `SessionStore` reopens browser windows, with their tabs.
-        .restorationBehavior(.disabled)
+        .browserWindowStyle()
         .commands {
             BrowserViewCommands(appServices: appServices)
             TabCommands()
             PageToolsCommands()
         }
+
+        // Private windows: never reopened, and never the target of links from
+        // other apps.
+        WindowGroup("Private Window", id: BrowserView.privateWindowID) {
+            BrowserView(appServices: appServices, isPrivate: true)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        }
+        .browserWindowStyle()
+        .handlesExternalEvents(matching: [])
 
         Window("History", id: HistoryWindow.windowID) {
             HistoryWindow(
@@ -52,5 +57,15 @@ struct CoveApp: App {
     private func openInBrowser(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
         appServices.externalURLRouter.open([url])
+    }
+}
+
+private extension Scene {
+    func browserWindowStyle() -> some Scene {
+        windowStyle(.titleBar)
+            .windowToolbarStyle(.unifiedCompact)
+            .windowBackgroundDragBehavior(.enabled)
+            // `SessionStore` reopens browser windows, with their tabs.
+            .restorationBehavior(.disabled)
     }
 }

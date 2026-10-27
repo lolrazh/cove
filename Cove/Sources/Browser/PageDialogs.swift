@@ -79,13 +79,7 @@ enum PageDialogs {
         for origin: WKSecurityOrigin,
         in window: NSWindow
     ) async -> Bool {
-        let names = devices.map { device in
-            switch device {
-            case .camera: "camera"
-            case .microphone: "microphone"
-            case .location: "location"
-            }
-        }
+        let names = devices.map(\.name)
         let alert = NSAlert()
         alert.messageText = "Allow “\(siteName(origin))” to use your \(names.joined(separator: " and "))?"
         alert.informativeText = "Cove remembers your choice for this site until you quit."

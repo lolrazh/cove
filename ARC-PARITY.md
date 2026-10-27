@@ -223,9 +223,10 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       Play/Pause Media. No video thumbnail.)*
 
 ### 5i. Site controls
-- [ ] Per-site menu from the URL pill: permissions, content blocking on/off,
+- [x] Per-site menu from the URL pill: permissions, content blocking on/off,
       zoom, clear site data, connection security.
-- [ ] Private window (non-persistent data store).
+- [x] Private window (non-persistent data store). *(Through a
+      `BrowsingContext` per window, which 5e's profiles extend.)*
 
 ### 5j. Boosts ⭑
 - [ ] Per-site custom CSS (and optionally JS) via `WKUserScript`, toggleable,

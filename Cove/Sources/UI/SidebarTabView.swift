@@ -12,6 +12,9 @@ struct SidebarTabView: View {
     let headerHeight: CGFloat
     /// Where the header's controls start: just past the traffic lights.
     let headerLeadingInset: CGFloat
+    /// Whether this sidebar's URL pill presents site controls: the one on
+    /// screen does, docked or floating.
+    let presentsSiteControls: Bool
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -52,7 +55,7 @@ struct SidebarTabView: View {
         VStack(spacing: 0) {
             navigationRow
 
-            SidebarAddressPill(session: activeTab, onEdit: tabManager.editCurrentURL)
+            SidebarAddressPill(tabManager: tabManager, session: activeTab, presentsSiteControls: presentsSiteControls)
                 .padding(.horizontal, ChromeMetrics.sidebarInset)
         }
         .background { headerBacking }
@@ -86,6 +89,12 @@ struct SidebarTabView: View {
             NavigationControls(session: activeTab)
 
             Spacer(minLength: 0)
+
+            if tabManager.isPrivate {
+                // The header has no room for the word beside the controls.
+                PrivateBadge()
+                    .labelStyle(.iconOnly)
+            }
         }
         .padding(.leading, headerLeadingInset)
         .padding(.trailing, ChromeMetrics.sidebarInset)
