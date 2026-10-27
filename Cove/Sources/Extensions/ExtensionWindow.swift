@@ -32,7 +32,7 @@ final class ExtensionWindow: NSObject, ObservableObject {
     /// Starts following a window's tabs.
     func track(_ tabManager: TabManager) {
         self.tabManager = tabManager
-        Publishers.CombineLatest4(tabManager.$tabs, tabManager.$favorites, tabManager.$pinned, tabManager.$activeTabID)
+        Publishers.CombineLatest4(tabManager.$today, tabManager.$favorites, tabManager.$pinned, tabManager.$activeTabID)
             .map { _ in }
             // `@Published` announces changes before making them.
             .receive(on: DispatchQueue.main)
