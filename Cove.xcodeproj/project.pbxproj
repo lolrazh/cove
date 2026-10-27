@@ -98,6 +98,7 @@
 		D02E795342C0F0F0CB734A95 /* CommandBarField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E140A0D78EB1887750909DE /* CommandBarField.swift */; };
 		D22B71952FA8D30C8A121289 /* Pins.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADFA11F2352E6DF68F68F807 /* Pins.swift */; };
 		D783E59A1CCCCF7F032D3E54 /* ChromeFieldStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BC0784E301AF554B1F60C23 /* ChromeFieldStyle.swift */; };
+		D8EA860E64ED50784B4BF02B /* RenameField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3513AF2BBB6252AB62EB185 /* RenameField.swift */; };
 		DACA7BB4F240D74D6D4F75BC /* HistoryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AC76D6D2302673F260F494 /* HistoryWindow.swift */; };
 		DCEE60773C1114683F4F03E0 /* MediaPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B43B1030B09DA2EDCB8D0E /* MediaPlayer.swift */; };
 		DFE94932F2D9086B1D76740F /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A51CD4F4016617B911B27AB3 /* LibraryModel.swift */; };
@@ -192,6 +193,7 @@
 		93BA97BC4159CEF20A76719F /* CommandBarModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarModel.swift; sourceTree = "<group>"; };
 		95F0F5F5E5792846736B17EB /* TabIdlePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdlePolicyTests.swift; sourceTree = "<group>"; };
 		A24428BD2191574360191520 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
+		A3513AF2BBB6252AB62EB185 /* RenameField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenameField.swift; sourceTree = "<group>"; };
 		A51CD4F4016617B911B27AB3 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		A8D6DD540D3F965FE8764184 /* BrowserSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSettingsStore.swift; sourceTree = "<group>"; };
 		A9AC76D6D2302673F260F494 /* HistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWindow.swift; sourceTree = "<group>"; };
@@ -295,6 +297,7 @@
 				B8F2DFCC94DC9CB6FDFFF7D3 /* ChromeTabSlot.swift */,
 				8E0D8B72636BB66A1C1A7A8D /* ChromeTheme.swift */,
 				E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */,
+				A3513AF2BBB6252AB62EB185 /* RenameField.swift */,
 				76721845DBDC8376C110F98A /* Toast.swift */,
 			);
 			path = Foundation;
@@ -612,6 +615,7 @@
 				BBEDB684E3929F84604C7605 /* PinStore.swift in Sources */,
 				D22B71952FA8D30C8A121289 /* Pins.swift in Sources */,
 				986C5523B0EA491EF47E55A0 /* PrivateBadge.swift in Sources */,
+				D8EA860E64ED50784B4BF02B /* RenameField.swift in Sources */,
 				154DFA3F0A442660CC2EACFE /* SavePagePanel.swift in Sources */,
 				14F9E6C68FB8FC3EFDBEFA65 /* SearchSuggestions.swift in Sources */,
 				CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */,
