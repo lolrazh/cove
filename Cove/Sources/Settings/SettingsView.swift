@@ -1,25 +1,50 @@
 import SwiftUI
 
+/// Settings' panes. The one shown last is remembered, and other places can
+/// open one, like an extension's button opening Extensions.
+enum SettingsPane: String {
+    case general
+    case appearance
+    case spaces
+    case extensions
+    case privacy
+    case downloads
+
+    static let defaultsKey = "settings.selectedPane"
+
+    @MainActor
+    static func show(_ pane: SettingsPane, with openSettings: OpenSettingsAction) {
+        UserDefaults.standard.set(pane.rawValue, forKey: defaultsKey)
+        openSettings()
+    }
+}
+
 struct SettingsView: View {
     @ObservedObject var settingsStore: BrowserSettingsStore
     let historyStore: HistoryStore
     let spaceStore: SpaceStore
+    let extensionLibrary: ExtensionLibrary
+
+    @AppStorage(SettingsPane.defaultsKey) private var pane = SettingsPane.general
 
     var body: some View {
-        TabView {
-            Tab("General", systemImage: ChromeSymbols.Settings.general) {
+        TabView(selection: $pane) {
+            Tab("General", systemImage: ChromeSymbols.Settings.general, value: .general) {
                 GeneralSettingsPane(settings: settingsStore)
             }
-            Tab("Appearance", systemImage: ChromeSymbols.Settings.appearance) {
+            Tab("Appearance", systemImage: ChromeSymbols.Settings.appearance, value: .appearance) {
                 AppearanceSettingsPane(settings: settingsStore)
             }
-            Tab("Spaces", systemImage: ChromeSymbols.Settings.spaces) {
+            Tab("Spaces", systemImage: ChromeSymbols.Settings.spaces, value: .spaces) {
                 SpacesSettingsPane(store: spaceStore)
             }
-            Tab("Privacy", systemImage: ChromeSymbols.Settings.privacy) {
+            Tab("Extensions", systemImage: ChromeSymbols.Settings.extensions, value: .extensions) {
+                ExtensionsSettingsPane(library: extensionLibrary)
+            }
+            Tab("Privacy", systemImage: ChromeSymbols.Settings.privacy, value: .privacy) {
                 PrivacySettingsPane(settings: settingsStore, historyStore: historyStore)
             }
-            Tab("Downloads", systemImage: ChromeSymbols.Settings.downloads) {
+            Tab("Downloads", systemImage: ChromeSymbols.Settings.downloads, value: .downloads) {
                 DownloadsSettingsPane(settings: settingsStore)
             }
         }
