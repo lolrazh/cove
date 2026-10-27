@@ -131,6 +131,22 @@ final class CommandBarModel: ObservableObject {
             tabManager.activeTab?.toggleMuted()
         case .closeOtherTabs:
             if let id = tabManager.activeTabID { tabManager.closeOtherTabs(keeping: id) }
+        case .findInPage:
+            tabManager.findInPage()
+        case .zoomIn:
+            tabManager.zoomIn()
+        case .zoomOut:
+            tabManager.zoomOut()
+        case .actualSize:
+            tabManager.resetZoom()
+        case .printPage:
+            tabManager.printPage()
+        case .savePage:
+            tabManager.savePage()
+        case .viewSource:
+            tabManager.viewSource()
+        case .pictureInPicture:
+            tabManager.togglePictureInPicture()
         case .showTabsInSidebar:
             withAnimation(ChromeMotion.shell) { tabManager.setLayout(.sidebar) }
         case .showTabsOnTop:
@@ -158,6 +174,10 @@ final class CommandBarModel: ObservableObject {
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
             case .closeOtherTabs: tabManager.tabs.count > 1
+            case .findInPage, .printPage, .savePage, .viewSource, .pictureInPicture: tabManager.activePage != nil
+            case .zoomIn: tabManager.activePage.map { PageZoom.zoomedIn(from: $0.pageZoom) != nil } ?? false
+            case .zoomOut: tabManager.activePage.map { PageZoom.zoomedOut(from: $0.pageZoom) != nil } ?? false
+            case .actualSize: tabManager.activePage.map { $0.pageZoom != 1 } ?? false
             case .showTabsInSidebar: tabManager.tabLayout == .horizontal
             case .showTabsOnTop: tabManager.tabLayout == .sidebar
             case .hideTabs: !tabManager.hideTabs
