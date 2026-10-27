@@ -166,7 +166,7 @@ final class CommandBarModel: ObservableObject {
 
         let tabs = tabManager.tabs
             .filter { $0.id != tabManager.activeTabID && !$0.currentURL.isEmpty }
-            .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.pageTitle, url: $0.currentURL) }
+            .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
         let history = trimmed.isEmpty
             ? historyStore.recentlyVisited.map { HistoryPage(url: $0.url, title: $0.title, frecency: 0) }
             : historyStore.pages(matching: trimmed)

@@ -6,6 +6,8 @@ import Combine
 struct SavedTab: Codable {
     let url: String
     let title: String
+    /// The user's name for the tab. Absent in sessions saved before renaming.
+    let customTitle: String?
     let interactionState: Data?
 }
 
@@ -98,11 +100,11 @@ final class SessionStore {
         return restorableWindows.count
     }
 
-    /// Saves the window whenever its tabs, active tab or any tab's page change.
+    /// Saves the window whenever its tabs, active tab or any saved tab change.
     /// A restored window's placement applies once its window is known.
     func track(_ tabManager: TabManager, placement: WindowPlacement?) {
         let tabsChanged = tabManager.$tabs
-            .map { tabs in Publishers.MergeMany(tabs.map { $0.$currentURL.map { _ in } }) }
+            .map { tabs in Publishers.MergeMany(tabs.map(\.savedTabChanges)) }
             .switchToLatest()
         let changes = Publishers.Merge(tabsChanged, tabManager.$activeTabID.map { _ in })
             .sink { [weak self] in self?.scheduleSave() }

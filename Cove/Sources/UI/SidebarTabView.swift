@@ -198,7 +198,7 @@ private struct SidebarFavoriteTile: View {
                 }
             }
             .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)
-            .help(tab.pageTitle)
+            .help(tab.title)
             .onTapGesture(perform: action)
     }
 }

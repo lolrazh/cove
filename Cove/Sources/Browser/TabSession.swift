@@ -24,6 +24,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var isNewTabPage: Bool
     @Published var currentURL: String = ""
     @Published var pageTitle: String = ""
+    /// A name the user gave the tab, shown instead of the page's title.
+    @Published private(set) var customTitle: String?
     @Published var canGoBack: Bool = false
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
@@ -91,18 +93,32 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         }
     }
 
+    /// What the tab is called: the user's name for it, or the page's title.
+    var title: String {
+        customTitle ?? pageTitle
+    }
+
     /// The tab as saved for the next launch. A start page saves no URL.
     var savedTab: SavedTab {
         SavedTab(
             url: isNewTabPage ? "" : currentURL,
             title: isNewTabPage ? "" : pageTitle,
+            customTitle: customTitle,
             interactionState: isNewTabPage ? nil : webView.interactionState as? Data
         )
+    }
+
+    /// Fires whenever something in `savedTab` changes enough to save.
+    var savedTabChanges: AnyPublisher<Void, Never> {
+        $currentURL.map { _ in }
+            .merge(with: $customTitle.map { _ in })
+            .eraseToAnyPublisher()
     }
 
     /// Brings back a tab from the last session, back/forward list included. The
     /// saved title shows until the page loads its own.
     private func restore(_ saved: SavedTab) {
+        customTitle = saved.customTitle
         guard !isNewTabPage else { return }
         currentURL = saved.url
         pageTitle = saved.title
@@ -176,6 +192,12 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func stopLoading() {
         webView.stopLoading()
+    }
+
+    /// Names the tab. An empty name gives it back the page's title.
+    func rename(_ title: String) {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        customTitle = title.isEmpty ? nil : title
     }
 
     func toggleMuted() {

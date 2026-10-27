@@ -6,8 +6,8 @@ enum ChromeTabPresentation {
 }
 
 /// One tab, in the top strip or in the sidebar. Everything about a tab is shared
-/// between the two; a presentation only decides the tab's height and how the
-/// active tab is drawn.
+/// between the two, renaming included; a presentation only decides the tab's
+/// height and how the active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
     let tabManager: TabManager
@@ -18,15 +18,15 @@ struct ChromeTabItem: View {
     var width: CGFloat? = nil
 
     @State private var isHovered = false
+    @State private var isRenaming = false
+    @State private var draftTitle = ""
+    @FocusState private var isTitleFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             FaviconView(image: tab.favicon, size: 16)
 
-            Text(title)
-                .font(.callout)
-                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
-                .lineLimit(1)
+            titleView
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             // Close together, so narrow top tabs keep room for the title.
@@ -47,7 +47,47 @@ struct ChromeTabItem: View {
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .onHover { isHovered = $0 }
         .onTapGesture { tabManager.selectTab(tab.id) }
+        // Alongside the single click, so selecting a tab never waits to see
+        // whether a second click follows.
+        .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
     }
+
+    // MARK: - Title
+
+    @ViewBuilder
+    private var titleView: some View {
+        if isRenaming {
+            TextField("Tab Name", text: $draftTitle)
+                .textFieldStyle(.plain)
+                .font(.callout)
+                .focused($isTitleFieldFocused)
+                .onAppear { isTitleFieldFocused = true }
+                .onSubmit(finishRenaming)
+                .onExitCommand { isRenaming = false }
+                .onChange(of: isTitleFieldFocused) { _, isFocused in
+                    if !isFocused { finishRenaming() }
+                }
+        } else {
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func beginRenaming() {
+        draftTitle = tab.title
+        isRenaming = true
+    }
+
+    /// Return or clicking away keeps the new name; Escape leaves before this.
+    private func finishRenaming() {
+        guard isRenaming else { return }
+        isRenaming = false
+        tab.rename(draftTitle)
+    }
+
+    // MARK: - Accessories
 
     /// Shows while the page plays sound, and while it's muted so it can be
     /// unmuted. Clicking it toggles.
@@ -121,6 +161,6 @@ struct ChromeTabItem: View {
     }
 
     private var title: String {
-        tab.pageTitle.isEmpty ? "New Tab" : tab.pageTitle
+        tab.title.isEmpty ? "New Tab" : tab.title
     }
 }
