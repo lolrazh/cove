@@ -84,7 +84,8 @@ struct SidebarTabView: View {
             .allowsHitTesting(false)
     }
 
-    /// Arc's header row: traffic lights, the dock toggle, then navigation.
+    /// Arc's header row: traffic lights, the dock toggle, navigation, then
+    /// extensions' buttons.
     private var navigationRow: some View {
         HStack(spacing: 4) {
             Button(action: onToggleDocked) {
@@ -96,6 +97,9 @@ struct SidebarTabView: View {
             NavigationControls(session: activeTab)
 
             Spacer(minLength: 0)
+
+            ExtensionToolbar(tabManager: tabManager)
+                .layoutPriority(1)
 
             if tabManager.isPrivate {
                 // The header has no room for the word beside the controls.

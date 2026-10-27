@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The toolbar in the page card, in top-tab mode: navigation, the address
-/// field, the media player and the Library. The field only shows the URL behind
+/// field, extensions' buttons, the media player and the Library. The field only shows the URL behind
 /// the site controls glyph; clicking the URL opens the Command Bar, where all
 /// editing happens.
 struct NavigationBar: View {
@@ -26,6 +26,7 @@ struct NavigationBar: View {
             if tabManager.isPrivate {
                 PrivateBadge()
             }
+            ExtensionToolbar(tabManager: tabManager)
             MediaPlayer(tabManager: tabManager, style: .compact)
             LibraryButton(library: tabManager.library, popoverEdge: .bottom)
         }
