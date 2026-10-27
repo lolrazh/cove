@@ -47,6 +47,24 @@ private struct GeneralSettingsPane: View {
                 TextField("Home page", text: settings.binding(\.homePageURL, set: settings.setHomePageURL), prompt: Text("https://"))
                     .disabled(settings.newTabPreference != .homePage)
             }
+
+            Section {
+                Picker("Sleep background tabs after", selection: settings.binding(\.sleepTabsAfter, set: settings.setSleepTabsAfter)) {
+                    ForEach(TabSleepDelay.allCases) { delay in
+                        Text(delay.displayName).tag(delay)
+                    }
+                }
+
+                Picker("Archive unused tabs after", selection: settings.binding(\.archiveTabsAfter, set: settings.setArchiveTabsAfter)) {
+                    ForEach(TabArchiveDelay.allCases) { delay in
+                        Text(delay.displayName).tag(delay)
+                    }
+                }
+            } header: {
+                Text("Tabs")
+            } footer: {
+                Text("Sleeping tabs give back their memory and reload when selected. Archived tabs leave the sidebar and can be reopened from the Command Bar.")
+            }
         }
     }
 }

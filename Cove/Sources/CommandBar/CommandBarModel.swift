@@ -26,6 +26,7 @@ final class CommandBarModel: ObservableObject {
     private let historyStore: HistoryStore
     private let faviconStore: FaviconStore
     private let recentlyClosed: RecentlyClosedTabs
+    private let archive: TabArchive
     private let ranker = CommandBarRanker()
     private let suggestions = SearchSuggestions()
     private var suggestionTask: Task<Void, Never>?
@@ -38,13 +39,15 @@ final class CommandBarModel: ObservableObject {
         settings: BrowserSettingsStore,
         historyStore: HistoryStore,
         faviconStore: FaviconStore,
-        recentlyClosed: RecentlyClosedTabs
+        recentlyClosed: RecentlyClosedTabs,
+        archive: TabArchive
     ) {
         self.tabManager = tabManager
         self.settings = settings
         self.historyStore = historyStore
         self.faviconStore = faviconStore
         self.recentlyClosed = recentlyClosed
+        self.archive = archive
     }
 
     var searchEngine: SearchEngine { settings.searchEngine }
@@ -87,6 +90,8 @@ final class CommandBarModel: ObservableObject {
         switch result.kind {
         case .tab(let id):
             tabManager.selectTab(id)
+        case .archived(let id):
+            tabManager.reopenArchivedTab(id)
         case .history, .url:
             load(result.destination, inNewTab: inNewTab)
         case .search, .suggestion:
@@ -205,6 +210,7 @@ final class CommandBarModel: ObservableObject {
             query: query,
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
+                archive: archive.entries,
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),
                 commands: availableCommands

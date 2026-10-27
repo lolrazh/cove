@@ -11,6 +11,7 @@ struct CommandBarRanker {
 
     struct Sources {
         var tabs: [OpenTab] = []
+        var archive: [ArchivedTab] = []
         var history: [HistoryPage] = []
         var suggestions: [String] = []
         var commands: [CommandBarCommand] = []
@@ -27,6 +28,7 @@ struct CommandBarRanker {
 
     private enum Limit {
         static let tabs = 3
+        static let archive = 3
         static let history = 5
         static let recent = 6
         static let suggestions = 4
@@ -42,7 +44,8 @@ struct CommandBarRanker {
         let match = QueryMatch(trimmed)
         let completion = completion(for: query, match: match, sources: sources)
         let topHits = [completion?.result, primaryResult(for: trimmed)].compactMap { $0 }
-        // Pages already offered as a top hit or an open tab aren't listed again.
+        // A page is listed once: as a top hit, an open tab, an archived tab or
+        // a page from history, in that order of preference.
         let shown = Set(topHits.map(\.destination))
         let openURLs = shown.union(sources.tabs.map(\.url))
 
@@ -53,8 +56,16 @@ struct CommandBarRanker {
             .prefix(Limit.tabs)
             .map { CommandBarResult(kind: .tab($1.id), title: $1.title, destination: $1.url) }
 
-        let history = sources.history
+        let archived = sources.archive
             .filter { !openURLs.contains($0.url) }
+            .compactMap { tab in match.quality(title: tab.title, url: tab.url).map { ($0, tab) } }
+            .sorted { ($0.0, $0.1.archivedAt) > ($1.0, $1.1.archivedAt) }
+            .prefix(Limit.archive)
+            .map { Self.archivedResult($1) }
+        let listedURLs = openURLs.union(archived.map(\.destination))
+
+        let history = sources.history
+            .filter { !listedURLs.contains($0.url) }
             .compactMap { page in match.quality(title: page.title, url: page.url).map { ($0, page) } }
             .sorted { ($0.0, $0.1.frecency) > ($1.0, $1.1.frecency) }
             .prefix(Limit.history)
@@ -73,6 +84,7 @@ struct CommandBarRanker {
         let sections = [
             CommandBarSection(title: nil, results: topHits),
             CommandBarSection(title: "Switch to Tab", results: tabs),
+            CommandBarSection(title: "Archive", results: archived),
             CommandBarSection(title: "History", results: history),
             CommandBarSection(title: "Commands", results: commands),
             CommandBarSection(title: "Suggestions", results: suggestions),
@@ -153,8 +165,16 @@ struct CommandBarRanker {
     // MARK: - Rows
 
     private static func historyResult(_ page: HistoryPage) -> CommandBarResult {
-        let title = page.title.isEmpty ? CommandBarResult.displayURL(for: page.url) : page.title
-        return CommandBarResult(kind: .history, title: title, destination: page.url)
+        CommandBarResult(kind: .history, title: pageTitle(page.title, url: page.url), destination: page.url)
+    }
+
+    private static func archivedResult(_ tab: ArchivedTab) -> CommandBarResult {
+        CommandBarResult(kind: .archived(tab.id), title: pageTitle(tab.title, url: tab.url), destination: tab.url)
+    }
+
+    /// A page without a title goes by its address.
+    private static func pageTitle(_ title: String, url: String) -> String {
+        title.isEmpty ? CommandBarResult.displayURL(for: url) : title
     }
 
     private static func commandResult(_ command: CommandBarCommand) -> CommandBarResult {

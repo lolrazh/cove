@@ -35,6 +35,9 @@ struct ChromeTabItem: View {
                 closeButton
             }
         }
+        // A sleeping tab fades a little, as in Arc, until hovered: it's still
+        // there, it just has to wake.
+        .opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
         .padding(.leading, 8)
         .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         .frame(width: width, height: height)
@@ -45,6 +48,7 @@ struct ChromeTabItem: View {
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
+        .animation(ChromeMotion.fade, value: tab.isAsleep)
         .onHover { isHovered = $0 }
         .onTapGesture { tabManager.selectTab(tab.id) }
         // Alongside the single click, so selecting a tab never waits to see
@@ -107,6 +111,8 @@ struct ChromeTabItem: View {
             .transition(.opacity)
         }
     }
+
+    private static let asleepOpacity = 0.55
 
     private var closeButton: some View {
         let isVisible = canClose && isHovered

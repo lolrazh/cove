@@ -20,8 +20,19 @@ struct TabSessionServices {
 
 @MainActor
 final class TabSession: NSObject, Identifiable, ObservableObject {
+    /// Whether the tab holds a live page. A background tab sleeps after a
+    /// while: its web view is released and the sidebar keeps showing it from
+    /// its title, favicon and URL. The selected tab is always awake.
+    enum Page {
+        case awake(WKWebView)
+        /// WebKit's copy of the back/forward list, to wake from. Nil for a page
+        /// that never loaded, which wakes by loading its URL afresh.
+        case asleep(interactionState: Data?)
+    }
+
     let id: UUID
 
+    @Published private(set) var page: Page
     @Published var isNewTabPage: Bool
     @Published var currentURL: String = ""
     @Published var pageTitle: String = ""
@@ -38,10 +49,12 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// Whether the page is playing sound, muted or not.
     @Published private(set) var isPlayingAudio = false
     @Published private(set) var isMuted = false
+    /// When the tab was last selected or last left; what idle time counts from.
+    private(set) var lastUsedAt: Date
 
-    private(set) var webView: WKWebView
-    /// The find bar's state. Follows the web view when it's replaced.
-    private(set) lazy var findInPage = FindInPage { [unowned self] in webView }
+    /// The find bar's state. Follows the web view when it's replaced, and
+    /// wakes the page if it has to.
+    private(set) lazy var findInPage = FindInPage { [unowned self] in wake() }
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
@@ -56,6 +69,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var webViewCanGoForward = false
     private var hasSyntheticStartPageEntry: Bool
     private var syntheticForwardToWebContent = false
+    /// The page holds typed input, as `FormInput` last reported.
+    private var hasUnsavedInput = false
     /// A page recorded in history before its title was known (example.com sets
     /// it after `didFinish`). Its visit gets the title when it arrives.
     private var visitAwaitingTitle: String?
@@ -81,18 +96,20 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.onOpenInNewTab = onOpenInNewTab
         self.onSelect = onSelect
         self.faviconFetcher = FaviconFetcher(store: services.faviconStore)
-        self.webView = services.webKitEnvironment.makeWebView()
+        self.page = .asleep(interactionState: saved?.interactionState)
+        self.customTitle = saved?.customTitle
+        self.lastUsedAt = saved?.lastUsedAt ?? .now
         super.init()
 
-        configureWebView(webView)
-        setupObservers()
         refreshNavigationState()
-        if let saved {
+        if let saved, !isNewTabPage {
             restore(saved)
         } else if let initialRequest {
             loadRequest(initialRequest)
         } else if let initialURL {
             loadURL(initialURL)
+        } else {
+            wake()
         }
     }
 
@@ -101,13 +118,43 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         customTitle ?? pageTitle
     }
 
+    var isAsleep: Bool {
+        if case .asleep = page { true } else { false }
+    }
+
+    /// The live web view, for what only it can answer, like the window it's
+    /// in; nil while asleep. Acting on the page goes through `wake()`.
+    var webView: WKWebView? {
+        if case .awake(let webView) = page { webView } else { nil }
+    }
+
+    /// Whether the page is doing something a reload would interrupt: playing
+    /// audio, using the camera or microphone, or holding typed input.
+    var isInUse: Bool {
+        guard case .awake(let webView) = page else { return false }
+        return hasUnsavedInput
+            || isPlayingAudio
+            || webView.cameraCaptureState != .none
+            || webView.microphoneCaptureState != .none
+    }
+
+    /// The tab was selected, or was just left: either way it's in use now.
+    func markUsed() {
+        lastUsedAt = .now
+    }
+
     /// The tab as saved for the next launch. A start page saves no URL.
     var savedTab: SavedTab {
-        SavedTab(
+        let interactionState: Data? = switch page {
+        case .awake(let webView): webView.interactionState as? Data
+        case .asleep(let interactionState): interactionState
+        }
+        return SavedTab(
             url: isNewTabPage ? "" : currentURL,
             title: isNewTabPage ? "" : pageTitle,
             customTitle: customTitle,
-            interactionState: isNewTabPage ? nil : webView.interactionState as? Data
+            interactionState: isNewTabPage ? nil : interactionState,
+            lastUsedAt: lastUsedAt
         )
     }
 
@@ -118,25 +165,60 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             .eraseToAnyPublisher()
     }
 
-    /// Brings back a tab from the last session, back/forward list included. The
-    /// saved title shows until the page loads its own.
+    /// A tab from the last session, or the archive, shows what it showed until
+    /// it's selected and woken; its back/forward list comes back with it.
     private func restore(_ saved: SavedTab) {
-        customTitle = saved.customTitle
-        guard !isNewTabPage else { return }
         currentURL = saved.url
         pageTitle = saved.title
-        if let state = saved.interactionState {
-            webView.interactionState = state
-        } else {
-            loadURL(saved.url)
+        updateFavicon(for: URL(string: saved.url))
+    }
+
+    // MARK: - Sleeping
+
+    /// Brings a sleeping page back, in a new web view that takes up the saved
+    /// back/forward list or loads the page afresh. Every action on the page
+    /// starts here, so an awake page just answers with its web view.
+    @discardableResult
+    func wake() -> WKWebView {
+        switch page {
+        case .awake(let webView):
+            return webView
+        case .asleep(let interactionState):
+            let webView = services.webKitEnvironment.makeWebView()
+            page = .awake(webView)
+            configureWebView(webView)
+            setupObservers(for: webView)
+            if let interactionState {
+                webView.interactionState = interactionState
+            } else if !currentURL.isEmpty {
+                loadURL(currentURL)
+            }
+            return webView
         }
+    }
+
+    /// Releases the page's web view, keeping its back/forward list to wake
+    /// from. A page that failed to load keeps only its URL, so waking tries it
+    /// again. Whether the page may sleep is `TabIdlePolicy`'s call.
+    func sleep() {
+        guard case .awake(let webView) = page else { return }
+        let interactionState = loadFailure == nil ? webView.interactionState as? Data : nil
+        releaseWebView(webView)
+        page = .asleep(interactionState: interactionState)
+        audio = nil
+        isLoading = false
+        estimatedProgress = 0
+        loadFailure = nil
+        hoveredLink = nil
+        isPlayingAudio = false
+        hasUnsavedInput = false
     }
 
     func navigate(_ input: String) {
         guard let request = request(for: input) else { return }
 
         if isNewTabPage && syntheticForwardToWebContent {
-            replaceWebViewForFreshNavigation()
+            discardPage()
             syntheticForwardToWebContent = false
         }
 
@@ -145,7 +227,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         }
 
         isNewTabPage = false
-        loadRequest(request)
+        let webView = wake()
+        webView.load(request)
         refreshNavigationState()
         // Typing a destination hands focus to the page, as in Safari, which also
         // ends editing in the address field so it can show the new URL.
@@ -158,14 +241,14 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func loadRequest(_ request: URLRequest) {
-        webView.load(request)
+        wake().load(request)
     }
 
     func goBack() {
         guard !isNewTabPage else { return }
 
         if webViewCanGoBack {
-            webView.goBack()
+            wake().goBack()
         } else if hasSyntheticStartPageEntry {
             showSyntheticStartPage()
         }
@@ -178,10 +261,11 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             return
         }
 
-        webView.goForward()
+        wake().goForward()
     }
 
     func reload() {
+        let webView = wake()
         guard webView.url != nil else { return }
         updateFavicon(for: webView.url, force: true)
         webView.reload()
@@ -194,6 +278,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     func stopLoading() {
+        guard case .awake(let webView) = page else { return }
         webView.stopLoading()
     }
 
@@ -210,8 +295,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     /// The page's zoom, remembered for its site.
     var pageZoom: Double {
-        get { webView.pageZoom }
+        get { webView.map { Double($0.pageZoom) } ?? services.siteZoom.zoom(for: URL(string: currentURL)) }
         set {
+            let webView = wake()
             webView.pageZoom = newValue
             services.siteZoom.setZoom(newValue, for: webView.url)
         }
@@ -230,7 +316,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     // MARK: - Observers
 
-    private func setupObservers() {
+    private func setupObservers(for webView: WKWebView) {
         observers = [
             webView.observe(\.url) { [weak self] webView, _ in
                 Task { @MainActor in self?.handleURLChange(webView.url) }
@@ -299,20 +385,28 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
+        FormInput.install(in: webView.configuration.userContentController) { [weak self] hasInput in
+            self?.hasUnsavedInput = hasInput
+        }
         audio = PageAudio(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
             self?.isPlayingAudio = isPlaying
         }
     }
 
-    private func replaceWebViewForFreshNavigation() {
+    private func releaseWebView(_ webView: WKWebView) {
         observers.removeAll()
         webView.stopLoading()
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
+    }
 
-        let replacement = services.webKitEnvironment.makeWebView()
-        webView = replacement
-        configureWebView(replacement)
+    /// Forgets the page kept behind the start page, so navigating from there
+    /// starts a fresh back/forward list.
+    private func discardPage() {
+        if case .awake(let webView) = page {
+            releaseWebView(webView)
+        }
+        page = .asleep(interactionState: nil)
 
         webViewCanGoBack = false
         webViewCanGoForward = false
@@ -325,7 +419,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         isPlayingAudio = false
         faviconFetcher.reset()
         favicon = nil
-        setupObservers()
     }
 
     private func showSyntheticStartPage() {
@@ -341,6 +434,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     private func revealWebViewFromSyntheticStartPage() {
+        let webView = wake()
         isNewTabPage = false
         syntheticForwardToWebContent = false
         currentURL = webView.url?.absoluteString ?? ""
@@ -381,6 +475,7 @@ extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         loadFailure = nil
         hoveredLink = nil
+        hasUnsavedInput = false
         // URL changes were ignored while the failure showed.
         handleURLChange(webView.url)
     }
@@ -503,7 +598,7 @@ extension TabSession: WKUIDelegate {
     /// tab has none, so its tab is selected first, as Safari does for alerts,
     /// and the dialog waits for the page to come on screen.
     private func dialogWindow() async -> NSWindow? {
-        if let window = webView.window { return window }
+        if case .awake(let webView) = page, let window = webView.window { return window }
         onSelect?()
         return await withCheckedContinuation { dialogWindowWaiters.append($0) }
     }

@@ -78,6 +78,21 @@ struct CommandBarRankerTests {
         #expect(history.map(\.destination) == [swiftDocs.url])
     }
 
+    @Test func `archived tabs get their own group and aren't repeated from history`() {
+        let archived = ArchivedTab(id: UUID(), url: swiftRepo.url, title: swiftRepo.title, archivedAt: .now)
+        let ranking = rank("swift", .init(archive: [archived], history: [swiftRepo, swiftDocs]))
+        #expect(ranking.sections.map(\.title) == [nil, "Archive", "History"])
+        #expect(ranking.sections[1].results.map(\.kind) == [.archived(archived.id)])
+        #expect(ranking.sections[2].results.map(\.destination) == [swiftDocs.url])
+    }
+
+    @Test func `an open tab beats the archive for the same page`() {
+        let tab = CommandBarRanker.OpenTab(id: UUID(), title: swiftRepo.title, url: swiftRepo.url)
+        let archived = ArchivedTab(id: UUID(), url: swiftRepo.url, title: swiftRepo.title, archivedAt: .now)
+        let ranking = rank("swift", .init(tabs: [tab], archive: [archived]))
+        #expect(ranking.sections.map(\.title) == [nil, "Switch to Tab"])
+    }
+
     @Test func `a pasted address matches history despite its scheme`() {
         let ranking = rank("https://www.github.com/", .init(history: [swiftRepo]))
         let history = ranking.sections.first { $0.title == "History" }?.results ?? []

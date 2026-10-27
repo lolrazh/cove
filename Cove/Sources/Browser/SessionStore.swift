@@ -9,6 +9,9 @@ struct SavedTab: Codable {
     /// The user's name for the tab. Absent in sessions saved before renaming.
     let customTitle: String?
     let interactionState: Data?
+    /// When the tab was last looked at, so idle time survives a relaunch.
+    /// Unknown counts as now.
+    let lastUsedAt: Date?
 }
 
 struct SavedWindow: Codable {

@@ -144,7 +144,7 @@ private struct CommandBarPanel: View {
 
     private func detail(for result: CommandBarResult) -> String? {
         switch result.kind {
-        case .tab, .history: result.displayURL
+        case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
         case .url, .suggestion, .command: nil
         }
@@ -199,7 +199,7 @@ private struct CommandBarRow: View {
     @ViewBuilder
     private var iconView: some View {
         switch result.kind {
-        case .tab, .history, .url:
+        case .tab, .archived, .history, .url:
             FaviconView(image: icon, size: 16)
         case .search, .suggestion:
             symbol(ChromeSymbols.Navigation.search)

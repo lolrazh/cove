@@ -10,6 +10,7 @@ final class AppServices {
     let webKitEnvironment: WebKitEnvironment
     let externalURLRouter: ExternalURLRouter
     let recentlyClosedTabs = RecentlyClosedTabs()
+    let tabArchive = TabArchive()
     let sitePermissions = SitePermissions()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()

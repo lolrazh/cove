@@ -6,6 +6,7 @@ import WebKit
 extension TabSession {
     /// Shows the print sheet for the page.
     func printPage() {
+        let webView = wake()
         guard let window = webView.window else { return }
         let operation = webView.printOperation(with: .shared)
         // WebKit prints blank pages from a print view that has no size.
@@ -16,7 +17,7 @@ extension TabSession {
     /// The page and everything it loaded, as a web archive.
     func webArchive() async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
-            webView.createWebArchiveData { continuation.resume(with: $0) }
+            wake().createWebArchiveData { continuation.resume(with: $0) }
         }
     }
 
@@ -31,7 +32,7 @@ extension TabSession {
     /// video. Runs in WebKit's client world, out of the page's reach; WebKit
     /// treats calls from the app as a user gesture, which the API requires.
     func togglePictureInPicture() async -> Bool {
-        let result = try? await webView.evaluateJavaScript(Self.pictureInPictureScript, contentWorld: .defaultClient)
+        let result = try? await wake().evaluateJavaScript(Self.pictureInPictureScript, contentWorld: .defaultClient)
         return result as? Bool ?? false
     }
 
