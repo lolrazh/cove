@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light dark; font: 13px -apple-system, system-ui, sans-serif; }
+    body { margin: 0; padding: 14px; width: 240px; }
+    h1 { font-size: 15px; margin: 0 0 8px; }
+    p { margin: 4px 0; color: GrayText; }
+    strong { color: CanvasText; }
+    .buttons { display: flex; gap: 6px; margin-top: 10px; }
+    button { flex: 1; }
+  </style>
+</head>
+<body>
+  <h1>Cove Test Extension</h1>
+  <p>Pages marked: <strong id="visits">0</strong></p>
+  <p>Active tab: <strong id="tab">—</strong></p>
+  <p>Last selected: <strong id="activated">—</strong></p>
+  <p>Cookies: <strong id="cookies">—</strong></p>
+  <div class="buttons">
+    <button id="reset">Reset</button>
+    <button id="options">Options</button>
+    <button id="ask">Cookies</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

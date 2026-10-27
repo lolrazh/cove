@@ -35,6 +35,11 @@ targets:
     platform: macOS
     sources:
       - path: CoveTests
+        excludes:
+          - Fixtures
+      - path: CoveTests/Fixtures
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: Cove
     settings:
