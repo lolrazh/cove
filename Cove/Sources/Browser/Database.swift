@@ -2,11 +2,16 @@ import Foundation
 import SQLite3
 
 final class Database {
+    /// A path that keeps the database in memory, gone when it's closed.
+    static let inMemory = ":memory:"
+
     private var db: OpaquePointer?
 
     init(path: String) throws {
-        let dir = (path as NSString).deletingLastPathComponent
-        try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        if path != Self.inMemory {
+            let dir = (path as NSString).deletingLastPathComponent
+            try FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        }
 
         if sqlite3_open(path, &db) != SQLITE_OK {
             let msg = String(cString: sqlite3_errmsg(db))

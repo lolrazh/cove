@@ -43,7 +43,7 @@ struct BrowserViewCommands: Commands {
             HistoryMenu(
                 tabManager: tabManager,
                 historyStore: appServices.historyStore,
-                recentlyClosed: tabManager?.recentlyClosed ?? appServices.recentlyClosedTabs,
+                archive: tabManager?.archive ?? appServices.tabArchive,
                 faviconStore: appServices.faviconStore,
                 onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
             )

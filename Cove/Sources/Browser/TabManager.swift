@@ -36,10 +36,9 @@ final class TabManager: ObservableObject {
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
-    /// This window's closed tabs: the shared list, or a private window's own.
-    let recentlyClosed: RecentlyClosedTabs
-    /// Nil in a private window, whose tabs are never archived.
-    private let archive: TabArchive?
+    /// Where this window's closed and idle tabs go: the shared archive, or a
+    /// private window's own, kept in memory and gone with the window.
+    let archive: TabArchive
     private let sweepClock = TabSweepClock()
     private var cancellables: Set<AnyCancellable> = []
 
@@ -49,7 +48,6 @@ final class TabManager: ObservableObject {
         settings: settings,
         historyStore: services.historyStore,
         faviconStore: services.faviconStore,
-        recentlyClosed: recentlyClosed,
         archive: archive
     )
 
@@ -64,18 +62,16 @@ final class TabManager: ObservableObject {
         tabLayout == .sidebar ? tabs.reversed() : tabs
     }
 
-    /// A private window passes no archive and no session, so nothing of it
-    /// is written down or comes back.
+    /// A private window passes an in-memory archive and no session, so
+    /// nothing of it is written down or comes back.
     init(
         settings: BrowserSettingsStore,
         services: TabSessionServices,
-        recentlyClosed: RecentlyClosedTabs,
-        archive: TabArchive?,
+        archive: TabArchive,
         session: SessionStore?
     ) {
         self.settings = settings
         self.services = services
-        self.recentlyClosed = recentlyClosed
         self.archive = archive
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
@@ -266,9 +262,11 @@ final class TabManager: ObservableObject {
                 nil
             }
 
+            // Into the archive, as in Arc, where it keeps its back/forward
+            // list for Reopen Last Closed Tab.
             let closed = tabs.remove(at: index)
             closed.close()
-            recentlyClosed.record(url: closed.currentURL, title: closed.pageTitle)
+            archive.add(closed.savedTab, reason: .closed)
 
             if let replacementID {
                 activeTabID = replacementID
@@ -276,10 +274,10 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// Reopens a recently closed tab, or the most recently closed one.
-    func reopenClosedTab(_ id: UUID? = nil) {
-        guard let entry = recentlyClosed.take(id) else { return }
-        addTab(url: entry.url)
+    /// Reopens the most recently closed tab.
+    func reopenClosedTab() {
+        guard let closed = archive.lastClosed else { return }
+        reopenArchivedTab(closed.id)
     }
 
     // MARK: - Idle tabs
@@ -290,7 +288,7 @@ final class TabManager: ObservableObject {
     func sweepIdleTabs(underMemoryPressure: Bool = false, now: Date = .now) {
         var policy = TabIdlePolicy(
             sleepAfter: settings.sleepTabsAfter.interval,
-            archiveAfter: archive == nil ? nil : settings.archiveTabsAfter.interval
+            archiveAfter: isPrivate ? nil : settings.archiveTabsAfter.interval
         )
         if underMemoryPressure {
             policy = policy.underMemoryPressure
@@ -308,15 +306,15 @@ final class TabManager: ObservableObject {
     /// Moves a background tab out of Today and into the archive, with its
     /// back/forward list, so it can come back whole.
     private func archiveTab(_ id: UUID) {
-        guard let archive, id != activeTabID, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        guard id != activeTabID, let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         let archived = tabs.remove(at: index)
         archived.close()
-        archive.add(archived.savedTab)
+        archive.add(archived.savedTab, reason: .idle)
     }
 
     /// Brings an archived tab back into Today, selected.
     func reopenArchivedTab(_ id: UUID) {
-        guard let saved = archive?.take(id) else { return }
+        guard let saved = archive.take(id) else { return }
         open(makeTab(restoring: saved))
     }
 
