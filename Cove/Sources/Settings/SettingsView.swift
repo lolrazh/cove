@@ -69,6 +69,14 @@ private struct GeneralSettingsPane: View {
             } footer: {
                 Text("Sleeping tabs give back their memory and reload when selected. Archived tabs leave the sidebar and can be reopened from the Command Bar.")
             }
+
+            Section {
+                Toggle("Open links from other apps in Little Cove", isOn: settings.binding(\.opensLinksInLittleCove, set: settings.setOpensLinksInLittleCove))
+            } header: {
+                Text("Links")
+            } footer: {
+                Text("Little Cove is a small window for a quick look. Open in Cove moves the page into your browser window.")
+            }
         }
     }
 }
