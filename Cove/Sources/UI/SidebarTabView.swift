@@ -19,8 +19,8 @@ struct SidebarTabView: View {
         tabManager.tabs.map(\.id)
     }
 
-    private var tabReorderAnimation: Animation? {
-        reduceMotion ? nil : .snappy(duration: 0.16, extraBounce: 0.02)
+    private var tabAnimation: Animation? {
+        reduceMotion ? nil : ChromeMotion.tab
     }
 
     var body: some View {
@@ -51,6 +51,23 @@ struct SidebarTabView: View {
             SidebarAddressPill(session: activeTab, onEdit: tabManager.editCurrentURL)
                 .padding(.horizontal, ChromeMetrics.sidebarInset)
         }
+        .background { headerBacking }
+    }
+
+    /// Rows scroll up under the header. This hides them behind it and fades
+    /// them out over the gap below the pill instead of cutting them off.
+    private var headerBacking: some View {
+        Rectangle()
+            .fill(ChromePalette.shell)
+            .padding(.bottom, -ChromeMetrics.sidebarSectionSpacing)
+            .mask {
+                VStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                        .frame(height: ChromeMetrics.sidebarSectionSpacing)
+                }
+            }
+            .allowsHitTesting(false)
     }
 
     /// Arc's header row: traffic lights, the dock toggle, then navigation.
@@ -94,7 +111,7 @@ struct SidebarTabView: View {
             }
             .padding(.horizontal, ChromeMetrics.sidebarInset)
             .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
-            .animation(tabReorderAnimation, value: tabOrder)
+            .animation(tabAnimation, value: tabOrder)
         }
     }
 
@@ -121,6 +138,7 @@ struct SidebarTabView: View {
                     onClose: { tabManager.closeTab(tab.id) },
                     canClose: tabManager.tabs.count > 1
                 )
+                .transition(.tabSlot(.vertical))
             }
         }
     }
@@ -176,8 +194,8 @@ private struct SidebarFavoriteTile: View {
             .background {
                 if isActive {
                     ConcentricRectangle.chrome(minimum: ChromeRadius.tile)
-                        .fill(ChromePalette.content)
-                        .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                        .fill(ChromePalette.raised)
+                        .chromeShadow(.raised)
                 }
             }
             .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)

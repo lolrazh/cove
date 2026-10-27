@@ -68,8 +68,8 @@ struct ChromeTabItem: View {
             switch presentation {
             case .sidebar:
                 shape
-                    .fill(ChromePalette.content)
-                    .shadow(color: .black.opacity(0.08), radius: 1, y: 1)
+                    .fill(ChromePalette.raised)
+                    .chromeShadow(.raised)
             case .horizontal:
                 AttachedTabShape()
                     .fill(ChromePalette.content)

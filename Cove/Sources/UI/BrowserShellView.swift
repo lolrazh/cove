@@ -70,7 +70,6 @@ struct BrowserShellView<Content: View>: View {
         }
         .animation(ChromeMotion.shell, value: tabManager.tabLayout)
         .animation(ChromeMotion.shell, value: tabManager.hideTabs)
-        .animation(ChromeMotion.shell, value: areTabsVisible)
         .onChange(of: tabManager.hideTabs) { _, _ in
             hideTask?.cancel()
         }
@@ -104,8 +103,10 @@ struct BrowserShellView<Content: View>: View {
         tabStrip
             .chromeFloatingSurface(minimumRadius: ChromeRadius.tab)
             .onHover(perform: chromeHover)
-            .offset(y: showsFloatingTopRow ? 0 : -(ChromeMetrics.titlebarHeight + ChromeMetrics.gutter * 4))
-            .allowsHitTesting(showsFloatingTopRow)
+            .chromeSlide(
+                isShown: showsFloatingTopRow,
+                from: CGSize(width: 0, height: -(ChromeMetrics.titlebarHeight + ChromeMetrics.gutter * 4))
+            )
     }
 
     private var tabRowLeadingInset: CGFloat {
@@ -177,8 +178,10 @@ struct BrowserShellView<Content: View>: View {
         .chromeFloatingSurface()
         .padding(ChromeMetrics.gutter)
         .onHover(perform: chromeHover)
-        .offset(x: showsFloatingSidebar ? 0 : -(sidebarWidth + ChromeMetrics.gutter * 4))
-        .allowsHitTesting(showsFloatingSidebar)
+        .chromeSlide(
+            isShown: showsFloatingSidebar,
+            from: CGSize(width: -(sidebarWidth + ChromeMetrics.gutter * 4), height: 0)
+        )
     }
 
     // MARK: - Content Card
@@ -192,13 +195,20 @@ struct BrowserShellView<Content: View>: View {
                 contentLoadingIndicator
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay { LinkPreview(url: activeTab.hoveredLink) }
+            .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ChromePalette.content)
         .clipShape(.chrome())
         // A concentric clip also becomes the hit area, and resolves in the
         // wrong place: without this the card swallows clicks meant for the tabs.
         .contentShape(Rectangle())
+        // The shadow sits behind the clip, or the clip would cut it off.
+        .background {
+            ConcentricRectangle.chrome()
+                .fill(ChromePalette.content)
+                .chromeShadow(.card)
+        }
     }
 
     /// The toolbar above the page, in top-tab mode only. In sidebar mode its
@@ -220,17 +230,9 @@ struct BrowserShellView<Content: View>: View {
         .allowsHitTesting(isTopMode)
     }
 
-    @ViewBuilder
     private var contentLoadingIndicator: some View {
-        if activeTab.isLoading {
-            ProgressView(value: activeTab.estimatedProgress)
-                .progressViewStyle(.linear)
-                .tint(.accentColor)
-                .labelsHidden()
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .allowsHitTesting(false)
-        }
+        PageProgressBar(progress: activeTab.estimatedProgress, isLoading: activeTab.isLoading)
+            .id(activeTab.id)
     }
 
     // MARK: - Visibility

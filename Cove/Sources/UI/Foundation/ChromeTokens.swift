@@ -43,17 +43,22 @@ enum ChromeMetrics {
 
     static let navigationBarHeight: CGFloat = 44
     static let iconButtonSize: CGFloat = 28
+    /// The loading bar along the top edge of the page.
+    static let progressHeight: CGFloat = 2
 }
 
 /// Colors come from the system, so light and dark mode, increased contrast and
 /// the accent color all work without any code of ours.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for
-    /// the area behind a page. On macOS 27 the plain window color matches the
-    /// page color exactly, which would make the card vanish.
-    static let shell = Color(nsColor: .underPageBackgroundColor)
+    /// the area behind a page, tinted by the window's `ChromeTheme`. On macOS 27
+    /// the plain window color matches the page color exactly, which would make
+    /// the card vanish.
+    static var shell: some ShapeStyle { ChromeFrameStyle() }
     /// The content card, and anything standing in for a web page.
     static let content = Color(nsColor: .textBackgroundColor)
+    /// The selected thing in the sidebar, lifted off the frame.
+    static var raised: some ShapeStyle { ChromeRaisedStyle() }
 
     /// Interaction fills, from the system fill hierarchy. The same everywhere, so
     /// a hovered tab, button and tile all look alike.
@@ -65,9 +70,61 @@ enum ChromePalette {
 enum ChromeMotion {
     static let hover = Animation.easeOut(duration: 0.12)
     static let press = Animation.easeOut(duration: 0.08)
+    /// The frame rearranging itself: sidebar to top tabs, docked to hidden.
     static let shell = Animation.smooth(duration: 0.26)
+    /// Hidden chrome sliding in from a window edge; the overshoot reads as
+    /// arriving rather than extending.
+    static let slide = Animation.spring(duration: 0.34, bounce: 0.18)
+    /// A tab opening or closing, and its neighbors making room.
+    static let tab = Animation.smooth(duration: 0.18)
     /// The Command Bar scaling and fading in. Quick: it answers a keystroke.
     static let commandBar = Animation.smooth(duration: 0.18)
+    /// A toast appearing over the page.
+    static let appear = Animation.spring(duration: 0.3, bounce: 0.2)
+    static let fade = Animation.easeOut(duration: 0.25)
+    static let progress = Animation.linear(duration: 0.2)
+}
+
+/// Elevation, in four steps. Shadows are the only thing that lifts a surface;
+/// nothing in the chrome has an outline.
+enum ChromeShadow {
+    /// Just off the frame: the active sidebar tab.
+    case raised
+    /// The page card, floating over the frame like Arc's.
+    case card
+    /// Chrome over the page: the revealed sidebar, toasts, the link preview.
+    case floating
+    /// A panel over the whole window: the Command Bar.
+    case panel
+
+    var radius: CGFloat {
+        switch self {
+        case .raised: 1
+        case .card: 12
+        case .floating: 16
+        case .panel: 28
+        }
+    }
+
+    var y: CGFloat {
+        switch self {
+        case .raised: 1
+        case .card: 3
+        case .floating: 4
+        case .panel: 10
+        }
+    }
+
+    /// Dark frames swallow shadows, so they get about twice the ink.
+    func opacity(in colorScheme: ColorScheme) -> Double {
+        let light: Double = switch self {
+        case .raised: 0.08
+        case .card: 0.12
+        case .floating: 0.18
+        case .panel: 0.24
+        }
+        return colorScheme == .dark ? light * 2 : light
+    }
 }
 
 /// Minimum corner radii, one per component size. Actual radii come from

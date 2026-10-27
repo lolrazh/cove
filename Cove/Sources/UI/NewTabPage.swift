@@ -26,15 +26,8 @@ struct NewTabPage: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-                .frame(minHeight: 80, maxHeight: 160)
+                .frame(minHeight: 80, maxHeight: 200)
 
-            // Title
-            Text("Cove")
-                .font(.largeTitle.weight(.thin))
-                .foregroundStyle(.primary.opacity(0.6))
-                .padding(.bottom, 24)
-
-            // Search bar
             HStack(spacing: 10) {
                 Image(systemName: ChromeSymbols.Navigation.search)
                     .foregroundStyle(.tertiary)
@@ -54,7 +47,6 @@ struct NewTabPage: View {
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
 
-            // Recent sites
             if settingsStore.shouldShowRecentSites && !recentSites.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recent")
@@ -128,16 +120,14 @@ struct RecentSiteCard: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            if let favicon {
-                FaviconView(image: favicon, size: 28)
-                    .frame(width: 36, height: 36)
-            } else {
-                Text(domainInitial)
-                    .font(.title2.weight(.medium))
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 36, height: 36)
+            Group {
+                if let favicon {
+                    FaviconView(image: favicon, size: 28)
+                } else {
+                    SiteMonogram(host: domainName, size: 28)
+                }
             }
+            .frame(width: 36, height: 36)
 
             Text(domainName)
                 .font(.subheadline)
@@ -152,10 +142,6 @@ struct RecentSiteCard: View {
     private var domainName: String {
         guard let host = URL(string: entry.url)?.host else { return entry.url }
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-    }
-
-    private var domainInitial: String {
-        String(domainName.prefix(1)).uppercased()
     }
 
     private var favicon: NSImage? {

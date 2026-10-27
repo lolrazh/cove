@@ -124,9 +124,7 @@ final class CommandBarModel: ObservableObject {
     private func perform(_ command: CommandBarCommand) {
         switch command {
         case .copyURL:
-            guard let url = tabManager.activeTab?.currentURL else { return }
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(url, forType: .string)
+            tabManager.copyURL()
         case .showTabsInSidebar:
             withAnimation(ChromeMotion.shell) { tabManager.setLayout(.sidebar) }
         case .showTabsOnTop:

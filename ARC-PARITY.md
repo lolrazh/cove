@@ -123,23 +123,26 @@ Arc's signature: ⌘T and ⌘L open one floating palette instead of a new-tab pa
 
 ## 4. Look and feel
 
-- [ ] **Theme color.** An optional tint for the frame (window background
+- [x] **Theme color.** An optional tint for the frame (window background
       behind the card), default system gray. Per-space later. Subtle, never
-      full-window glass.
-- [ ] **Page card shadow**: soft elevation like Arc's floating page, no
+      full-window glass. *(`ChromeTheme`, a value read from the environment;
+      Settings › Appearance has swatches and a custom color.)*
+- [x] **Page card shadow**: soft elevation like Arc's floating page, no
       outline.
-- [ ] **Thin progress indicator** (about 2pt) instead of the system progress
-      bar 8pt into the page, or Arc's shimmer on the active tab.
-- [ ] **Link hover preview**: the hovered link's URL in the bottom-leading
+- [x] **Thin progress indicator** (about 2pt) instead of the system progress
+      bar 8pt into the page, or Arc's shimmer on the active tab. *(A 2pt line
+      along the page's top edge, so it shows in every tab mode.)*
+- [x] **Link hover preview**: the hovered link's URL in the bottom-leading
       corner of the page.
-- [ ] **Copy URL toast** (⌘⇧C): "Copied URL" capsule that fades out.
-- [ ] **Motion:** sidebar slide with a spring, tab close "poof", space switch
-      paging, Command Bar scale-and-fade in. Respect Reduce Motion.
-- [ ] **Start page polish:** remove the thin "Cove" title or give it intent;
+- [x] **Copy URL toast** (⌘⇧C): "Copied URL" capsule that fades out.
+- [x] **Motion:** sidebar slide with a spring, tab close "poof", space switch
+      paging, Command Bar scale-and-fade in. Respect Reduce Motion. *(Space
+      paging arrives with Spaces, 5e.)*
+- [x] **Start page polish:** remove the thin "Cove" title or give it intent;
       tiles without a favicon need a better fallback than a letter.
-- [ ] **Active sidebar tab** matches Arc: raised, slightly lighter than the
+- [x] **Active sidebar tab** matches Arc: raised, slightly lighter than the
       frame in dark mode.
-- [ ] **Settings window restyle**, consistent with the chrome.
+- [x] **Settings window restyle**, consistent with the chrome.
 
 ---
 

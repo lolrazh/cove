@@ -30,6 +30,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var estimatedProgress: Double = 0
     @Published var favicon: NSImage?
     @Published private(set) var loadFailure: LoadFailure?
+    /// The link under the pointer, for the preview in the page's corner.
+    @Published private(set) var hoveredLink: URL?
 
     private(set) var webView: WKWebView
 
@@ -251,6 +253,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private func configureWebView(_ webView: WKWebView) {
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
+            self?.hoveredLink = link
+        }
     }
 
     private func replaceWebViewForFreshNavigation() {
@@ -270,6 +275,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         isLoading = false
         estimatedProgress = 0
         loadFailure = nil
+        hoveredLink = nil
         faviconFetcher.reset()
         favicon = nil
         setupObservers()
@@ -327,6 +333,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         loadFailure = nil
+        hoveredLink = nil
         // URL changes were ignored while the failure showed.
         handleURLChange(webView.url)
     }

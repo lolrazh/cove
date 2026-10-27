@@ -57,6 +57,12 @@ struct BrowserViewCommands: Commands {
             .keyboardShortcut("r", modifiers: .command)
             .disabled(tabManager == nil)
 
+            Button("Copy URL") {
+                tabManager?.copyURL()
+            }
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled(tabManager == nil)
+
             Divider()
 
             browserLayoutCommands

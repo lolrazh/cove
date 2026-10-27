@@ -10,6 +10,7 @@ enum ChromeSymbols {
         static let globe = "globe"
         static let loadFailed = "exclamationmark.triangle"
         static let secure = "lock.fill"
+        static let link = "link"
     }
 
     enum Tabs {
@@ -21,6 +22,7 @@ enum ChromeSymbols {
 
     enum Settings {
         static let general = "gearshape"
+        static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
     }

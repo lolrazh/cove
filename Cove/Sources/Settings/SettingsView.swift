@@ -1,232 +1,172 @@
 import SwiftUI
 
-@MainActor
 struct SettingsView: View {
-    @ObservedObject private var settingsStore: BrowserSettingsStore
-    private let historyStore: HistoryStore
-
-    init(settingsStore: BrowserSettingsStore, historyStore: HistoryStore) {
-        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
-        self.historyStore = historyStore
-    }
+    @ObservedObject var settingsStore: BrowserSettingsStore
+    let historyStore: HistoryStore
 
     var body: some View {
         TabView {
-            GeneralSettingsPane(settingsStore: settingsStore)
-                .tabItem {
-                    Label("General", systemImage: ChromeSymbols.Settings.general)
-                }
-
-            PrivacySettingsPane(settingsStore: settingsStore, historyStore: historyStore)
-                .tabItem {
-                    Label("Privacy", systemImage: ChromeSymbols.Settings.privacy)
-                }
-
-            DownloadsSettingsPane(settingsStore: settingsStore)
-                .tabItem {
-                    Label("Downloads", systemImage: ChromeSymbols.Settings.downloads)
-                }
-        }
-        .scenePadding()
-        .frame(width: 500, height: 360)
-    }
-}
-
-@MainActor
-private struct GeneralSettingsPane: View {
-    @ObservedObject private var settingsStore: BrowserSettingsStore
-
-    init(settingsStore: BrowserSettingsStore) {
-        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
-    }
-
-    private var isHomePageMode: Bool {
-        settingsStore.newTabPreference == .homePage
-    }
-
-    private var searchEngineBinding: Binding<String> {
-        Binding(
-            get: { settingsStore.searchEngine.rawValue },
-            set: { rawValue in
-                guard let searchEngine = SearchEngine(rawValue: rawValue) else { return }
-                settingsStore.setSearchEngine(searchEngine)
+            Tab("General", systemImage: ChromeSymbols.Settings.general) {
+                GeneralSettingsPane(settings: settingsStore)
             }
-        )
-    }
-
-    private var newTabPreferenceBinding: Binding<String> {
-        Binding(
-            get: { settingsStore.newTabPreference.rawValue },
-            set: { rawValue in
-                guard let preference = NewTabPreference(rawValue: rawValue) else { return }
-                settingsStore.setNewTabPreference(preference)
+            Tab("Appearance", systemImage: ChromeSymbols.Settings.appearance) {
+                AppearanceSettingsPane(settings: settingsStore)
             }
-        )
-    }
-
-    private var homePageURLBinding: Binding<String> {
-        Binding(
-            get: { settingsStore.homePageURL },
-            set: { homePageURL in
-                settingsStore.setHomePageURL(homePageURL)
+            Tab("Privacy", systemImage: ChromeSymbols.Settings.privacy) {
+                PrivacySettingsPane(settings: settingsStore, historyStore: historyStore)
             }
-        )
-    }
-
-    private var showTabsInSidebarBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.showsTabsInSidebar },
-            set: { showsTabsInSidebar in
-                settingsStore.setShowsTabsInSidebar(showsTabsInSidebar)
-            }
-        )
-    }
-
-    private var hideTabsBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.hideTabs },
-            set: { hideTabs in
-                settingsStore.setHideTabs(hideTabs)
-            }
-        )
-    }
-
-    var body: some View {
-        Form {
-            Section("Browsing") {
-                Picker("Search engine", selection: searchEngineBinding) {
-                    ForEach(SearchEngine.allCases) { engine in
-                        Text(engine.displayName).tag(engine.rawValue)
-                    }
-                }
-
-                Picker("New tabs open with", selection: newTabPreferenceBinding) {
-                    ForEach(NewTabPreference.allCases) { preference in
-                        Text(preference.displayName).tag(preference.rawValue)
-                    }
-                }
-
-                TextField("Home page URL", text: homePageURLBinding)
-                    .disabled(!isHomePageMode)
-
-                Toggle("Show Tabs in Sidebar", isOn: showTabsInSidebarBinding)
-                Toggle("Hide Tabs", isOn: hideTabsBinding)
-            }
-
-            Section {
-                Text("Cove keeps the top chrome custom, but uses native macOS behavior where it improves clarity and feel.")
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
+            Tab("Downloads", systemImage: ChromeSymbols.Settings.downloads) {
+                DownloadsSettingsPane(settings: settingsStore)
             }
         }
         .formStyle(.grouped)
+        .frame(width: 520, height: 400)
     }
 }
 
-@MainActor
+private struct GeneralSettingsPane: View {
+    @ObservedObject var settings: BrowserSettingsStore
+
+    var body: some View {
+        Form {
+            Section("Search") {
+                Picker("Search engine", selection: settings.binding(\.searchEngine, set: settings.setSearchEngine)) {
+                    ForEach(SearchEngine.allCases) { engine in
+                        Text(engine.displayName).tag(engine)
+                    }
+                }
+            }
+
+            Section("New Tabs") {
+                Picker("New tabs open with", selection: settings.binding(\.newTabPreference, set: settings.setNewTabPreference)) {
+                    ForEach(NewTabPreference.allCases) { preference in
+                        Text(preference.displayName).tag(preference)
+                    }
+                }
+
+                TextField("Home page", text: settings.binding(\.homePageURL, set: settings.setHomePageURL), prompt: Text("https://"))
+                    .disabled(settings.newTabPreference != .homePage)
+            }
+        }
+    }
+}
+
+private struct AppearanceSettingsPane: View {
+    @ObservedObject var settings: BrowserSettingsStore
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Frame color") {
+                    HStack(spacing: 10) {
+                        ForEach(ChromeTheme.presets, id: \.rawValue) { theme in
+                            ThemeSwatch(theme: theme, isSelected: theme == settings.theme) {
+                                settings.setTheme(theme)
+                            }
+                        }
+                    }
+                }
+
+                ColorPicker("Custom color", selection: customTint, supportsOpacity: false)
+            } header: {
+                Text("Theme")
+            } footer: {
+                Text("Tints the frame around the page. The page itself is never tinted.")
+            }
+
+            Section("Tabs") {
+                Toggle("Show Tabs in Sidebar", isOn: settings.binding(\.showsTabsInSidebar, set: settings.setShowsTabsInSidebar))
+                Toggle("Hide Tabs", isOn: settings.binding(\.hideTabs, set: settings.setHideTabs))
+            }
+        }
+    }
+
+    private var customTint: Binding<Color> {
+        Binding(
+            get: { settings.theme.tint ?? Color(nsColor: .underPageBackgroundColor) },
+            set: { settings.setTheme(ChromeTheme(tint: $0)) }
+        )
+    }
+}
+
+/// One theme to pick: its tint as a disc, the system gray for none, with a
+/// ring in the accent color around the selected one.
+private struct ThemeSwatch: View {
+    let theme: ChromeTheme
+    let isSelected: Bool
+    let action: () -> Void
+
+    private let side: CGFloat = 22
+
+    var body: some View {
+        Button(action: action) {
+            Circle()
+                .fill(theme.tint ?? Color(nsColor: .underPageBackgroundColor))
+                .overlay {
+                    Circle().strokeBorder(.separator)
+                }
+                .padding(3)
+                .overlay {
+                    Circle()
+                        .strokeBorder(.tint, lineWidth: 2)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .frame(width: side + 6, height: side + 6)
+                .animation(ChromeMotion.hover, value: isSelected)
+        }
+        .buttonStyle(.plain)
+        .help(theme.tint == nil ? "System" : "Color \(theme.rawValue)")
+    }
+}
+
 private struct PrivacySettingsPane: View {
-    @ObservedObject private var settingsStore: BrowserSettingsStore
-    private let historyStore: HistoryStore
-
-    init(settingsStore: BrowserSettingsStore, historyStore: HistoryStore) {
-        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
-        self.historyStore = historyStore
-    }
-
-    private var contentBlockingBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.contentBlockingEnabled },
-            set: { isEnabled in
-                settingsStore.setContentBlockingEnabled(isEnabled)
-            }
-        )
-    }
-
-    private var saveBrowsingHistoryBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.saveBrowsingHistory },
-            set: { saveBrowsingHistory in
-                settingsStore.setSaveBrowsingHistory(saveBrowsingHistory)
-            }
-        )
-    }
-
-    private var showRecentSitesBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.showRecentSites },
-            set: { showRecentSites in
-                settingsStore.setShowRecentSites(showRecentSites)
-            }
-        )
-    }
-
-    private var showSearchSuggestionsBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.showSearchSuggestions },
-            set: { showSearchSuggestions in
-                settingsStore.setShowSearchSuggestions(showSearchSuggestions)
-            }
-        )
-    }
+    @ObservedObject var settings: BrowserSettingsStore
+    let historyStore: HistoryStore
 
     var body: some View {
         Form {
             Section("Privacy") {
-                Toggle("Block ads and trackers", isOn: contentBlockingBinding)
-                Toggle("Save browsing history", isOn: saveBrowsingHistoryBinding)
-                Toggle("Show recent sites on the start page", isOn: showRecentSitesBinding)
-                    .disabled(!settingsStore.saveBrowsingHistory)
-                Toggle("Show search suggestions in the Command Bar", isOn: showSearchSuggestionsBinding)
+                Toggle("Block ads and trackers", isOn: settings.binding(\.contentBlockingEnabled, set: settings.setContentBlockingEnabled))
+                Toggle("Save browsing history", isOn: settings.binding(\.saveBrowsingHistory, set: settings.setSaveBrowsingHistory))
+                Toggle("Show recent sites on the start page", isOn: settings.binding(\.showRecentSites, set: settings.setShowRecentSites))
+                    .disabled(!settings.saveBrowsingHistory)
+                Toggle("Show search suggestions in the Command Bar", isOn: settings.binding(\.showSearchSuggestions, set: settings.setShowSearchSuggestions))
             }
 
-            Section("History") {
-                Button("Clear History") {
-                    historyStore.clearAll()
-                }
-
+            Section {
+                Button("Clear History", action: historyStore.clearAll)
+            } header: {
+                Text("History")
+            } footer: {
                 Text("Turning off history also removes recent sites from the start page.")
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
             }
         }
-        .formStyle(.grouped)
     }
 }
 
-@MainActor
 private struct DownloadsSettingsPane: View {
-    @ObservedObject private var settingsStore: BrowserSettingsStore
-
-    init(settingsStore: BrowserSettingsStore) {
-        self._settingsStore = ObservedObject(wrappedValue: settingsStore)
-    }
-
-    private var downloadDestinationModeBinding: Binding<String> {
-        Binding(
-            get: { settingsStore.downloadDestinationMode.rawValue },
-            set: { rawValue in
-                guard let mode = DownloadDestinationMode(rawValue: rawValue) else { return }
-                settingsStore.setDownloadDestinationMode(mode)
-            }
-        )
-    }
+    @ObservedObject var settings: BrowserSettingsStore
 
     var body: some View {
         Form {
             Section("Downloads") {
-                Picker("Save downloaded files to", selection: downloadDestinationModeBinding) {
+                Picker("Save downloaded files to", selection: settings.binding(\.downloadDestinationMode, set: settings.setDownloadDestinationMode)) {
                     ForEach(DownloadDestinationMode.allCases) { mode in
-                        Text(mode.displayName).tag(mode.rawValue)
+                        Text(mode.displayName).tag(mode)
                     }
                 }
             }
-
-            Section {
-                Text("Custom persistent download folders can come later. The native first pass is Downloads or asking every time.")
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
-            }
         }
-        .formStyle(.grouped)
+    }
+}
+
+private extension BrowserSettingsStore {
+    /// A control binding for a setting: reads the published value, writes
+    /// through its setter.
+    func binding<Value>(
+        _ keyPath: KeyPath<BrowserSettingsStore, Value>,
+        set: @escaping @MainActor (Value) -> Void
+    ) -> Binding<Value> {
+        Binding(get: { self[keyPath: keyPath] }, set: set)
     }
 }
