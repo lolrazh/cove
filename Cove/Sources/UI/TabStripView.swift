@@ -49,6 +49,10 @@ struct TabStripView: View {
         let sharedTabWidth = resolvedSharedTabWidth(for: availableWidth)
 
         return HStack(spacing: Metrics.tabSpacing) {
+            if tabManager.spaces.count > 1 {
+                SpaceMenuButton(tabManager: tabManager)
+                    .background { WindowDragExclusion() }
+            }
             ForEach(pinnedTabs) { tab in
                 tabItem(tab, presentation: .compact, width: ChromeMetrics.compactTabWidth)
             }
@@ -85,7 +89,8 @@ struct TabStripView: View {
         let tabCount = max(tabManager.tabs.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
         let pinnedReservation = CGFloat(pinnedTabs.count) * (ChromeMetrics.compactTabWidth + Metrics.tabSpacing)
-        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation
+        let spaceReservation = tabManager.spaces.count > 1 ? ChromeMetrics.tabHeight + Metrics.tabSpacing : 0
+        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation + spaceReservation
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 

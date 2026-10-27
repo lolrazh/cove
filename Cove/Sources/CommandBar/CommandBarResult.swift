@@ -8,6 +8,8 @@ struct CommandBarResult: Identifiable, Hashable {
         case tab(UUID)
         /// A tab in the archive, reopened with its back/forward list.
         case archived(UUID)
+        /// Another space, to switch to.
+        case space(UUID)
         /// A page from history.
         case history
         /// The input taken as an address.
@@ -60,6 +62,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case addToFavorites
     case newFolder
     case importBookmarks
+    case newSpace
+    case editSpace
     case duplicateTab
     case muteTab
     case unmuteTab
@@ -95,6 +99,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
         case .importBookmarks: "Import Bookmarks"
+        case .newSpace: "New Space"
+        case .editSpace: "Edit Space"
         case .duplicateTab: "Duplicate Tab"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
@@ -132,6 +138,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
         case .importBookmarks: "square.and.arrow.down.on.square"
+        case .newSpace: ChromeSymbols.Settings.spaces
+        case .editSpace: "pencil"
         case .duplicateTab: "plus.square.on.square"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
@@ -169,6 +177,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
         case .importBookmarks: ["safari", "chrome", "pinned"]
+        case .newSpace: ["create", "add", "profile"]
+        case .editSpace: ["rename", "icon", "color", "theme", "profile"]
         case .duplicateTab: ["copy", "clone"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]

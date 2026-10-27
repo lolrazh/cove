@@ -7,7 +7,6 @@ enum BrowserSettingKeys {
     static let showTabsInSidebar = "browser.showTabsInSidebar"
     static let hideTabs = "browser.hideTabs"
     static let sidebarWidth = "browser.sidebarWidth"
-    static let themeColor = "browser.themeColor"
     static let contentBlockingEnabled = "browser.contentBlockingEnabled"
     static let saveBrowsingHistory = "browser.saveBrowsingHistory"
     static let showRecentSites = "browser.showRecentSites"
@@ -16,6 +15,8 @@ enum BrowserSettingKeys {
     static let sleepTabsAfter = "browser.sleepTabsAfter"
     static let archiveTabsAfter = "browser.archiveTabsAfter"
     static let legacyPreferredTabLayout = "browser.preferredTabLayout"
+    /// The frame color from before each space had its own; the first space's.
+    static let legacyThemeColor = "browser.themeColor"
 }
 
 /// How long a background tab goes unused before it sleeps.

@@ -205,12 +205,23 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       is remembered. Private windows have no pins at all.)*
 
 ### 5e. Spaces and profiles ⭑
-- [ ] Spaces: each has a name, icon, theme color, its own Pinned and Today.
-- [ ] Switch spaces: footer dots, two-finger horizontal swipe on the sidebar,
-      ⌃1–9 / ⌘⌥← →.
-- [ ] Profiles: separate `WKWebsiteDataStore` per profile; a space belongs to a
-      profile.
+- [x] Spaces: each has a name, icon, theme color, its own Pinned and Today.
+      *(Icon is an SF Symbol or an emoji. Each window keeps every space's
+      Today and selected tab, saved with the session. Favorites belong to the
+      profile, shared by its spaces, as in Arc. Create from the footer's +,
+      the Spaces menu or the Command Bar; edit, move and delete from a
+      space's context menu or Settings › Spaces. Private windows have none.)*
+- [x] Switch spaces: footer dots, two-finger horizontal swipe on the sidebar,
+      ⌃1–9 / ⌘⌥← →. *(The sidebar pages with the swipe and the theme follows;
+      a crossfade under Reduce Motion. Also the Command Bar's "Switch to …",
+      which lists other spaces' tabs too. With tabs on top, a space menu
+      leads the strip once there are two spaces.)*
+- [x] Profiles: separate `WKWebsiteDataStore` per profile; a space belongs to a
+      profile. *(`WKWebsiteDataStore(forIdentifier:)` per profile, the default
+      profile on the default store. Settings › Spaces creates, renames and
+      deletes them; deleting removes the profile's site data.)*
 - [ ] Air Traffic Control: rules that route external links to a space.
+      *(Deferred to the roadmap; see Later.)*
 
 ### 5f. Peek, Little Arc, Split View ⭑
 - [ ] Little Arc: links from other apps open in a small floating window with
@@ -266,6 +277,12 @@ Big, self-contained builds; scheduled after the core features.
 - [ ] Notes: rich-text notes that live in the sidebar like tabs, pinnable.
 - [ ] Easels: a freeform canvas of text, images, drawings and live web
       clippings (a selected page region that stays live).
+
+### Later: Air Traffic Control
+Moved out of 5e. Rules (a site, or the app a link came from) that send links
+from other apps to a chosen space. `ExternalURLRouter` stays the one path, so
+it's a routing decision there plus a Settings list.
+- [ ] Air Traffic Control rules and their Settings UI.
 
 ### Later: AI that stays out of the way
 At the very end of the roadmap, and only the kind that works quietly in the

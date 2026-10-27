@@ -51,6 +51,8 @@ struct SidebarTabView: View {
         sectionList
             .contentMargins(.top, headerHeight + ChromeMetrics.sidebarRowHeight, for: .scrollContent)
             .scrollEdgeEffectHidden(true, for: .top)
+            .spacePage(tabManager)
+            .spacePaging(tabManager)
             .overlay(alignment: .top) {
                 header
             }
@@ -111,6 +113,9 @@ struct SidebarTabView: View {
     private var sectionList: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: ChromeMetrics.sidebarSectionSpacing) {
+                if tabManager.spaces.count > 1, let space = tabManager.activeSpace {
+                    SidebarSpaceTitle(space: space, tabManager: tabManager)
+                }
                 favorites
                 pinned
 
@@ -172,18 +177,23 @@ struct SidebarTabView: View {
 
     // MARK: - Footer
 
-    /// The Library leading, the space dots centered. The new space button
-    /// arrives with Spaces.
+    /// The Library leading, the spaces centered, New Space trailing. A
+    /// private window has no spaces.
     private var footer: some View {
         HStack {
             LibraryButton(library: tabManager.library)
             Spacer()
+            if !tabManager.isPrivate {
+                Button(action: tabManager.newSpace) {
+                    Image(systemName: ChromeSymbols.Spaces.newSpace)
+                }
+                .buttonStyle(ChromeButtonStyle())
+                .help("New Space")
+            }
         }
         .overlay {
-            Circle()
-                .fill(.secondary)
-                .frame(width: 6, height: 6)
-                .help("Space")
+            SidebarSpaceIcons(tabManager: tabManager)
+                .padding(.horizontal, ChromeMetrics.iconButtonSize + 4)
         }
         .padding(.horizontal, ChromeMetrics.sidebarInset)
         .frame(height: ChromeMetrics.sidebarFooterHeight)

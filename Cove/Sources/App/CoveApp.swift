@@ -21,6 +21,7 @@ struct CoveApp: App {
         .commands {
             BrowserViewCommands(appServices: appServices)
             TabCommands()
+            SpaceCommands()
             PageToolsCommands()
         }
 
@@ -47,7 +48,8 @@ struct CoveApp: App {
         Settings {
             SettingsView(
                 settingsStore: appServices.settingsStore,
-                historyStore: appServices.historyStore
+                historyStore: appServices.historyStore,
+                spaceStore: appServices.spaceStore
             )
         }
     }

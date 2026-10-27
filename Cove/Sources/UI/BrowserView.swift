@@ -5,7 +5,6 @@ struct BrowserView: View {
     static let privateWindowID = "private"
 
     private let appServices: AppServices
-    @ObservedObject private var settings: BrowserSettingsStore
     @StateObject private var tabManager: TabManager
     @State private var areTabsVisible = true
     @Environment(\.appearsActive) private var appearsActive
@@ -13,14 +12,13 @@ struct BrowserView: View {
 
     init(appServices: AppServices, isPrivate: Bool = false) {
         self.appServices = appServices
-        self._settings = ObservedObject(wrappedValue: appServices.settingsStore)
         self._tabManager = StateObject(wrappedValue: Self.makeTabManager(appServices: appServices, isPrivate: isPrivate))
     }
 
-    /// A normal window browses with the shared context and is saved with the
-    /// session. A private window gets a context of its own and keeps nothing:
-    /// no session, no pins, and an archive of its own, in memory, for its
-    /// closed tabs.
+    /// A normal window shows the shared spaces, each browsing with its
+    /// profile's context, and is saved with the session. A private window
+    /// gets a context of its own and keeps nothing: no spaces, no session, no
+    /// pins, and an archive of its own, in memory, for its closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
         let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
         return TabManager(
@@ -28,6 +26,7 @@ struct BrowserView: View {
             services: appServices.tabSessionServices(in: context),
             archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
             pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
+            spaces: isPrivate ? nil : appServices.spaceStore,
             session: isPrivate ? nil : appServices.sessionStore
         )
     }
@@ -53,7 +52,7 @@ struct BrowserView: View {
             }
         }
         .background(ChromePalette.shell)
-        .environment(\.chromeTheme, tabManager.isPrivate ? .privateBrowsing : settings.theme)
+        .environment(\.chromeTheme, tabManager.isPrivate ? .privateBrowsing : tabManager.activeSpace?.theme ?? .system)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
         .onAppear {
@@ -81,6 +80,22 @@ struct BrowserView: View {
         .onOpenURL { url in
             appServices.externalURLRouter.open([url])
         }
+        .sheet(isPresented: isPresent($tabManager.spaceToEdit)) {
+            if let id = tabManager.spaceToEdit {
+                SpaceEditor(store: appServices.spaceStore, spaceID: id)
+            }
+        }
+        .confirmationDialog(
+            "Delete \u{201C}\(spaceToDelete?.name ?? "")\u{201D}?",
+            isPresented: isPresent($tabManager.spaceToDelete),
+            presenting: spaceToDelete
+        ) { space in
+            Button("Delete Space", role: .destructive) {
+                tabManager.deleteSpace(space.id)
+            }
+        } message: { _ in
+            Text("Its open tabs move to the archive, and its pinned tabs are removed.")
+        }
         .onChange(of: tabManager.hideTabs) { _, hide in
             withAnimation(ChromeMotion.shell) {
                 areTabsVisible = !hide
@@ -91,6 +106,14 @@ struct BrowserView: View {
                 areTabsVisible = !tabManager.hideTabs
             }
         }
+    }
+
+    private var spaceToDelete: Space? {
+        tabManager.spaces.first { $0.id == tabManager.spaceToDelete }
+    }
+
+    private func isPresent(_ id: Binding<UUID?>) -> Binding<Bool> {
+        Binding(get: { id.wrappedValue != nil }, set: { if !$0 { id.wrappedValue = nil } })
     }
 
     private var externalEvents: Set<String> {

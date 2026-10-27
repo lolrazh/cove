@@ -118,6 +118,7 @@ private struct CommandBarPanel: View {
                                 result: result,
                                 detail: detail(for: result),
                                 icon: model.icon(for: result),
+                                spaceIcon: model.spaceIcon(for: result),
                                 isSelected: result == model.selection
                             )
                             .frame(height: Metrics.rowHeight)
@@ -147,7 +148,7 @@ private struct CommandBarPanel: View {
         switch result.kind {
         case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
-        case .url, .suggestion, .command: nil
+        case .url, .suggestion, .command, .space: nil
         }
     }
 
@@ -166,6 +167,7 @@ private struct CommandBarRow: View {
     let result: CommandBarResult
     let detail: String?
     let icon: NSImage?
+    let spaceIcon: SpaceIcon?
     let isSelected: Bool
 
     @State private var isHovered = false
@@ -206,6 +208,10 @@ private struct CommandBarRow: View {
             symbol(ChromeSymbols.Navigation.search)
         case .command(let command):
             symbol(command.symbol)
+        case .space:
+            SpaceIconView(icon: spaceIcon ?? .dot)
+                .font(.body.weight(.medium))
+                .foregroundStyle(.secondary)
         }
     }
 

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -10,14 +11,17 @@ final class AppServices {
     let webKitEnvironment: WebKitEnvironment
     let externalURLRouter: ExternalURLRouter
     let tabArchive = TabArchive()
-    /// What normal windows browse with; private windows make their own.
+    /// What the default profile browses with; other profiles' contexts come
+    /// from the space store, and private windows make their own.
     let browsingContext: BrowsingContext
+    let spaceStore: SpaceStore
     let pinStore = PinStore()
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
     let boosts = BoostInjector(store: BoostStore())
 
     private var didPrepareLaunch = false
+    private var spacePruning: AnyCancellable?
 
     init(defaults: UserDefaults = .standard) {
         let settingsStore = BrowserSettingsStore(defaults: defaults)
@@ -30,11 +34,23 @@ final class AppServices {
         self.settingsStore = settingsStore
         self.historyStore = historyStore
         self.faviconStore = faviconStore
-        self.browsingContext = .standard(faviconStore: faviconStore)
+        let browsingContext = BrowsingContext.standard(faviconStore: faviconStore)
+        self.browsingContext = browsingContext
+        self.spaceStore = SpaceStore(
+            initialTheme: ChromeTheme(rawValue: defaults.string(forKey: BrowserSettingKeys.legacyThemeColor) ?? "")
+        ) { profileID in
+            profileID == Profile.defaultID ? browsingContext : .profile(profileID, faviconStore: faviconStore)
+        }
         self.downloadManager = downloadManager
         self.contentBlockerManager = contentBlockerManager
         self.webKitEnvironment = WebKitEnvironment(contentBlockerManager: contentBlockerManager)
         self.externalURLRouter = externalURLRouter
+
+        // Pins follow their spaces and profiles, whichever window or Settings
+        // deleted them.
+        spacePruning = spaceStore.$spaces.sink { [pinStore] spaces in
+            pinStore.change { $0.prune(to: spaces) }
+        }
     }
 
     func tabSessionServices(in context: BrowsingContext) -> TabSessionServices {
@@ -53,6 +69,7 @@ final class AppServices {
     func prepareForLaunch() {
         guard !didPrepareLaunch else { return }
         didPrepareLaunch = true
+        spaceStore.removeOrphanedDataStores()
 
         guard settingsStore.contentBlockingEnabled else { return }
 

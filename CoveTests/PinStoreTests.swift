@@ -11,7 +11,7 @@ struct PinStoreTests {
 
     @Test func `pins and their tabs come back from the file`() {
         let before = PinStore(fileURL: fileURL)
-        before.change { $0.add(pin, to: .pinned) }
+        before.change(in: .default) { $0.add(pin, to: .pinned) }
         let tab = SavedTab(url: "https://example.com/docs", title: "Docs", customTitle: "Reading", interactionState: Data([1]), lastUsedAt: nil)
         before.record(tab, for: pin.id)
         before.record(tab, for: UUID())
@@ -20,31 +20,69 @@ struct PinStoreTests {
         before.save()
 
         let after = PinStore(fileURL: fileURL)
-        #expect(after.pins.pinned.tabs == [pin])
+        #expect(after.pins(in: .default).pinned.tabs == [pin])
         #expect(after.savedTab(for: pin.id)?.url == "https://example.com/docs")
         #expect(after.savedTab(for: pin.id)?.interactionState == Data([1]))
     }
 
     @Test func `a removed pin's tab is forgotten and an unchanged layout is not republished`() {
         let store = PinStore(fileURL: fileURL)
-        store.change { $0.add(pin, to: .favorites) }
+        store.change(in: .default) { $0.add(pin, to: .favorites) }
         store.record(SavedTab(url: pin.url, title: "", customTitle: nil, interactionState: nil, lastUsedAt: nil), for: pin.id)
 
         var publishes = 0
-        let subscription = store.$pins.dropFirst().sink { _ in publishes += 1 }
+        let subscription = store.$layout.dropFirst().sink { _ in publishes += 1 }
         store.change { $0.update(UUID()) { $0.title = "Nothing" } }
         #expect(publishes == 0)
 
-        store.change { $0.remove(pin.id) }
+        store.change(in: .default) { $0.remove(pin.id) }
         #expect(publishes == 1)
         #expect(store.savedTab(for: pin.id) == nil)
         subscription.cancel()
     }
 
+    @Test func `pins saved before Spaces belong to the first space`() throws {
+        struct UnscopedPins: Encodable {
+            var pins: Pins
+            var tabs: [String: SavedTab]
+        }
+        var pins = Pins()
+        pins.add(pin, to: .pinned)
+        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try PropertyListEncoder().encode(UnscopedPins(pins: pins, tabs: [:])).write(to: fileURL)
+
+        let store = PinStore(fileURL: fileURL)
+        #expect(store.pins(in: .default) == pins)
+        #expect(store.pins(in: PinScope(space: UUID(), profile: Profile.defaultID)).pinned.isEmpty)
+    }
+
     @Test func `without a file, nothing is kept`() {
         let store = PinStore(fileURL: nil)
-        store.change { $0.add(pin, to: .pinned) }
+        store.change(in: .default) { $0.add(pin, to: .pinned) }
         store.save()
-        #expect(PinStore(fileURL: nil).pins == Pins())
+        #expect(PinStore(fileURL: nil).layout == PinLayout())
+    }
+}
+
+struct StoreFileTests {
+    @Test func `an unreadable file is moved aside, not left to be overwritten`() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("CoveTests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent("pins.plist")
+        try Data("from a newer Cove".utf8).write(to: url)
+
+        let value: Int? = StoreFile.read(url) { _ in nil }
+
+        #expect(value == nil)
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+        let aside = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        #expect(aside.count == 1 && aside[0].hasPrefix("pins.plist.unreadable-"))
+        #expect(try Data(contentsOf: directory.appendingPathComponent(aside[0])) == Data("from a newer Cove".utf8))
+    }
+
+    @Test func `a missing file is simply nothing`() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("CoveTests-\(UUID().uuidString).plist")
+        let value: Int? = StoreFile.read(url) { _ in 1 }
+        #expect(value == nil)
     }
 }

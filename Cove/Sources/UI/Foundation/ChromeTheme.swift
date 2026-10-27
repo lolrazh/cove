@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// The frame's color: an optional tint over the system gray. A value, so a
-/// window today and a Space later can each carry one; the frame reads it from
-/// the environment and never full-window glass.
-struct ChromeTheme: Equatable {
+/// The frame's color: an optional tint over the system gray. A value each
+/// space carries; the frame reads the active space's from the environment, and
+/// it's never full-window glass.
+struct ChromeTheme: Hashable {
     var tint: Color?
 
     static let system = ChromeTheme()
@@ -41,7 +41,7 @@ struct ChromeTheme: Equatable {
 }
 
 /// Stored as an sRGB hex string, empty for the system gray.
-extension ChromeTheme: RawRepresentable {
+extension ChromeTheme: RawRepresentable, Codable {
     init(rawValue: String) {
         var hex = Substring(rawValue)
         if hex.hasPrefix("#") { hex = hex.dropFirst() }

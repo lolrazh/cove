@@ -89,6 +89,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.selectTab(id)
         case .archived(let id):
             tabManager.reopenArchivedTab(id)
+        case .space(let id):
+            tabManager.switchToSpace(id)
         case .history, .url:
             load(result.destination, inNewTab: inNewTab)
         case .search, .suggestion:
@@ -99,6 +101,12 @@ final class CommandBarModel: ObservableObject {
             perform(command)
         }
         dismiss()
+    }
+
+    /// A space row's icon.
+    func spaceIcon(for result: CommandBarResult) -> SpaceIcon? {
+        guard case .space(let id) = result.kind else { return nil }
+        return tabManager.spaces.first { $0.id == id }?.icon
     }
 
     /// Favicons for page rows: a tab's own, or the cached one for its site.
@@ -135,6 +143,10 @@ final class CommandBarModel: ObservableObject {
             tabManager.newFolder()
         case .importBookmarks:
             tabManager.importBookmarks()
+        case .newSpace:
+            tabManager.newSpace()
+        case .editSpace:
+            tabManager.spaceToEdit = tabManager.activeSpaceID
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .muteTab, .unmuteTab:
@@ -193,7 +205,7 @@ final class CommandBarModel: ObservableObject {
             case .pinTab: canPin && activeSection == .today
             case .addToFavorites: canPin && [.today, .pinned].contains(activeSection)
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
-            case .newFolder, .importBookmarks: !tabManager.isPrivate
+            case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
             case .duplicateTab: true
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
@@ -231,7 +243,8 @@ final class CommandBarModel: ObservableObject {
         guard isPresented else { return }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
-        let tabs = tabManager.tabsInDisplayOrder
+        // This space's tabs first, then those open in the window's others.
+        let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherSpaces)
             .filter { $0.id != tabManager.activeTabID && !$0.currentURL.isEmpty }
             .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
         let history = trimmed.isEmpty
@@ -242,6 +255,9 @@ final class CommandBarModel: ObservableObject {
             query: query,
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
+                spaces: tabManager.spaces
+                    .filter { $0.id != tabManager.activeSpaceID }
+                    .map { CommandBarRanker.OtherSpace(id: $0.id, name: $0.name) },
                 archive: archive.entries,
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),
