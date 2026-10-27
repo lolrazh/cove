@@ -21,6 +21,7 @@
 		191F17D406A5B462BBAD746B /* SidebarAddressPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4724DA9BDE2466D45B0FBA /* SidebarAddressPill.swift */; };
 		1D2E1EB3AB5BF2F94F277126 /* LinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4881B115778440A4CA4B65A9 /* LinkPreview.swift */; };
 		211DBEE751E6191879907D12 /* RecentlyClosedTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */; };
+		215018DF2FB2C80480C034F5 /* Site.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA337274A4F23ED7FF72368 /* Site.swift */; };
 		23B3C7090C1956EB10BA14B7 /* TabOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829CC2510A17E758182AA6CE /* TabOrderTests.swift */; };
 		25D5A87F08AB34D1E31F7917 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DE51D644E19087E579BD8A /* AppServices.swift */; };
 		2650DF001201AE15A92D540E /* ChromeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */; };
@@ -54,6 +55,7 @@
 		78A6C56CB939C419F9144687 /* TabArchiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695B3D10886152D201A80999 /* TabArchiveTests.swift */; };
 		7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4E68B430D945E3968A4B9 /* TabStripView.swift */; };
 		89257E2980E78C1F9E822D53 /* TabOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688678017C158214A111DDDE /* TabOrder.swift */; };
+		893F1A0418F9514D565CF9D1 /* SiteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE77F6E10F1036BE3F2809A /* SiteTests.swift */; };
 		8A6EAA0FF636EE4434A7298C /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */; };
 		8B04F5475F57771937977934 /* PageToolsCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC4045F2A420281D29A42EF3 /* PageToolsCommands.swift */; };
 		90007D43BCC7E8C6B486D5AA /* ContentBlockerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06BDB6FCAF41376A2B37D8BB /* ContentBlockerManager.swift */; };
@@ -149,6 +151,7 @@
 		7896A735CCDFE42F7192DDF5 /* NewTabPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPage.swift; sourceTree = "<group>"; };
 		78CAF27E26781E0DB9D293C4 /* LoadFailurePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadFailurePage.swift; sourceTree = "<group>"; };
 		7C09C21F89D86520A6E27B5B /* FaviconImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaviconImage.swift; sourceTree = "<group>"; };
+		7CA337274A4F23ED7FF72368 /* Site.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Site.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
 		829CC2510A17E758182AA6CE /* TabOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabOrderTests.swift; sourceTree = "<group>"; };
 		875E7F241F959DD45E691CEA /* TabReordering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReordering.swift; sourceTree = "<group>"; };
@@ -162,6 +165,7 @@
 		A8D6DD540D3F965FE8764184 /* BrowserSettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSettingsStore.swift; sourceTree = "<group>"; };
 		A9AC76D6D2302673F260F494 /* HistoryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryWindow.swift; sourceTree = "<group>"; };
 		AAAD4F48AAADD750585F40AB /* NavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBar.swift; sourceTree = "<group>"; };
+		AAE77F6E10F1036BE3F2809A /* SiteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteTests.swift; sourceTree = "<group>"; };
 		AB0C29E5B5FF9BFD449511B8 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 		AB6526AAC426FA4B5DB1CA72 /* easylist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = easylist.json; sourceTree = "<group>"; };
 		AD1DC06C05E1401C83C66729 /* LinkHover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkHover.swift; sourceTree = "<group>"; };
@@ -295,6 +299,7 @@
 				1AAA58B74923BA5B80443009 /* PageZoom.swift */,
 				1B618406836E569C93C72671 /* RecentlyClosedTabs.swift */,
 				D37D6F4076AE807F1AD51D7C /* SessionStore.swift */,
+				7CA337274A4F23ED7FF72368 /* Site.swift */,
 				0C89B867AB04C6932C9E4BA5 /* SitePermissions.swift */,
 				D1EADA6A8D163611CC3ACA5A /* TabArchive.swift */,
 				4D5C49221C164B898E5C62B9 /* TabIdlePolicy.swift */,
@@ -358,6 +363,7 @@
 				AFDB5DFAD2615AAE528B985D /* CommandBarRankerTests.swift */,
 				55F1BE1EEC7CD3C49C11312B /* NowPlayingTests.swift */,
 				B035625AA34C20AF6AE5C781 /* PageZoomTests.swift */,
+				AAE77F6E10F1036BE3F2809A /* SiteTests.swift */,
 				695B3D10886152D201A80999 /* TabArchiveTests.swift */,
 				95F0F5F5E5792846736B17EB /* TabIdlePolicyTests.swift */,
 				829CC2510A17E758182AA6CE /* TabOrderTests.swift */,
@@ -465,6 +471,7 @@
 				69636FCA10E4F18F5AD06236 /* CommandBarRankerTests.swift in Sources */,
 				AD828BAAE857C984A2935D8E /* NowPlayingTests.swift in Sources */,
 				E5AE51EE2CE832AA6664568B /* PageZoomTests.swift in Sources */,
+				893F1A0418F9514D565CF9D1 /* SiteTests.swift in Sources */,
 				78A6C56CB939C419F9144687 /* TabArchiveTests.swift in Sources */,
 				CC2F542865C026BADEAB3ED6 /* TabIdlePolicyTests.swift in Sources */,
 				23B3C7090C1956EB10BA14B7 /* TabOrderTests.swift in Sources */,
@@ -535,6 +542,7 @@
 				977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */,
 				191F17D406A5B462BBAD746B /* SidebarAddressPill.swift in Sources */,
 				7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */,
+				215018DF2FB2C80480C034F5 /* Site.swift in Sources */,
 				0FC0CA5E50EE594874643D90 /* SiteMonogram.swift in Sources */,
 				FF9E865C1F37C3C6D2EA8752 /* SitePermissions.swift in Sources */,
 				02618DA378CCA5CEEFC9061B /* SourceWindow.swift in Sources */,
