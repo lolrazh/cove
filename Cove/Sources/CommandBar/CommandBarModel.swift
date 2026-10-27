@@ -98,6 +98,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.switchToSpace(id)
         case .extensionAction(let id):
             tabManager.extensionHost.extensionContext(id: id).map(tabManager.performExtensionAction)
+        case .document(let id, _):
+            tabManager.showDocument(id)
         case .history, .url:
             load(result.destination, inNewTab: inNewTab)
         case .search, .suggestion:
@@ -139,8 +141,8 @@ final class CommandBarModel: ObservableObject {
         }
         let activeTab = tabManager.activeTab
         let reuseActive = activeTab.map { $0.isNewTabPage && $0.currentURL.isEmpty } ?? false
-        if let activeTab, !inNewTab, mode == .editURL || reuseActive {
-            activeTab.navigate(input)
+        if activeTab != nil, !inNewTab, mode == .editURL || reuseActive {
+            tabManager.navigateActiveTab(to: input)
         } else {
             tabManager.addTab(url: input)
         }
@@ -151,11 +153,17 @@ final class CommandBarModel: ObservableObject {
         case .copyURL:
             tabManager.copyURL()
         case .pinTab, .unpinTab:
-            if let id = tabManager.activeTabID { tabManager.togglePinned(id) }
+            if let id = tabManager.activeDocumentID {
+                tabManager.togglePinnedDocument(id)
+            } else if let id = tabManager.activeTabID {
+                tabManager.togglePinned(id)
+            }
         case .addToFavorites:
             if let id = tabManager.activeTabID { tabManager.moveTab(id, toEndOf: .favorites) }
         case .newFolder:
             tabManager.newFolder()
+        case .newNote:
+            tabManager.newDocument(.note)
         case .importBookmarks:
             tabManager.importBookmarks()
         case .newSpace:
@@ -223,13 +231,17 @@ final class CommandBarModel: ObservableObject {
     /// Commands that make sense right now, under the name for the state
     /// they would move to.
     private var availableCommands: [CommandBarCommand] {
-        CommandBarCommand.allCases.filter { command in
+        // Over a note, only commands that make sense for it: no page, no tab.
+        let showsPage = tabManager.activeDocumentID == nil
+        return CommandBarCommand.allCases.filter { command in
             switch command {
-            case .copyURL: !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
-            case .addToFavorites: canPin && [.today, .pinned].contains(activeSection)
+            case .addToFavorites: showsPage && canPin && [.today, .pinned].contains(activeSection)
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
             case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
+            case .newNote: tabManager.documentStore != nil
+            case .duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView where !showsPage: false
             case .duplicateTab: true
             case .addSplitView: tabManager.canAddSplitPane
             case .rotateSplitView, .separateSplitView: tabManager.activeSplit != nil
@@ -256,12 +268,12 @@ final class CommandBarModel: ObservableObject {
     }
 
     private var activeSection: TabManager.TabSection? {
-        tabManager.activeTabID.flatMap(tabManager.section)
+        (tabManager.activeDocumentID ?? tabManager.activeTabID).flatMap(tabManager.section)
     }
 
-    /// A page can be pinned, outside a private window, which keeps nothing.
+    /// A page or a note can be pinned, outside a private window, which keeps nothing.
     private var canPin: Bool {
-        !tabManager.isPrivate && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+        !tabManager.isPrivate && (tabManager.activeDocumentID != nil || !(tabManager.activeTab?.currentURL.isEmpty ?? true))
     }
 
     // MARK: - Ranking
@@ -284,6 +296,9 @@ final class CommandBarModel: ObservableObject {
             query: query,
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
+                documents: (tabManager.documentStore?.documents.values.sorted { $0.modifiedAt > $1.modifiedAt } ?? [])
+                    .filter { $0.id != tabManager.activeDocumentID }
+                    .map { CommandBarRanker.Document(id: $0.id, kind: $0.kind, title: $0.displayTitle, text: $0.text) },
                 spaces: tabManager.spaces
                     .filter { $0.id != tabManager.activeSpaceID }
                     .map { CommandBarRanker.OtherSpace(id: $0.id, name: $0.name) },

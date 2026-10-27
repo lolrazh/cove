@@ -2,7 +2,8 @@ import AppKit
 import UniformTypeIdentifiers
 
 /// Arc's Capture (⌘⇧2, the Command Bar, a page's context menu): a region or
-/// an element of the active page as an image, to copy or save.
+/// an element of the active page as an image, to copy, save, or send to a
+/// note.
 extension TabManager {
     /// Starts capturing the active page, in region mode.
     func startCapture() {
@@ -26,6 +27,25 @@ extension TabManager {
         NSPasteboard.general.writeObjects([item])
         endCapture()
         toasts.show("Copied Capture", symbol: ChromeSymbols.Capture.capture)
+    }
+
+    /// The notes a capture can go to, most recently changed first.
+    var captureDestinations: [DocumentInfo] {
+        (documentStore?.documents.values.filter { $0.kind == .note } ?? [])
+            .sorted { $0.modifiedAt > $1.modifiedAt }
+    }
+
+    /// The capture at the end of a note, or of a new one named for its page;
+    /// the note comes on screen.
+    func sendCapture(_ capture: Capture, toNote id: UUID?) {
+        guard let documentStore else { return }
+        let id = id ?? documentStore.create(.note).id
+        if documentStore.documents[id]?.title.isEmpty == true {
+            documentStore.rename(id, to: capture.source.name)
+        }
+        documentStore.note(id)?.append(capture)
+        endCapture()
+        showDocument(id)
     }
 
     /// The capture as a PNG file, wherever the save sheet says.

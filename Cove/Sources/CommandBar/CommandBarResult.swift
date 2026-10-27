@@ -12,6 +12,8 @@ struct CommandBarResult: Identifiable, Hashable {
         case space(UUID)
         /// An extension's button, by its context's unique identifier.
         case extensionAction(String)
+        /// A note, found by its title or its words.
+        case document(UUID, DocumentKind)
         /// A page from history.
         case history
         /// The input taken as an address.
@@ -63,6 +65,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case unpinTab
     case addToFavorites
     case newFolder
+    case newNote
     case importBookmarks
     case newSpace
     case editSpace
@@ -106,6 +109,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: "Unpin Tab"
         case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
+        case .newNote: "New Note"
         case .importBookmarks: "Import Bookmarks"
         case .newSpace: "New Space"
         case .editSpace: "Edit Space"
@@ -151,6 +155,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ChromeSymbols.Tabs.unpin
         case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
+        case .newNote: ChromeSymbols.Documents.newNote
         case .importBookmarks: "square.and.arrow.down.on.square"
         case .newSpace: ChromeSymbols.Settings.spaces
         case .editSpace: "pencil"
@@ -196,6 +201,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ["bookmark", "today"]
         case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
+        case .newNote: ["write", "text", "document", "jot"]
         case .importBookmarks: ["safari", "chrome", "pinned"]
         case .newSpace: ["create", "add", "profile"]
         case .editSpace: ["rename", "icon", "color", "theme", "profile"]

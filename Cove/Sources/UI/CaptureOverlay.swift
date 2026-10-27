@@ -150,6 +150,9 @@ private struct CaptureResultBar: View {
 
             action("Copy", symbol: ChromeSymbols.Capture.copy) { tabManager.copyCapture(capture) }
             action("Save…", symbol: ChromeSymbols.Capture.save) { tabManager.saveCapture(capture) }
+            if tabManager.documentStore != nil {
+                sendToNote
+            }
 
             Button(action: tabManager.endCapture) {
                 Image(systemName: ChromeSymbols.Tabs.close)
@@ -161,6 +164,27 @@ private struct CaptureResultBar: View {
         .padding(8)
         .chromeFloatingSurface(minimumRadius: ChromeRadius.tile)
         .padding(16)
+    }
+
+    /// A new note, or the end of a recent one.
+    private var sendToNote: some View {
+        Menu {
+            Button("New Note") { tabManager.sendCapture(capture, toNote: nil) }
+            let notes = tabManager.captureDestinations.prefix(8)
+            if !notes.isEmpty {
+                Divider()
+                ForEach(notes) { note in
+                    Button(note.displayTitle) { tabManager.sendCapture(capture, toNote: note.id) }
+                }
+            }
+        } label: {
+            Label("Send to Note", systemImage: ChromeSymbols.Documents.note)
+                .padding(.horizontal, 8)
+        }
+        .menuStyle(.button)
+        .menuIndicator(.hidden)
+        .buttonStyle(ChromeButtonStyle())
+        .fixedSize()
     }
 
     private func action(_ title: String, symbol: String, perform: @escaping () -> Void) -> some View {

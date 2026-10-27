@@ -21,8 +21,17 @@ struct CommandBarRanker {
         let name: String
     }
 
+    /// A note, offered when its title or words match.
+    struct Document {
+        let id: UUID
+        let kind: DocumentKind
+        let title: String
+        let text: String
+    }
+
     struct Sources {
         var tabs: [OpenTab] = []
+        var documents: [Document] = []
         var spaces: [OtherSpace] = []
         var extensionActions: [ExtensionAction] = []
         var archive: [ArchivedTab] = []
@@ -42,6 +51,7 @@ struct CommandBarRanker {
 
     private enum Limit {
         static let tabs = 3
+        static let documents = 3
         static let archive = 3
         static let history = 5
         static let recent = 6
@@ -69,6 +79,12 @@ struct CommandBarRanker {
             .sorted { $0.0 > $1.0 }
             .prefix(Limit.tabs)
             .map { CommandBarResult(kind: .tab($1.id), title: $1.title, destination: $1.url) }
+
+        let documents = sources.documents
+            .compactMap { document in match.quality(of: document).map { ($0, document) } }
+            .sorted { $0.0 > $1.0 }
+            .prefix(Limit.documents)
+            .map { CommandBarResult(kind: .document($1.id, $1.kind), title: $1.title, destination: "") }
 
         let archived = sources.archive
             .filter { !openURLs.contains($0.url) }
@@ -100,6 +116,7 @@ struct CommandBarRanker {
         let sections = [
             CommandBarSection(title: nil, results: topHits),
             CommandBarSection(title: "Switch to Tab", results: tabs),
+            CommandBarSection(title: "Notes", results: documents),
             CommandBarSection(title: "Archive", results: archived),
             CommandBarSection(title: "History", results: history),
             CommandBarSection(title: "Commands", results: commands),
@@ -235,6 +252,14 @@ struct QueryMatch {
         if address.hasPrefix(text) { return 3 }
         if Self.words(of: title).contains(where: { $0.hasPrefix(first) }) { return 2 }
         return 1
+    }
+
+    /// Nil when some word is in neither the note's title nor its text; a
+    /// word starting its title ranks it above one found only in its text.
+    func quality(of document: CommandBarRanker.Document) -> Int? {
+        let title = document.title.lowercased(), text = document.text.lowercased()
+        guard let first = tokens.first, tokens.allSatisfy({ title.contains($0) || text.contains($0) }) else { return nil }
+        return Self.words(of: title).contains { $0.hasPrefix(first) } ? 2 : 1
     }
 
     /// Every typed word must start a word of a command's title or keywords.
