@@ -111,33 +111,3 @@ private struct HistoryRow: View {
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 }
-
-private struct HistoryDay: Identifiable {
-    let id: Date
-    let entries: [HistoryEntry]
-
-    /// "Today – Wednesday, September 23", "Yesterday – …", then plain dates.
-    var title: String {
-        let calendar = Calendar.current
-        let date = id.formatted(.dateTime.weekday(.wide).month(.wide).day())
-        if calendar.isDateInToday(id) { return "Today – \(date)" }
-        if calendar.isDateInYesterday(id) { return "Yesterday – \(date)" }
-        if calendar.isDate(id, equalTo: .now, toGranularity: .year) { return date }
-        return id.formatted(.dateTime.weekday(.wide).month(.wide).day().year())
-    }
-
-    /// Entries arrive newest first, so days come out newest first too.
-    static func group(_ entries: [HistoryEntry]) -> [HistoryDay] {
-        let calendar = Calendar.current
-        var days: [HistoryDay] = []
-        for entry in entries {
-            let day = calendar.startOfDay(for: entry.visitedAt)
-            if let last = days.last, last.id == day {
-                days[days.count - 1] = HistoryDay(id: day, entries: last.entries + [entry])
-            } else {
-                days.append(HistoryDay(id: day, entries: [entry]))
-            }
-        }
-        return days
-    }
-}

@@ -122,3 +122,13 @@ final class TabArchive: ObservableObject {
         entries.removeLast(entries.count - limit)
     }
 }
+
+extension [ArchivedTab] {
+    /// The entries whose title or address holds every typed word, still newest
+    /// first, as the Command Bar matches them. Nothing typed keeps them all.
+    func matching(_ query: String) -> [ArchivedTab] {
+        let match = QueryMatch(query)
+        guard !match.tokens.isEmpty else { return self }
+        return filter { match.quality(title: $0.title, url: $0.url) != nil }
+    }
+}
