@@ -67,10 +67,11 @@ struct CommandBarRanker {
 
         let match = QueryMatch(trimmed)
         let completion = completion(for: query, match: match, sources: sources)
-        let topHits = [completion?.result, primaryResult(for: trimmed)].compactMap { $0 }
+        let primary = primaryResult(for: trimmed)
+        let pageHits = [completion?.result, primary].compactMap { $0 }
         // A page is listed once: as a top hit, an open tab, an archived tab or
         // a page from history, in that order of preference.
-        let shown = Set(topHits.map(\.destination))
+        let shown = Set(pageHits.map(\.destination))
         let openURLs = shown.union(sources.tabs.map(\.url))
 
         let tabs = sources.tabs
@@ -106,12 +107,18 @@ struct CommandBarRanker {
             .prefix(Limit.suggestions)
             .map { CommandBarResult(kind: .suggestion, title: $0, destination: $0) }
 
-        let commands = sources.spaces.map(Self.spaceResult).filter { match.matches(title: $0.title, keywords: ["space"]) }
+        // A command the input names leads, unless the input is an address or
+        // completes to a visited site.
+        let namedCommand = completion == nil && primary.kind == .search ? namedCommand(by: match, in: sources) : nil
+        let topHits = [completion?.result, namedCommand, primary].compactMap { $0 }
+
+        let commands = (sources.spaces.map(Self.spaceResult).filter { match.matches(title: $0.title, keywords: ["space"]) }
             + sources.extensionActions.map(Self.extensionResult).filter { match.matches(title: $0.title, keywords: ["extension"]) }
             + sources.commands
             .filter { match.matches(title: $0.title, keywords: $0.keywords) }
             .prefix(Limit.commands)
-            .map(Self.commandResult)
+            .map(Self.commandResult))
+            .filter { $0 != namedCommand }
 
         let sections = [
             CommandBarSection(title: nil, results: topHits),
@@ -136,6 +143,16 @@ struct CommandBarRanker {
             CommandBarSection(title: "Commands", results: commands),
         ]
         return Ranking(sections: sections.filter { !$0.results.isEmpty }, completion: nil)
+    }
+
+    /// The command, space or extension whose name the input best spells out.
+    private func namedCommand(by match: QueryMatch, in sources: Sources) -> CommandBarResult? {
+        let candidates = sources.commands.map(Self.commandResult)
+            + sources.spaces.map(Self.spaceResult)
+            + sources.extensionActions.map(Self.extensionResult)
+        return candidates
+            .compactMap { result in match.naming(result.title).map { ($0, result) } }
+            .max { $0.0 < $1.0 }?.1
     }
 
     /// What Return does with the raw input: open it as an address, or search for it.
@@ -260,6 +277,17 @@ struct QueryMatch {
         let title = document.title.lowercased(), text = document.text.lowercased()
         guard let first = tokens.first, tokens.allSatisfy({ title.contains($0) || text.contains($0) }) else { return nil }
         return Self.words(of: title).contains { $0.hasPrefix(first) } ? 2 : 1
+    }
+
+    /// Nil unless the input names a command: higher for the whole title,
+    /// then for the start of it (a few letters at least), then for whole
+    /// words of it.
+    func naming(_ title: String) -> Int? {
+        let title = title.lowercased()
+        if title == text { return 3 }
+        if text.count >= 3, title.hasPrefix(text) { return 2 }
+        let words = Self.words(of: title)
+        return tokens.allSatisfy(words.contains) ? 1 : nil
     }
 
     /// Every typed word must start a word of a command's title or keywords.

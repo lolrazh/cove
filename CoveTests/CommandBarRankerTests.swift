@@ -106,6 +106,42 @@ struct CommandBarRankerTests {
         #expect(!rank("xyz", sources).results.contains { if case .command = $0.kind { true } else { false } })
     }
 
+    @Test(arguments: [
+        ("site settings", CommandBarCommand.siteSettings),
+        ("boost", .boostSite),
+        ("Settings", .settings),
+        ("sett", .settings),
+        ("history", .showHistory),
+    ])
+    func `a command the input names is the top hit`(query: String, command: CommandBarCommand) throws {
+        let ranking = rank(query, .init(history: [github], commands: CommandBarCommand.allCases))
+        #expect(ranking.results.first?.kind == .command(command))
+        #expect(ranking.results.dropFirst().first?.kind == .search)
+        #expect(ranking.results.filter { $0.kind == .command(command) }.count == 1)
+    }
+
+    @Test func `spaces and extensions lead when named too`() {
+        let work = CommandBarRanker.OtherSpace(id: UUID(), name: "Work")
+        let action = CommandBarRanker.ExtensionAction(id: "dark", name: "Dark Reader")
+        let sources = CommandBarRanker.Sources(spaces: [work], extensionActions: [action])
+        #expect(rank("work", sources).results.first?.kind == .space(work.id))
+        #expect(rank("dark re", sources).results.first?.kind == .extensionAction("dark"))
+    }
+
+    @Test(arguments: ["se", "sit set", "settings for safari", "pref"])
+    func `input that only touches a command still searches first`(query: String) {
+        let ranking = rank(query, .init(commands: CommandBarCommand.allCases))
+        #expect(ranking.results.first?.kind == .search)
+    }
+
+    @Test func `addresses and history completions keep the top spot over commands`() {
+        #expect(rank("settings.com", .init(commands: CommandBarCommand.allCases)).results.first?.kind == .url)
+        let bookmarks = HistoryPage(url: "https://library.example/", title: "Library", frecency: 3)
+        let ranking = rank("library", .init(history: [bookmarks], commands: CommandBarCommand.allCases))
+        #expect(ranking.completion == "library.example")
+        #expect(ranking.results.first?.kind == .history)
+    }
+
     @Test func `other spaces are offered by name`() {
         let work = CommandBarRanker.OtherSpace(id: UUID(), name: "Work")
         let sources = CommandBarRanker.Sources(spaces: [work])
