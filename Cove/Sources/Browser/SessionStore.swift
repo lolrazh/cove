@@ -22,6 +22,9 @@ struct SavedSpace: Codable {
     let activeTabIndex: Int?
     /// The selected tab, if it was a pinned tab or favorite: its pin's ID.
     let activePinID: UUID?
+    /// Splits by their tabs' places in `tabs`. Absent in sessions saved
+    /// before Split View.
+    var splits: [TabSplit<Int>]? = nil
 }
 
 /// A window: every space's Today as it was left there, and the space shown.
@@ -141,13 +144,19 @@ final class SessionStore {
         return restorableWindows.count
     }
 
-    /// Saves the window whenever its tabs, active tab, space or any saved tab
-    /// change. A restored window's placement applies once its window is known.
+    /// Saves the window whenever its tabs, splits, active tab, space or any
+    /// saved tab change. A restored window's placement applies once its
+    /// window is known.
     func track(_ tabManager: TabManager, placement: WindowPlacement?) {
         let tabsChanged = tabManager.$tabs
             .map { tabs in Publishers.MergeMany(tabs.map(\.savedTabChanges)) }
             .switchToLatest()
-        let changes = Publishers.Merge3(tabsChanged, tabManager.$activeTabID.map { _ in }, tabManager.$activeSpaceID.map { _ in })
+        let changes = Publishers.Merge4(
+            tabsChanged,
+            tabManager.$activeTabID.map { _ in },
+            tabManager.$activeSpaceID.map { _ in },
+            tabManager.$splits.map { _ in }
+        )
             .sink { [weak self] in self?.scheduleSave() }
         trackedWindows.append(TrackedWindow(tabManager: tabManager, placement: placement, changes: changes))
     }
