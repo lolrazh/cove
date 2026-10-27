@@ -37,19 +37,16 @@ extension TabSession {
 
     private static let pictureInPictureScript = """
     (() => {
-        const inPicture = (video) => video.webkitPresentationMode === "picture-in-picture";
-        const videos = [...document.querySelectorAll("video")];
-        const current = videos.find(inPicture);
-        if (current) {
-            current.webkitSetPresentationMode("inline");
+        if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
             return true;
         }
+        const videos = [...document.querySelectorAll("video")];
         const area = (video) => video.clientWidth * video.clientHeight;
         const video = videos.find((video) => !video.paused && !video.ended)
             ?? videos.sort((a, b) => area(b) - area(a))[0];
-        if (!video) { return false; }
-        video.webkitSetPresentationMode("picture-in-picture");
-        return true;
+        video?.requestPictureInPicture();
+        return video !== undefined;
     })();
     """
 }
