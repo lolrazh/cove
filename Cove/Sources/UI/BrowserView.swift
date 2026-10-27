@@ -21,7 +21,7 @@ struct BrowserView: View {
     /// session. A private window gets a context of its own and keeps nothing:
     /// no session, no archive, and its own list of closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
-        let context = isPrivate ? BrowsingContext.makePrivate() : appServices.browsingContext
+        let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
         return TabManager(
             settings: appServices.settingsStore,
             services: appServices.tabSessionServices(in: context),

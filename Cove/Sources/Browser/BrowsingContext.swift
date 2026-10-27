@@ -1,8 +1,8 @@
 import WebKit
 
-/// What a window browses with: where sites keep their cookies, storage and
-/// cache, what they've been allowed to use, and whether its pages leave a
-/// trace. Normal windows share one; each private window gets its own, which
+/// What a window browses with: where sites keep their cookies, storage,
+/// cache and favicons, what they've been allowed to use, and whether its
+/// pages leave a trace. Normal windows share one; each private window gets its own, which
 /// goes when the window closes. A profile will be one of these too.
 @MainActor
 final class BrowsingContext {
@@ -10,19 +10,26 @@ final class BrowsingContext {
     /// Private browsing records nothing: no history, no saved session, no
     /// archive, and its tabs never come back.
     let isPrivate: Bool
+    let faviconStore: FaviconStore
     let sitePermissions = SitePermissions()
 
-    private init(dataStore: WKWebsiteDataStore, isPrivate: Bool) {
+    private init(dataStore: WKWebsiteDataStore, faviconStore: FaviconStore, isPrivate: Bool) {
         self.dataStore = dataStore
+        self.faviconStore = faviconStore
         self.isPrivate = isPrivate
     }
 
-    static func standard() -> BrowsingContext {
-        BrowsingContext(dataStore: .default(), isPrivate: false)
+    static func standard(faviconStore: FaviconStore) -> BrowsingContext {
+        BrowsingContext(dataStore: .default(), faviconStore: faviconStore, isPrivate: false)
     }
 
-    /// A context whose site data lives in memory only.
-    static func makePrivate() -> BrowsingContext {
-        BrowsingContext(dataStore: .nonPersistent(), isPrivate: true)
+    /// A context whose site data lives in memory only. It reads favicons the
+    /// base context already has, but keeps the ones it fetches to itself.
+    static func makePrivate(over base: BrowsingContext) -> BrowsingContext {
+        BrowsingContext(
+            dataStore: .nonPersistent(),
+            faviconStore: FaviconStore(readingThrough: base.faviconStore),
+            isPrivate: true
+        )
     }
 }

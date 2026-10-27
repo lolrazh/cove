@@ -3,9 +3,12 @@ import AppKit
 @MainActor
 final class FaviconStore {
     private let db: Database?
+    /// The store a private window's store reads from and never writes to.
+    private let shared: FaviconStore?
     private var memoryCache: [String: NSImage] = [:]
 
     init() {
+        shared = nil
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let dbPath = appSupport.appendingPathComponent("Cove/favicons.db").path
 
@@ -16,6 +19,14 @@ final class FaviconStore {
             print("Failed to open favicon database: \(error)")
             db = nil
         }
+    }
+
+    /// A private window's store: favicons it fetches stay in memory, so
+    /// nothing on disk records the sites it visited, while ones already known
+    /// still show.
+    init(readingThrough shared: FaviconStore) {
+        db = nil
+        self.shared = shared
     }
 
     private func createTable() {
@@ -31,6 +42,9 @@ final class FaviconStore {
     func get(domain: String) -> NSImage? {
         if let cached = memoryCache[domain] {
             return cached
+        }
+        if let shared {
+            return shared.get(domain: domain)
         }
 
         guard let db,

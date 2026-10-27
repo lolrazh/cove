@@ -12,7 +12,7 @@ final class AppServices {
     let recentlyClosedTabs = RecentlyClosedTabs()
     let tabArchive = TabArchive()
     /// What normal windows browse with; private windows make their own.
-    let browsingContext = BrowsingContext.standard()
+    let browsingContext: BrowsingContext
     let sessionStore = SessionStore()
     let siteZoom = SiteZoomStore()
 
@@ -29,6 +29,7 @@ final class AppServices {
         self.settingsStore = settingsStore
         self.historyStore = historyStore
         self.faviconStore = faviconStore
+        self.browsingContext = .standard(faviconStore: faviconStore)
         self.downloadManager = downloadManager
         self.contentBlockerManager = contentBlockerManager
         self.webKitEnvironment = WebKitEnvironment(contentBlockerManager: contentBlockerManager)
@@ -38,7 +39,7 @@ final class AppServices {
     func tabSessionServices(in context: BrowsingContext) -> TabSessionServices {
         TabSessionServices(
             historyStore: historyStore,
-            faviconStore: faviconStore,
+            faviconStore: context.faviconStore,
             downloadManager: downloadManager,
             webKitEnvironment: webKitEnvironment,
             contentBlocker: contentBlockerManager,
