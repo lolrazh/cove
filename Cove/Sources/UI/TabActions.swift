@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What can be done to a tab: its context menu, and the active tab's half of
-/// the Tab menu. Pinning joins at the top.
+/// the Tab menu. Pinning comes first.
 struct TabActions: View {
     enum Placement {
         /// A tab's context menu. Renaming edits the title where it's shown.
@@ -15,6 +15,10 @@ struct TabActions: View {
     let placement: Placement
 
     var body: some View {
+        pinning
+
+        Divider()
+
         Button("Duplicate Tab") {
             tabManager.duplicateTab(tab.id)
         }
@@ -36,7 +40,7 @@ struct TabActions: View {
             Button("Close Tab") {
                 tabManager.closeTab(tab.id)
             }
-            .disabled(tabManager.tabs.count < 2)
+            .disabled(!tabManager.canCloseTab(tab.id))
         }
 
         Button("Close Other Tabs") {
@@ -47,6 +51,56 @@ struct TabActions: View {
         Button(tabManager.tabLayout == .sidebar ? "Close Tabs Below" : "Close Tabs to the Right") {
             tabManager.closeTabs(below: tab.id)
         }
-        .disabled(tabManager.tabsInDisplayOrder.elements(after: tab.id).isEmpty)
+        .disabled(tabManager.tabsInDisplayOrder.elements(after: tab.id).allSatisfy { tabManager.section(of: $0.id) != .today })
+    }
+
+    /// Pin or unpin, with ⌘D from the menu bar; the other section to move to;
+    /// the way back for a pinned tab that has wandered; a folder around a
+    /// pinned tab.
+    @ViewBuilder
+    private var pinning: some View {
+        let section = tabManager.section(of: tab.id)
+
+        if section == .today {
+            Button("Pin Tab") {
+                tabManager.pinTab(tab.id)
+            }
+            .keyboardShortcut(pinShortcut)
+            .disabled(tab.currentURL.isEmpty)
+
+            Button("Add to Favorites") {
+                tabManager.pinTab(tab.id, to: .favorites)
+            }
+            .disabled(tab.currentURL.isEmpty)
+        } else {
+            Button("Unpin Tab") {
+                tabManager.unpinTab(tab.id)
+            }
+            .keyboardShortcut(pinShortcut)
+
+            if section == .favorites {
+                Button("Move to Pinned") {
+                    tabManager.moveTab(tab.id, toEndOf: .pinned)
+                }
+            } else {
+                Button("Add to Favorites") {
+                    tabManager.moveTab(tab.id, toEndOf: .favorites)
+                }
+            }
+
+            if tab.isAwayFromPin {
+                Button("Back to Pinned Page", action: tab.returnToPin)
+            }
+
+            if section == .pinned, case .tab = placement {
+                Button("New Folder with Tab") {
+                    tabManager.newFolder(around: tab.id)
+                }
+            }
+        }
+    }
+
+    private var pinShortcut: KeyboardShortcut? {
+        if case .menuBar = placement { KeyboardShortcut("d", modifiers: .command) } else { nil }
     }
 }

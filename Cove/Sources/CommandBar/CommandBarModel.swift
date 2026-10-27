@@ -103,7 +103,7 @@ final class CommandBarModel: ObservableObject {
 
     /// Favicons for page rows: a tab's own, or the cached one for its site.
     func icon(for result: CommandBarResult) -> NSImage? {
-        if case .tab(let id) = result.kind, let tab = tabManager.tabs.first(where: { $0.id == id }) {
+        if case .tab(let id) = result.kind, let tab = tabManager.tab(id) {
             return tab.favicon
         }
         return faviconStore.image(forPage: result.destination)
@@ -127,6 +127,12 @@ final class CommandBarModel: ObservableObject {
         switch command {
         case .copyURL:
             tabManager.copyURL()
+        case .pinTab, .unpinTab:
+            if let id = tabManager.activeTabID { tabManager.togglePinned(id) }
+        case .addToFavorites:
+            if let id = tabManager.activeTabID { tabManager.moveTab(id, toEndOf: .favorites) }
+        case .newFolder:
+            tabManager.newFolder()
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .muteTab, .unmuteTab:
@@ -180,6 +186,10 @@ final class CommandBarModel: ObservableObject {
         CommandBarCommand.allCases.filter { command in
             switch command {
             case .copyURL: !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .pinTab: activeSection == .today && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .addToFavorites: [.today, .pinned].contains(activeSection) && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .unpinTab: [.pinned, .favorites].contains(activeSection)
+            case .newFolder: true
             case .duplicateTab: true
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
@@ -201,13 +211,17 @@ final class CommandBarModel: ObservableObject {
         }
     }
 
+    private var activeSection: TabManager.TabSection? {
+        tabManager.activeTabID.flatMap(tabManager.section)
+    }
+
     // MARK: - Ranking
 
     private func refresh() {
         guard isPresented else { return }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
-        let tabs = tabManager.tabs
+        let tabs = tabManager.tabsInDisplayOrder
             .filter { $0.id != tabManager.activeTabID && !$0.currentURL.isEmpty }
             .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
         let history = trimmed.isEmpty
