@@ -4,8 +4,8 @@
 **Agent:** Claude Fable 5.1
 **Branch:** `pinned-favorites`, PR to `main`
 **Status:** ✅ Code complete and unit-tested; section 5d and 5g's bookmark
-import ticked in ARC-PARITY.md. Live verification was blocked by a locked
-screen (see Verified); the coordinator should run the sidebar checks below.
+import ticked in ARC-PARITY.md. The core flows were verified live once the
+screen unlocked; the rest is listed under Verified for the coordinator.
 
 ## User Intention
 Section 5d of `ARC-PARITY.md`: Arc's pinned tabs and Favorites. Pin a tab
@@ -153,21 +153,36 @@ landed here too.
 ## Verified
 - `xcodebuild test`: 74 tests in 15 suites pass after rebasing on #10,
   #11 and #12.
-- **Live checks were blocked.** From the first launch attempt onward the
-  Mac's screen was locked (`CGSSessionScreenIsLocked=Yes` in
-  `ioreg -n Root -d1`): a newly launched app gets no window at all (the
-  main build behaved the same), and synthetic input cannot land. A harness
-  is ready in the session scratchpad, `pinned-favorites/` (`pf.sh`:
-  launch/front/shot/key/type/click/rclick/drag; `drag.swift`;
-  `seed.plist`, a four-tab session). Checks to run once unlocked:
-  ⌘D on the active tab; the context menu on a pinned tab; Add to
-  Favorites; navigate a pinned tab away and click ↩; ⌘W on an active
-  pinned tab (next tab selected, the pinned one dimmed at its pinned
-  URL); New Folder with Tab, rename, fold; drag a Today tab onto a pinned
-  tab and onto the Favorites drop zone, and a folder onto a folder; ⌘Q and
-  relaunch (`pins.plist` present, everything back); top mode's compact
-  tabs; a private window (no pins, no Pin Tab); Import Bookmarks… with a
-  Chrome `Bookmarks` file.
+- Live, in a build from this worktree with a seeded four-tab session
+  (`seed.plist`), screenshots in the session scratchpad,
+  `pinned-favorites/`. The screen was locked for the first two hours
+  (`CGSSessionScreenIsLocked=Yes` in `ioreg -n Root -d1`: a new app gets no
+  window and no input lands), and once it unlocked the user was working on
+  the Mac, so every keystroke went through a frontmost check and the run
+  stopped when the user closed the windows.
+  - `01-seeded.png`: the session restored, three tabs asleep.
+  - `02-pinned.png`: ⌘D moved the active Apple tab above the Clear line;
+    `pins.plist` appeared a second later.
+  - `03-pinned-menu.png`: the pinned row's menu: Unpin Tab, Add to
+    Favorites, New Folder with Tab, then the usual items.
+  - `08-new-folder-naming.png`, `10-dblclick-rename.png`: New Folder with
+    Tab put a folder around Apple in its place, indented it, and opened the
+    name field at once; typed text landed in the field. Return committed
+    the name (it's in `pins.plist`; the doubled "Apple StuffApple Stuff" is
+    a harness artifact: a second run typed into the still-open field).
+  - `16-relaunched.png`: after quit and relaunch the folder and its pinned
+    tab are back, the tab asleep.
+  - `17-top-mode.png`: in top mode the pinned Apple leads the strip as a
+    favicon-only tab before the Today tabs.
+  - `19-away-from-pin.png`: ⌘L on a Today tab navigates as before with
+    pins present.
+- **Not verified live** (focus was lost to the user's apps before these
+  ran): the ↩ back-to-pin accessory, ⌘W resetting a pinned tab, the
+  Favorites grid and its drop zone, drags between sections and onto
+  folders, the private window, Import Bookmarks…. One attempt at ⌘1 on a
+  pinned tab didn't register (`18-cmd1-pinned-selected.png`); it ran
+  during focus contention and wasn't reproduced, but is worth a check,
+  since `tabsInDisplayOrder` now starts with the pins.
 
 ## Key Learnings
 - **One `change { }` on the store** keeps structure edits atomic: a move
