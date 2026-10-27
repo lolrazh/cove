@@ -248,8 +248,13 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       `BrowsingContext` per window, which 5e's profiles extend.)*
 
 ### 5j. Boosts ⭑
-- [ ] Per-site custom CSS (and optionally JS) via `WKUserScript`, toggleable,
+- [x] Per-site custom CSS (and optionally JS) via `WKUserScript`, toggleable,
       edited in a small panel. Zap mode: click elements to hide them.
+      *(Tint, font and hidden elements, then CSS and JavaScript, in a panel
+      over the page, from site controls or "Boost This Site". Everything
+      runs in a "Boosts" content world; CSS previews live, scripts on the
+      next load. `boosts.json` in Application Support. Private windows apply
+      Boosts but don't edit them.)*
 
 ### 5k. Extensions ⭑
 - [ ] WebExtensions per PRODUCT.md Phase 3. Large; scheduled last.
