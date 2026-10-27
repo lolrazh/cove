@@ -36,7 +36,8 @@ final class TabManager: ObservableObject {
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
-    private let recentlyClosed: RecentlyClosedTabs
+    /// This window's closed tabs: the shared list, or a private window's own.
+    let recentlyClosed: RecentlyClosedTabs
     /// Nil in a private window, whose tabs are never archived.
     private let archive: TabArchive?
     private let sweepClock = TabSweepClock()
