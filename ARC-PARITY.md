@@ -165,10 +165,12 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
 - [x] ⌘S toggles the sidebar; ⌘⇧C copies the URL.
 
 ### 5b. Page tools
-- [ ] Find in page (⌘F, ⌘G, ⌘⇧G), a find bar in the card.
-- [ ] Zoom: ⌘+, ⌘−, ⌘0, remembered per site.
-- [ ] Print (⌘P), Save Page As, View Source.
-- [ ] Picture in Picture for the playing video.
+- [x] Find in page (⌘F, ⌘G, ⌘⇧G), a find bar in the card. *(No match
+      count: WebKit's public find API only says whether there is a match.)*
+- [x] Zoom: ⌘+, ⌘−, ⌘0, remembered per site.
+- [x] Print (⌘P), Save Page As (⌥⌘S: web archive or page source), View
+      Source (⌥⌘U, in a window of its own).
+- [x] Picture in Picture for the playing video (View menu and Command Bar).
 
 ### 5c. Session and memory ⭑
 - [x] Restore windows and tabs (with back/forward history via
