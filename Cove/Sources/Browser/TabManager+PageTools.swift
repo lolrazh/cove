@@ -51,8 +51,8 @@ extension TabManager {
 
     /// Save Page As: a web archive or the page's HTML, wherever the sheet says.
     func savePage() {
-        guard let page = activePage, let window = page.webView.window else { return }
-        let name = page.pageTitle.isEmpty ? page.webView.url?.host() ?? "Page" : page.pageTitle
+        guard let page = activePage, let window = page.webView?.window else { return }
+        let name = page.pageTitle.isEmpty ? page.webView?.url?.host() ?? "Page" : page.pageTitle
 
         Task {
             guard let (url, format) = await SavePagePanel.run(suggestedName: name, in: window) else { return }
@@ -75,7 +75,7 @@ extension TabManager {
                 toasts.show("No Source for This Page", symbol: ChromeSymbols.Navigation.loadFailed)
                 return
             }
-            SourceWindow.show(source, of: page.currentURL, over: page.webView.window)
+            SourceWindow.show(source, of: page.currentURL, over: page.webView?.window)
         }
     }
 

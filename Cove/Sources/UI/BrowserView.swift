@@ -112,8 +112,9 @@ struct ActiveTabView: View {
                 ) { input in
                     tab.navigate(input)
                 }
-            } else {
-                WebViewRepresentable(tab: tab)
+            } else if case .awake(let webView) = tab.page {
+                // Only the selected tab is shown, and it's always awake.
+                WebViewRepresentable(webView: webView, onAppear: tab.pageDidAppear)
                     .overlay {
                         if let failure = tab.loadFailure {
                             LoadFailurePage(failure: failure, onRetry: tab.retry)

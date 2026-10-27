@@ -16,7 +16,11 @@ final class TabManager: ObservableObject {
     /// sidebar already lays them out so pinning and favorites slot in.
     @Published private(set) var favorites: [TabSession] = []
     @Published private(set) var pinned: [TabSession] = []
-    @Published var activeTabID: UUID?
+    /// The selected tab is the one on screen, so it's always awake; the
+    /// others may sleep.
+    @Published var activeTabID: UUID? {
+        didSet { activeTab?.wake() }
+    }
     @Published var tabLayout: TabLayout
     @Published private(set) var hideTabs: Bool
     /// Confirmations shown over this window's page.
@@ -60,10 +64,12 @@ final class TabManager: ObservableObject {
         self.hideTabs = settings.hideTabs
         bindSettings()
 
+        // Restored tabs start asleep; selecting the active one wakes it, so a
+        // launch loads one page per window instead of every page.
         let saved = session.takeRestorableWindow()
         if let saved, !saved.tabs.isEmpty {
             tabs = saved.tabs.map { makeTab(restoring: $0) }
-            activeTabID = tabs[min(saved.activeTabIndex, tabs.count - 1)].id
+            selectTab(tabs[min(saved.activeTabIndex, tabs.count - 1)].id)
         } else {
             addTab()
         }
