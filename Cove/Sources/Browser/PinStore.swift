@@ -2,17 +2,30 @@ import AppKit
 import Combine
 
 /// Keeps the pinned tabs and favorites between launches, apart from the Today
-/// session: the sections' layout, and each pin's live tab (its current page
+/// session: every space's layout, and each pin's live tab (its current page
 /// and back/forward list) so a pinned tab comes back where it was left. One
 /// store for the app; every window shows the same pins with live tabs of its
 /// own. Without a file it keeps nothing, which is what a private window wants.
 @MainActor
 final class PinStore: ObservableObject {
-    @Published private(set) var pins: Pins
+    @Published private(set) var layout: PinLayout
 
     private struct SavedPins: Codable {
+        var layout: PinLayout
+        var tabs: [String: SavedTab]
+    }
+
+    /// Saved before Spaces: one set of pins, now the first space's and the
+    /// default profile's.
+    private struct UnscopedPins: Decodable {
         var pins: Pins
         var tabs: [String: SavedTab]
+
+        var scoped: SavedPins {
+            var layout = PinLayout()
+            layout[.default] = pins
+            return SavedPins(layout: layout, tabs: tabs)
+        }
     }
 
     private let fileURL: URL?
@@ -23,10 +36,11 @@ final class PinStore: ObservableObject {
 
     init(fileURL: URL? = PinStore.defaultFileURL) {
         self.fileURL = fileURL
-        let saved = fileURL
-            .flatMap { try? Data(contentsOf: $0) }
-            .flatMap { try? PropertyListDecoder().decode(SavedPins.self, from: $0) }
-        pins = saved?.pins ?? Pins()
+        let data = fileURL.flatMap { try? Data(contentsOf: $0) }
+        let decoder = PropertyListDecoder()
+        let saved = data.flatMap { try? decoder.decode(SavedPins.self, from: $0) }
+            ?? data.flatMap { try? decoder.decode(UnscopedPins.self, from: $0) }?.scoped
+        layout = saved?.layout ?? PinLayout()
         tabs = saved?.tabs ?? [:]
 
         terminationObserver = NotificationCenter.default.addObserver(
@@ -43,14 +57,24 @@ final class PinStore: ObservableObject {
             .appendingPathComponent("Cove/pins.plist")
     }
 
-    /// Changes the layout: one publish and one save per change, however much
-    /// it does. The tabs of pins that are gone are forgotten.
-    func change(_ change: (inout Pins) -> Void) {
-        var pins = pins
-        change(&pins)
-        guard pins != self.pins else { return }
-        self.pins = pins
-        let kept = Set(pins.all.map(\.id.uuidString))
+    /// One space's pins.
+    func pins(in scope: PinScope) -> Pins {
+        layout[scope]
+    }
+
+    /// Changes one space's pins: one publish and one save per change, however
+    /// much it does.
+    func change(in scope: PinScope, _ change: (inout Pins) -> Void) {
+        self.change { change(&$0[scope]) }
+    }
+
+    /// Changes the layout. The tabs of pins that are gone are forgotten.
+    func change(_ change: (inout PinLayout) -> Void) {
+        var layout = layout
+        change(&layout)
+        guard layout != self.layout else { return }
+        self.layout = layout
+        let kept = Set(layout.all.map(\.id.uuidString))
         tabs = tabs.filter { kept.contains($0.key) }
         scheduleSave()
     }
@@ -62,7 +86,7 @@ final class PinStore: ObservableObject {
 
     /// Remembers where a pin's live tab is, for the next launch.
     func record(_ tab: SavedTab, for id: UUID) {
-        guard pins.pin(id) != nil else { return }
+        guard layout.pin(id) != nil else { return }
         tabs[id.uuidString] = tab
         scheduleSave()
     }
@@ -82,7 +106,7 @@ final class PinStore: ObservableObject {
         guard let fileURL else { return }
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
-        guard let data = try? encoder.encode(SavedPins(pins: pins, tabs: tabs)) else { return }
+        guard let data = try? encoder.encode(SavedPins(layout: layout, tabs: tabs)) else { return }
         try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: fileURL, options: .atomic)
     }
