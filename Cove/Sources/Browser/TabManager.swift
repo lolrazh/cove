@@ -314,10 +314,17 @@ final class TabManager: ObservableObject {
             showsStartPage: saved.map { $0.url.isEmpty } ?? showsStartPage,
             settings: settings,
             services: tabServices ?? services(for: activeSpace),
-            onSelect: { [weak self] in self?.selectTab(tabID) }
-        ) { [weak self] request in
-            self?.addTab(request: request, nextTo: tabID)
-        }
+            host: host(for: tabID)
+        )
+    }
+
+    /// What a tab in this window does when it needs to be on screen or opens
+    /// a page: it's selected, and pages open beside it or in a Peek.
+    private func host(for tabID: UUID) -> TabSession.Host {
+        TabSession.Host(
+            select: { [weak self] in self?.selectTab(tabID) },
+            openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: tabID) }
+        )
     }
 
     private func open(_ tab: TabSession, nextTo openerID: UUID? = nil) {
