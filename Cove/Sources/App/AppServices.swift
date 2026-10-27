@@ -12,6 +12,7 @@ final class AppServices {
     let recentlyClosedTabs = RecentlyClosedTabs()
     let sitePermissions = SitePermissions()
     let sessionStore = SessionStore()
+    let siteZoom = SiteZoomStore()
 
     private var didPrepareLaunch = false
 
@@ -38,7 +39,8 @@ final class AppServices {
             faviconStore: faviconStore,
             downloadManager: downloadManager,
             webKitEnvironment: webKitEnvironment,
-            sitePermissions: sitePermissions
+            sitePermissions: sitePermissions,
+            siteZoom: siteZoom
         )
     }
 

@@ -15,6 +15,7 @@ struct TabSessionServices {
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
     let sitePermissions: SitePermissions
+    let siteZoom: SiteZoomStore
 }
 
 @MainActor
@@ -205,6 +206,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         audio?.setMuted(isMuted)
     }
 
+    /// The page's zoom, remembered for its site.
+    var pageZoom: Double {
+        get { webView.pageZoom }
+        set {
+            webView.pageZoom = newValue
+            services.siteZoom.setZoom(newValue, for: webView.url)
+        }
+    }
+
     /// The page came on screen, so dialogs waiting for it can show.
     func pageDidAppear(in window: NSWindow?) {
         dialogWindowWaiters.forEach { $0.resume(returning: window) }
@@ -373,8 +383,11 @@ extension TabSession: WKNavigationDelegate {
         handleURLChange(webView.url)
     }
 
+    /// A new page: its audio starts fresh, and its site opens at the zoom it
+    /// was left at.
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         audio?.reset()
+        webView.pageZoom = services.siteZoom.zoom(for: webView.url)
     }
 
     func webView(
