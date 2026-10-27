@@ -46,9 +46,31 @@ extension Array where Element: Identifiable {
     /// Moves the element with `id` into the place of the one with `target`,
     /// shifting the elements between them one place back toward where it was.
     mutating func move(_ id: Element.ID, onto target: Element.ID) {
-        guard let from = firstIndex(where: { $0.id == id }),
-              let to = firstIndex(where: { $0.id == target }),
-              from != to else { return }
-        insert(remove(at: from), at: to)
+        move([id], onto: [target])
+    }
+
+    /// The same for groups, like a split's tabs: the moving group takes the
+    /// place of the target group, landing past it on the side it came from,
+    /// and ends up together, in its order.
+    mutating func move(_ ids: [Element.ID], onto targets: [Element.ID]) {
+        guard let from = firstIndex(where: { ids.contains($0.id) }),
+              let to = firstIndex(where: { targets.contains($0.id) }),
+              from != to,
+              Set(ids).isDisjoint(with: targets) else { return }
+        let moving = filter { ids.contains($0.id) }
+        removeAll { ids.contains($0.id) }
+        let insertion = from < to
+            ? (lastIndex { targets.contains($0.id) }).map { $0 + 1 }
+            : firstIndex { targets.contains($0.id) }
+        insert(contentsOf: moving, at: insertion ?? endIndex)
+    }
+
+    /// Brings the elements with these IDs together where the first of them
+    /// is, in their order here, as a split's tabs are kept.
+    mutating func gather(_ ids: [Element.ID]) {
+        guard let anchor = firstIndex(where: { ids.contains($0.id) }) else { return }
+        let gathered = filter { ids.contains($0.id) }
+        removeAll { ids.contains($0.id) }
+        insert(contentsOf: gathered, at: anchor)
     }
 }

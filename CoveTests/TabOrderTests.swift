@@ -58,6 +58,35 @@ struct TabOrderTests {
         #expect(unchanged == tabs)
     }
 
+    @Test func `a group moves together onto another group, landing past it`() {
+        var down = tabs
+        down.move(["a", "b"], onto: ["d"])
+        #expect(ids(down) == "cdabe")
+
+        var up = tabs
+        up.move(["e"], onto: ["b", "c"])
+        #expect(ids(up) == "aebcd")
+
+        // Scattered members end up together, in their order.
+        var scattered = tabs
+        scattered.move(["a", "c"], onto: ["e"])
+        #expect(ids(scattered) == "bdeac")
+
+        var overlapping = tabs
+        overlapping.move(["a", "b"], onto: ["b"])
+        #expect(overlapping == tabs)
+    }
+
+    @Test func `gathering brings a group together where its first member is`() {
+        var gathered = tabs
+        gathered.gather(["d", "b"])
+        #expect(ids(gathered) == "abdce")
+
+        var unknown = tabs
+        unknown.gather(["z"])
+        #expect(unknown == tabs)
+    }
+
     @Test func `the display order runs favorites, pinned, then today, as each layout shows them`() {
         struct Pinned: Identifiable { let id = UUID(); let name: Character }
         let favorites = "fg".map(Pinned.init)
