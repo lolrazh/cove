@@ -13,7 +13,71 @@ enum BrowserSettingKeys {
     static let showRecentSites = "browser.showRecentSites"
     static let showSearchSuggestions = "browser.showSearchSuggestions"
     static let downloadDestinationMode = "browser.downloadDestinationMode"
+    static let sleepTabsAfter = "browser.sleepTabsAfter"
+    static let archiveTabsAfter = "browser.archiveTabsAfter"
     static let legacyPreferredTabLayout = "browser.preferredTabLayout"
+}
+
+/// How long a background tab goes unused before it sleeps.
+enum TabSleepDelay: String, CaseIterable, Identifiable {
+    case fiveMinutes
+    case fifteenMinutes
+    case thirtyMinutes
+    case oneHour
+    case never
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .fiveMinutes: "5 Minutes"
+        case .fifteenMinutes: "15 Minutes"
+        case .thirtyMinutes: "30 Minutes"
+        case .oneHour: "1 Hour"
+        case .never: "Never"
+        }
+    }
+
+    var interval: TimeInterval? {
+        switch self {
+        case .fiveMinutes: 5 * 60
+        case .fifteenMinutes: 15 * 60
+        case .thirtyMinutes: 30 * 60
+        case .oneHour: 60 * 60
+        case .never: nil
+        }
+    }
+}
+
+/// How long a Today tab goes unused before it's archived.
+enum TabArchiveDelay: String, CaseIterable, Identifiable {
+    case twelveHours
+    case oneDay
+    case oneWeek
+    case oneMonth
+    case never
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .twelveHours: "12 Hours"
+        case .oneDay: "24 Hours"
+        case .oneWeek: "7 Days"
+        case .oneMonth: "30 Days"
+        case .never: "Never"
+        }
+    }
+
+    var interval: TimeInterval? {
+        switch self {
+        case .twelveHours: 12 * 3600
+        case .oneDay: 24 * 3600
+        case .oneWeek: 7 * 24 * 3600
+        case .oneMonth: 30 * 24 * 3600
+        case .never: nil
+        }
+    }
 }
 
 enum SearchEngine: String, CaseIterable, Identifiable {

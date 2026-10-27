@@ -20,6 +20,8 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var showRecentSites: Bool
     @Published private(set) var showSearchSuggestions: Bool
     @Published private(set) var downloadDestinationMode: DownloadDestinationMode
+    @Published private(set) var sleepTabsAfter: TabSleepDelay
+    @Published private(set) var archiveTabsAfter: TabArchiveDelay
 
     private let defaults: UserDefaults
 
@@ -39,6 +41,8 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.showRecentSites: true,
             BrowserSettingKeys.showSearchSuggestions: true,
             BrowserSettingKeys.downloadDestinationMode: DownloadDestinationMode.downloadsFolder.rawValue,
+            BrowserSettingKeys.sleepTabsAfter: TabSleepDelay.thirtyMinutes.rawValue,
+            BrowserSettingKeys.archiveTabsAfter: TabArchiveDelay.oneDay.rawValue,
         ])
 
         self.searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
@@ -53,6 +57,8 @@ final class BrowserSettingsStore: ObservableObject {
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
         self.showSearchSuggestions = defaults.bool(forKey: BrowserSettingKeys.showSearchSuggestions)
         self.downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
+        self.sleepTabsAfter = TabSleepDelay(rawValue: defaults.string(forKey: BrowserSettingKeys.sleepTabsAfter) ?? "") ?? .thirtyMinutes
+        self.archiveTabsAfter = TabArchiveDelay(rawValue: defaults.string(forKey: BrowserSettingKeys.archiveTabsAfter) ?? "") ?? .oneDay
     }
 
     var shouldShowRecentSites: Bool {
@@ -101,6 +107,8 @@ final class BrowserSettingsStore: ObservableObject {
     func setShowRecentSites(_ v: Bool) { set(\.showRecentSites, to: v, key: BrowserSettingKeys.showRecentSites) }
     func setShowSearchSuggestions(_ v: Bool) { set(\.showSearchSuggestions, to: v, key: BrowserSettingKeys.showSearchSuggestions) }
     func setDownloadDestinationMode(_ v: DownloadDestinationMode) { set(\.downloadDestinationMode, to: v, key: BrowserSettingKeys.downloadDestinationMode) }
+    func setSleepTabsAfter(_ v: TabSleepDelay) { set(\.sleepTabsAfter, to: v, key: BrowserSettingKeys.sleepTabsAfter) }
+    func setArchiveTabsAfter(_ v: TabArchiveDelay) { set(\.archiveTabsAfter, to: v, key: BrowserSettingKeys.archiveTabsAfter) }
 
     // MARK: - Private
 
