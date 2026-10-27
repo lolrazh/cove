@@ -196,6 +196,11 @@ struct BrowserShellView<Content: View>: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay { LinkPreview(url: activeTab.hoveredLink) }
+            .overlay {
+                if !activeTab.isNewTabPage {
+                    FindBar(find: activeTab.findInPage)
+                }
+            }
             .overlay { ToastOverlay(center: tabManager.toasts) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

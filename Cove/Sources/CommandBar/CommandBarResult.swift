@@ -57,6 +57,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case muteTab
     case unmuteTab
     case closeOtherTabs
+    case findInPage
+    case zoomIn
+    case zoomOut
+    case actualSize
+    case printPage
+    case savePage
+    case viewSource
+    case pictureInPicture
     case showTabsInSidebar
     case showTabsOnTop
     case hideTabs
@@ -73,6 +81,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
         case .closeOtherTabs: "Close Other Tabs"
+        case .findInPage: "Find on Page"
+        case .zoomIn: "Zoom In"
+        case .zoomOut: "Zoom Out"
+        case .actualSize: "Actual Size"
+        case .printPage: "Print"
+        case .savePage: "Save Page As"
+        case .viewSource: "View Source"
+        case .pictureInPicture: "Picture in Picture"
         case .showTabsInSidebar: "Show Tabs in Sidebar"
         case .showTabsOnTop: "Show Tabs on Top"
         case .hideTabs: "Hide Tabs"
@@ -91,6 +107,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
         case .closeOtherTabs: "xmark.square"
+        case .findInPage: ChromeSymbols.Navigation.search
+        case .zoomIn: "plus.magnifyingglass"
+        case .zoomOut: "minus.magnifyingglass"
+        case .actualSize: "1.magnifyingglass"
+        case .printPage: "printer"
+        case .savePage: "square.and.arrow.down"
+        case .viewSource: "chevron.left.forwardslash.chevron.right"
+        case .pictureInPicture: "pip.enter"
         case .showTabsInSidebar, .showTabsOnTop: ChromeSymbols.Tabs.sidebarLayout
         case .hideTabs: "eye.slash"
         case .showTabs: "eye"
@@ -108,6 +132,14 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .duplicateTab: ["copy", "clone"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .closeOtherTabs: ["clean", "tidy"]
+        case .findInPage: ["search", "text"]
+        case .zoomIn: ["bigger", "larger", "magnify"]
+        case .zoomOut: ["smaller"]
+        case .actualSize: ["zoom", "reset"]
+        case .printPage: ["pdf"]
+        case .savePage: ["download", "archive", "html"]
+        case .viewSource: ["html", "code", "developer"]
+        case .pictureInPicture: ["pip", "video", "float"]
         case .showTabsInSidebar, .showTabsOnTop: ["toggle", "layout", "vertical", "horizontal"]
         case .hideTabs, .showTabs: ["toggle", "sidebar", "immersive"]
         case .reopenClosedTab: ["restore", "undo"]

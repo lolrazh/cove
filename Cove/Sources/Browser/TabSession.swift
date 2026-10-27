@@ -15,6 +15,7 @@ struct TabSessionServices {
     let downloadManager: DownloadManager
     let webKitEnvironment: WebKitEnvironment
     let sitePermissions: SitePermissions
+    let siteZoom: SiteZoomStore
 }
 
 @MainActor
@@ -39,6 +40,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published private(set) var isMuted = false
 
     private(set) var webView: WKWebView
+    /// The find bar's state. Follows the web view when it's replaced.
+    private(set) lazy var findInPage = FindInPage { [unowned self] in webView }
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
@@ -203,6 +206,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     func toggleMuted() {
         isMuted.toggle()
         audio?.setMuted(isMuted)
+    }
+
+    /// The page's zoom, remembered for its site.
+    var pageZoom: Double {
+        get { webView.pageZoom }
+        set {
+            webView.pageZoom = newValue
+            services.siteZoom.setZoom(newValue, for: webView.url)
+        }
     }
 
     /// The page came on screen, so dialogs waiting for it can show.
@@ -373,8 +385,11 @@ extension TabSession: WKNavigationDelegate {
         handleURLChange(webView.url)
     }
 
+    /// A new page: its audio starts fresh, and its site opens at the zoom it
+    /// was left at.
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         audio?.reset()
+        webView.pageZoom = services.siteZoom.zoom(for: webView.url)
     }
 
     func webView(
@@ -401,11 +416,12 @@ extension TabSession: WKNavigationDelegate {
 
     /// Cancellations aren't failures: another navigation replaced this one, or
     /// the response became a download, which WebKit reports as its "frame load
-    /// interrupted" error (the constant for it is deprecated).
+    /// interrupted" error, or WebKit's media player took over a video or audio
+    /// file, its "plug-in handled load" (the constants for both are deprecated).
     private func showFailure(_ error: Error) {
         let error = error as NSError
         let isCancellation = (error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled)
-            || (error.domain == "WebKitErrorDomain" && error.code == 102)
+            || (error.domain == "WebKitErrorDomain" && [102, 204].contains(error.code))
         guard !isCancellation else { return }
 
         let url = error.userInfo[NSURLErrorFailingURLErrorKey] as? URL

@@ -25,6 +25,7 @@ struct CoveApp: App {
         .commands {
             BrowserViewCommands(appServices: appServices)
             TabCommands()
+            PageToolsCommands()
         }
 
         Window("History", id: HistoryWindow.windowID) {

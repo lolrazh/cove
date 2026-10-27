@@ -19,6 +19,10 @@ final class WebKitEnvironment {
         // for it (`isInspectable` only allows remote inspection from Safari), and
         // no public way to open Web Inspector at all, so there's no Develop menu.
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        // Picture in Picture, which macOS web views leave off, again with no
+        // public switch. With it, video controls get a PiP button and pages
+        // can call `requestPictureInPicture()`.
+        configuration.preferences.setValue(true, forKey: "allowsPictureInPictureMediaPlayback")
         contentBlockerManager.attach(to: configuration.userContentController)
 
         let webView = BrowserWebView(frame: .zero, configuration: configuration)
