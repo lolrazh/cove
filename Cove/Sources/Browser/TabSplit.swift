@@ -105,31 +105,3 @@ enum SplitAxis: String, Codable {
     /// Panes stacked, top to bottom.
     case vertical
 }
-
-/// One entry in Today as the sidebar and the strip show it: a tab on its own,
-/// or the tabs of a split together, in the split's order.
-enum TabEntry<Tab: Identifiable>: Identifiable where Tab.ID == UUID {
-    case tab(Tab)
-    case split(TabSplit<UUID>, [Tab])
-
-    var id: UUID {
-        switch self {
-        case .tab(let tab): tab.id
-        case .split(let split, _): split.id
-        }
-    }
-}
-
-extension Array where Element: Identifiable, Element.ID == UUID {
-    /// The tabs as entries: a split shows once, where the first of its tabs
-    /// is, and a tab in no split shows on its own.
-    func entries(splits: [TabSplit<UUID>]) -> [TabEntry<Element>] {
-        var shown: Set<UUID> = []
-        return compactMap { tab in
-            guard let split = splits.first(where: { $0.contains(tab.id) }) else { return .tab(tab) }
-            guard shown.insert(split.id).inserted else { return nil }
-            let tabs = split.panes.compactMap { id in first { $0.id == id } }
-            return .split(split, tabs)
-        }
-    }
-}

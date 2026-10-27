@@ -31,6 +31,7 @@ struct SplitPageView: View {
                         tabManager.selectTab(tab.id)
                     }
                     .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
+                    .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
                         .frame(
                             width: split.axis == .horizontal ? length * split.fractions[index] : nil,
                             height: split.axis == .vertical ? length * split.fractions[index] : nil

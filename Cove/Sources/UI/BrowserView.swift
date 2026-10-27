@@ -18,7 +18,7 @@ struct BrowserView: View {
     /// A normal window shows the shared spaces, each browsing with its
     /// profile's context, and is saved with the session. A private window
     /// gets a context of its own and keeps nothing: no spaces, no session, no
-    /// pins, and an archive of its own, in memory, for its closed tabs.
+    /// pins, no notes, and an archive of its own, in memory, for its closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
         let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
         return TabManager(
@@ -27,6 +27,7 @@ struct BrowserView: View {
             archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
             pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
             spaces: isPrivate ? nil : appServices.spaceStore,
+            documents: isPrivate ? nil : appServices.documentStore,
             session: isPrivate ? nil : appServices.sessionStore
         )
     }
@@ -98,6 +99,17 @@ struct BrowserView: View {
         } message: { _ in
             Text("Its open tabs move to the archive, and its pinned tabs are removed.")
         }
+        .confirmationDialog(
+            "Delete \u{201C}\(documentToDelete?.displayTitle ?? "")\u{201D}?",
+            isPresented: isPresent($tabManager.documentToDelete),
+            presenting: documentToDelete
+        ) { document in
+            Button("Delete \(document.kind.name)", role: .destructive) {
+                tabManager.deleteDocument(document.id)
+            }
+        } message: { _ in
+            Text("It's removed from every space, and can't be brought back.")
+        }
         .onChange(of: tabManager.hideTabs) { _, hide in
             withAnimation(ChromeMotion.shell) {
                 areTabsVisible = !hide
@@ -108,6 +120,10 @@ struct BrowserView: View {
                 areTabsVisible = !tabManager.hideTabs
             }
         }
+    }
+
+    private var documentToDelete: DocumentInfo? {
+        tabManager.documentToDelete.flatMap { tabManager.documentStore?.documents[$0] }
     }
 
     private var spaceToDelete: Space? {
@@ -127,15 +143,19 @@ struct BrowserView: View {
     }
 
     /// The page on screen, or the split holding it, with the drop zones for
-    /// splitting and the Peek over all of it.
+    /// splitting and the Peek over all of it; or a note in its place.
     private func activeTabContent(_ tab: TabSession) -> some View {
         Group {
-            if let split = tabManager.activeSplit {
+            if let id = tabManager.activeDocumentID, let store = tabManager.documentStore {
+                DocumentPage(id: id, store: store, tabManager: tabManager)
+                    .id(id)
+            } else if let split = tabManager.activeSplit {
                 SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
             } else {
                 PageView(tab: tab, appServices: appServices)
                     .id(tab.id)
                     .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
+                    .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -83,7 +83,7 @@ extension TabManager {
         if !splits.contains(where: { $0.id == split.id }) {
             splits.append(split)
         }
-        tabs.gather(split.panes)
+        today.gather(split.panes)
         selectTab(id)
     }
 

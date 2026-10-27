@@ -152,7 +152,7 @@ private struct CommandBarPanel: View {
         switch result.kind {
         case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
-        case .url, .suggestion, .command, .space, .extensionAction: nil
+        case .url, .suggestion, .command, .space, .extensionAction, .document: nil
         }
     }
 
@@ -212,6 +212,8 @@ private struct CommandBarRow: View {
             symbol(ChromeSymbols.Navigation.search)
         case .command(let command):
             symbol(command.symbol)
+        case .document(_, let kind):
+            symbol(kind.symbol)
         case .space:
             SpaceIconView(icon: spaceIcon ?? .dot)
                 .font(.body.weight(.medium))

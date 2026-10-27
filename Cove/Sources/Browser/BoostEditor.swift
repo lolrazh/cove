@@ -12,7 +12,7 @@ final class BoostEditor: ObservableObject {
 
     let page: TabSession
     private let store: BoostStore
-    private var zap: BoostZap?
+    private var zap: ElementPicker?
 
     /// Edits the site's Boost, or the one covering it, or a new one.
     init(page: TabSession, site: Site) {
@@ -63,7 +63,7 @@ final class BoostEditor: ObservableObject {
     private func startZapping() {
         guard let webView = page.webView else { return }
         isZapping = true
-        zap = BoostZap(in: webView) { [weak self] selector in
+        zap = BoostZap.start(in: webView) { [weak self] selector in
             guard let self, !boost.hiddenElements.contains(selector) else { return }
             boost.hiddenElements.append(selector)
         } onEnd: { [weak self] in

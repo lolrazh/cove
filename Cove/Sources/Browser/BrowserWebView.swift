@@ -13,10 +13,25 @@ final class BrowserWebView: WKWebView {
     /// The extension whose pages this web view shows, made from its
     /// configuration; nil for the web. WebKit loads each only in its own.
     weak var extensionPage: WKWebExtensionContext?
+    /// Capture, offered at the end of the page's context menu.
+    var onCapture: (() -> Void)?
 
     override func mouseDown(with event: NSEvent) {
         onMouseDown?()
         super.mouseDown(with: event)
+    }
+
+    override func willOpenMenu(_ menu: NSMenu, with event: NSEvent) {
+        super.willOpenMenu(menu, with: event)
+        guard onCapture != nil else { return }
+        let capture = NSMenuItem(title: "Capture…", action: #selector(capture), keyEquivalent: "")
+        capture.target = self
+        menu.addItem(.separator())
+        menu.addItem(capture)
+    }
+
+    @objc private func capture() {
+        onCapture?()
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {

@@ -1,10 +1,12 @@
 import Foundation
 
 /// The View and File menus' page commands, and the Command Bar's, for the
-/// active tab. None of them apply to a start page.
+/// active tab. None of them apply to a start page, or while a note covers
+/// the page.
 extension TabManager {
     var activePage: TabSession? {
-        activeTab.flatMap { $0.isNewTabPage ? nil : $0 }
+        guard activeDocumentID == nil else { return nil }
+        return activeTab.flatMap { $0.isNewTabPage ? nil : $0 }
     }
 
     // MARK: - Find

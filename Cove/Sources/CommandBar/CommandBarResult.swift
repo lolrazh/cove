@@ -12,6 +12,8 @@ struct CommandBarResult: Identifiable, Hashable {
         case space(UUID)
         /// An extension's button, by its context's unique identifier.
         case extensionAction(String)
+        /// A note, found by its title or its words.
+        case document(UUID, DocumentKind)
         /// A page from history.
         case history
         /// The input taken as an address.
@@ -63,6 +65,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case unpinTab
     case addToFavorites
     case newFolder
+    case newNote
+    case newEasel
     case importBookmarks
     case newSpace
     case editSpace
@@ -81,6 +85,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case actualSize
     case printPage
     case savePage
+    case capture
     case viewSource
     case pictureInPicture
     case siteSettings
@@ -105,6 +110,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: "Unpin Tab"
         case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
+        case .newNote: "New Note"
+        case .newEasel: "New Easel"
         case .importBookmarks: "Import Bookmarks"
         case .newSpace: "New Space"
         case .editSpace: "Edit Space"
@@ -123,6 +130,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: "Actual Size"
         case .printPage: "Print"
         case .savePage: "Save Page As"
+        case .capture: "Capture"
         case .viewSource: "View Source"
         case .pictureInPicture: "Picture in Picture"
         case .siteSettings: "Site Settings"
@@ -149,6 +157,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ChromeSymbols.Tabs.unpin
         case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
+        case .newNote: ChromeSymbols.Documents.newNote
+        case .newEasel: ChromeSymbols.Documents.easel
         case .importBookmarks: "square.and.arrow.down.on.square"
         case .newSpace: ChromeSymbols.Settings.spaces
         case .editSpace: "pencil"
@@ -167,6 +177,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: "1.magnifyingglass"
         case .printPage: "printer"
         case .savePage: "square.and.arrow.down"
+        case .capture: ChromeSymbols.Capture.capture
         case .viewSource: "chevron.left.forwardslash.chevron.right"
         case .pictureInPicture: "pip.enter"
         case .siteSettings: "switch.2"
@@ -193,6 +204,8 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .unpinTab: ["bookmark", "today"]
         case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
+        case .newNote: ["write", "text", "document", "jot"]
+        case .newEasel: ["canvas", "board", "draw", "sketch", "whiteboard", "clipping"]
         case .importBookmarks: ["safari", "chrome", "pinned"]
         case .newSpace: ["create", "add", "profile"]
         case .editSpace: ["rename", "icon", "color", "theme", "profile"]
@@ -209,6 +222,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: ["zoom", "reset"]
         case .printPage: ["pdf"]
         case .savePage: ["download", "archive", "html"]
+        case .capture: ["screenshot", "snapshot", "image", "clip", "region", "element"]
         case .viewSource: ["html", "code", "developer"]
         case .pictureInPicture: ["pip", "video", "float"]
         case .siteSettings: ["permissions", "camera", "microphone", "location", "cookies", "clear", "blocking", "security"]

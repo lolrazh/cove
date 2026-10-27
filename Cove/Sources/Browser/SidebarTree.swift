@@ -10,9 +10,10 @@ enum SidebarPosition: Equatable {
     case end
 }
 
-/// A tree of tabs and folders, as the Pinned section holds them. Generic over
-/// the tab so the saved form (pins) and the live form (tab sessions) share one
-/// shape, and the moves can be tested on plain values.
+/// A tree of tabs, documents and folders, as the Pinned section holds them.
+/// Generic over the tab so the saved form (pins) and the live form (tab
+/// sessions) share one shape, and the moves can be tested on plain values. A
+/// document is the same in both: its ID.
 struct SidebarTree<Tab: Identifiable> where Tab.ID == UUID {
     var items: [SidebarItem<Tab>] = []
 
@@ -22,23 +23,30 @@ struct SidebarTree<Tab: Identifiable> where Tab.ID == UUID {
 
     var isEmpty: Bool { items.isEmpty }
 
+    /// Every tab and document, folders flattened, in the order they're shown.
+    var leaves: [SidebarItem<Tab>] {
+        leaves(inCollapsedFolders: true)
+    }
+
     /// Every tab, folders flattened, in the order they're shown.
     var tabs: [Tab] {
-        items.flatMap { item in
-            switch item {
-            case .tab(let tab): [tab]
-            case .folder(let folder): folder.contents.tabs
-            }
-        }
+        leaves.compactMap(\.tab)
     }
 
     /// The tabs on screen: those in collapsed folders are left out.
     var visibleTabs: [Tab] {
-        items.flatMap { item in
-            switch item {
-            case .tab(let tab): [tab]
-            case .folder(let folder): folder.isCollapsed ? [] : folder.contents.visibleTabs
-            }
+        leaves(inCollapsedFolders: false).compactMap(\.tab)
+    }
+
+    /// Every note and easel, folders flattened.
+    var documents: [UUID] {
+        leaves.compactMap(\.documentID)
+    }
+
+    private func leaves(inCollapsedFolders: Bool) -> [SidebarItem<Tab>] {
+        items.flatMap { item -> [SidebarItem<Tab>] in
+            guard case .folder(let folder) = item else { return [item] }
+            return folder.isCollapsed && !inCollapsedFolders ? [] : folder.contents.leaves(inCollapsedFolders: inCollapsedFolders)
         }
     }
 
@@ -55,6 +63,7 @@ struct SidebarTree<Tab: Identifiable> where Tab.ID == UUID {
         items.flatMap { item in
             switch item {
             case .tab(let tab): [tab.id]
+            case .document(let id): [id]
             case .folder(let folder): [folder.id] + folder.contents.ids
             }
         }
@@ -78,6 +87,7 @@ struct SidebarTree<Tab: Identifiable> where Tab.ID == UUID {
         SidebarTree<T>(items.map { item in
             switch item {
             case .tab(let tab): .tab(transform(tab))
+            case .document(let id): .document(id)
             case .folder(let folder):
                 .folder(SidebarFolder(
                     id: folder.id,
@@ -194,17 +204,28 @@ struct SidebarTree<Tab: Identifiable> where Tab.ID == UUID {
 
 enum SidebarItem<Tab: Identifiable>: Identifiable where Tab.ID == UUID {
     case tab(Tab)
+    /// A note or easel, kept in the sidebar like a tab.
+    case document(UUID)
     case folder(SidebarFolder<Tab>)
 
     var id: UUID {
         switch self {
         case .tab(let tab): tab.id
+        case .document(let id): id
         case .folder(let folder): folder.id
         }
     }
+
+    var tab: Tab? {
+        if case .tab(let tab) = self { tab } else { nil }
+    }
+
+    var documentID: UUID? {
+        if case .document(let id) = self { id } else { nil }
+    }
 }
 
-/// A folder in the Pinned section; it holds tabs and other folders.
+/// A folder in the Pinned section; it holds tabs, documents and other folders.
 struct SidebarFolder<Tab: Identifiable>: Identifiable where Tab.ID == UUID {
     let id: UUID
     var name: String

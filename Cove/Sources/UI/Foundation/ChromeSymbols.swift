@@ -36,6 +36,20 @@ enum ChromeSymbols {
         static let splitVertically = "rectangle.split.1x2"
     }
 
+    enum Capture {
+        static let capture = "camera.viewfinder"
+        static let region = "rectangle.dashed"
+        static let element = "cursorarrow.rays"
+        static let copy = "doc.on.doc"
+        static let save = "square.and.arrow.down"
+    }
+
+    enum Documents {
+        static let note = "note.text"
+        static let newNote = "square.and.pencil"
+        static let easel = "scribble.variable"
+    }
+
     enum Spaces {
         static let newSpace = "plus"
         static let profile = "person.crop.circle"
