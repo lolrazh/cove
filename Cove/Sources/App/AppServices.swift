@@ -9,7 +9,9 @@ final class AppServices {
     let downloadManager: DownloadManager
     let contentBlockerManager: ContentBlockerManager
     let webKitEnvironment: WebKitEnvironment
-    let externalURLRouter: ExternalURLRouter
+    /// Lazy only because they need `self`.
+    private(set) lazy var externalURLRouter = ExternalURLRouter(settings: settingsStore, littleCove: littleCove)
+    private(set) lazy var littleCove = LittleCove(appServices: self)
     let tabArchive = TabArchive()
     /// What the default profile browses with; other profiles' contexts come
     /// from the space store, and private windows make their own.
@@ -29,7 +31,6 @@ final class AppServices {
         let faviconStore = FaviconStore()
         let downloadManager = DownloadManager(settings: settingsStore)
         let contentBlockerManager = ContentBlockerManager(settings: settingsStore)
-        let externalURLRouter = ExternalURLRouter()
 
         self.settingsStore = settingsStore
         self.historyStore = historyStore
@@ -44,7 +45,6 @@ final class AppServices {
         self.downloadManager = downloadManager
         self.contentBlockerManager = contentBlockerManager
         self.webKitEnvironment = WebKitEnvironment(contentBlockerManager: contentBlockerManager)
-        self.externalURLRouter = externalURLRouter
 
         // Pins follow their spaces and profiles, whichever window or Settings
         // deleted them.

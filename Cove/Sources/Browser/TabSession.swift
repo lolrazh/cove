@@ -46,7 +46,20 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         case asleep(interactionState: Data?)
     }
 
+    /// Where the tab lives: a browser window, a Peek, or Little Cove. It
+    /// selects the tab when a page dialog needs it on screen, and takes the
+    /// pages the tab opens elsewhere. A tab that moves (Peek or Little Cove
+    /// into a window) gets a new host and keeps its page.
+    struct Host {
+        let select: @MainActor () -> Void
+        let openInNewTab: @MainActor (URLRequest) -> Void
+        /// Opens a link in a Peek over the page; nil where there's no page to
+        /// peek over.
+        var peek: (@MainActor (URLRequest) -> Void)? = nil
+    }
+
     let id: UUID
+    var host: Host?
 
     @Published private(set) var page: Page
     @Published var isNewTabPage: Bool
@@ -81,8 +94,6 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let settings: BrowserSettingsStore
     let services: TabSessionServices
     private let requestBuilder: NavigationRequestBuilder
-    private let onOpenInNewTab: (@MainActor (URLRequest) -> Void)?
-    private let onSelect: (@MainActor () -> Void)?
     private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
     /// The page's media, to play, pause and skip; nil while asleep.
@@ -107,8 +118,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         settings: BrowserSettingsStore,
         services: TabSessionServices,
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
-        onSelect: (@MainActor () -> Void)? = nil,
-        onOpenInNewTab: (@MainActor (URLRequest) -> Void)? = nil
+        host: Host? = nil
     ) {
         self.id = id
         self.isNewTabPage = showsStartPage
@@ -116,8 +126,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.settings = settings
         self.services = services
         self.requestBuilder = requestBuilder
-        self.onOpenInNewTab = onOpenInNewTab
-        self.onSelect = onSelect
+        self.host = host
         self.faviconFetcher = FaviconFetcher(store: services.faviconStore)
         self.page = .asleep(interactionState: saved?.interactionState)
         self.customTitle = saved?.customTitle
@@ -441,6 +450,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private func configureWebView(_ webView: WKWebView) {
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        (webView as? BrowserWebView)?.onMouseDown = { [weak self] in self?.host?.select() }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
@@ -594,6 +604,10 @@ extension TabSession: WKNavigationDelegate {
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
+        if navigationAction.targetFrame?.isMainFrame == true, opensInPeek(navigationAction), let peek = host?.peek {
+            peek(navigationAction.request)
+            return .cancel
+        }
         if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
             services.contentBlocker.update(
@@ -659,8 +673,21 @@ extension TabSession: WKUIDelegate {
 
         var request = navigationAction.request
         request.url = url
-        onOpenInNewTab?(request)
+        if opensInPeek(navigationAction), let peek = host?.peek {
+            peek(request)
+        } else {
+            host?.openInNewTab(request)
+        }
         return nil
+    }
+
+    /// Arc's Peek: a link clicked with Shift, or one from a pinned tab or
+    /// favorite to another site, opens over the page instead of leaving it.
+    private func opensInPeek(_ action: WKNavigationAction) -> Bool {
+        guard action.navigationType == .linkActivated || action.targetFrame == nil, let host = action.request.url?.host() else { return false }
+        if action.modifierFlags.contains(.shift) { return true }
+        guard pinnedURL != nil, let site = Site(URL(string: currentURL)) else { return false }
+        return !site.contains(host)
     }
 
     /// The window to show one of the page's dialogs on. A page in a background
@@ -668,7 +695,7 @@ extension TabSession: WKUIDelegate {
     /// and the dialog waits for the page to come on screen.
     private func dialogWindow() async -> NSWindow? {
         if case .awake(let webView) = page, let window = webView.window { return window }
-        onSelect?()
+        host?.select()
         return await withCheckedContinuation { dialogWindowWaiters.append($0) }
     }
 

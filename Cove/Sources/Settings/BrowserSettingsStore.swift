@@ -21,6 +21,9 @@ final class BrowserSettingsStore: ObservableObject {
     @Published private(set) var downloadDestinationMode: DownloadDestinationMode
     @Published private(set) var sleepTabsAfter: TabSleepDelay
     @Published private(set) var archiveTabsAfter: TabArchiveDelay
+    /// Links from other apps open in a small window of their own, as in Arc's
+    /// Little Arc, instead of a tab in the browser window.
+    @Published private(set) var opensLinksInLittleCove: Bool
 
     private let defaults: UserDefaults
 
@@ -41,6 +44,7 @@ final class BrowserSettingsStore: ObservableObject {
             BrowserSettingKeys.downloadDestinationMode: DownloadDestinationMode.downloadsFolder.rawValue,
             BrowserSettingKeys.sleepTabsAfter: TabSleepDelay.thirtyMinutes.rawValue,
             BrowserSettingKeys.archiveTabsAfter: TabArchiveDelay.oneDay.rawValue,
+            BrowserSettingKeys.opensLinksInLittleCove: false,
         ])
 
         self.searchEngine = SearchEngine(rawValue: defaults.string(forKey: BrowserSettingKeys.searchEngine) ?? "") ?? .google
@@ -56,6 +60,7 @@ final class BrowserSettingsStore: ObservableObject {
         self.downloadDestinationMode = DownloadDestinationMode(rawValue: defaults.string(forKey: BrowserSettingKeys.downloadDestinationMode) ?? "") ?? .downloadsFolder
         self.sleepTabsAfter = TabSleepDelay(rawValue: defaults.string(forKey: BrowserSettingKeys.sleepTabsAfter) ?? "") ?? .thirtyMinutes
         self.archiveTabsAfter = TabArchiveDelay(rawValue: defaults.string(forKey: BrowserSettingKeys.archiveTabsAfter) ?? "") ?? .oneDay
+        self.opensLinksInLittleCove = defaults.bool(forKey: BrowserSettingKeys.opensLinksInLittleCove)
     }
 
     var shouldShowRecentSites: Bool {
@@ -105,6 +110,7 @@ final class BrowserSettingsStore: ObservableObject {
     func setDownloadDestinationMode(_ v: DownloadDestinationMode) { set(\.downloadDestinationMode, to: v, key: BrowserSettingKeys.downloadDestinationMode) }
     func setSleepTabsAfter(_ v: TabSleepDelay) { set(\.sleepTabsAfter, to: v, key: BrowserSettingKeys.sleepTabsAfter) }
     func setArchiveTabsAfter(_ v: TabArchiveDelay) { set(\.archiveTabsAfter, to: v, key: BrowserSettingKeys.archiveTabsAfter) }
+    func setOpensLinksInLittleCove(_ v: Bool) { set(\.opensLinksInLittleCove, to: v, key: BrowserSettingKeys.opensLinksInLittleCove) }
 
     // MARK: - Private
 

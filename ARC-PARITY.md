@@ -224,12 +224,25 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       *(Deferred to the roadmap; see Later.)*
 
 ### 5f. Peek, Little Arc, Split View ⭑
-- [ ] Little Arc: links from other apps open in a small floating window with
+- [x] Little Arc: links from other apps open in a small floating window with
       "Open in Cove" to move the page into the main window (setting).
-- [ ] Peek: links opened from Favorites and Pinned tabs on another site open
-      in an overlay card; expand to a full tab.
-- [ ] Split View: up to four tabs side by side, resizable, ⌃⇧=; split tabs
-      show as one entry in the sidebar.
+      *(Little Cove: Settings › General › Links. A compact window with the
+      site and Open in Cove, which moves the live tab, page and history,
+      into the last active window's space's Today. ⌥⌘N and the Command Bar open an
+      empty one. `ExternalURLRouter.open(_:from:)` is the one decision
+      point, where Air Traffic Control can choose a space later.)*
+- [x] Peek: links opened from Favorites and Pinned tabs on another site open
+      in an overlay card; expand to a full tab. *(Also any ⇧-clicked link.
+      Escape or a click on the dimmed page closes it; Open as Tab moves the
+      same tab into Today beside its opener.)*
+- [x] Split View: up to four tabs side by side, resizable, ⌃⇧=; split tabs
+      show as one entry in the sidebar. *(Today tabs only. ⌃⇧= opens the
+      Command Bar in Split View mode (or a start page, as Settings says);
+      also Open in Split View in a tab's menu and dragging a tab onto the
+      page's edge. Stack or side by side; one grouped entry in the sidebar
+      and the strip; ⌘W closes the focused pane; saved with the session.
+      Splits belong to a space's Today. The active tab is the focused pane,
+      so page tools, ⌘L, navigation, site controls and Boosts act on it.)*
 
 ### 5g. Library, bookmarks, downloads
 - [x] Library panel: Downloads, Archive, History, in the sidebar footer.

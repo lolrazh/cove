@@ -5,6 +5,7 @@ import SwiftUI
 /// page card and the sidebar alike. A click anywhere else dismisses it.
 struct CommandBarOverlay: View {
     @ObservedObject var model: CommandBarModel
+    let onOpenLittleCove: () -> Void
 
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
@@ -46,6 +47,7 @@ struct CommandBarOverlay: View {
         switch result.kind {
         case .command(.newWindow): openWindow(id: BrowserView.windowID)
         case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
+        case .command(.newLittleCove): onOpenLittleCove()
         case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
         case .command(.settings): openSettings()
         default: break
@@ -85,14 +87,15 @@ private struct CommandBarPanel: View {
 
     private var field: some View {
         HStack(spacing: 12) {
-            Image(systemName: ChromeSymbols.Navigation.search)
+            // Split View mode says where the page will open.
+            Image(systemName: model.mode == .splitView ? ChromeSymbols.Tabs.splitView : ChromeSymbols.Navigation.search)
                 .font(.title2.weight(.medium))
                 .foregroundStyle(.secondary)
 
             CommandBarField(
                 text: $model.query,
                 completion: model.completion,
-                placeholder: "Search or enter URL",
+                placeholder: model.mode == .splitView ? "Open in Split View" : "Search or enter URL",
                 onKey: handle
             )
         }

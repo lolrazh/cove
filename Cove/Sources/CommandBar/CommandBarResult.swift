@@ -65,6 +65,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case newSpace
     case editSpace
     case duplicateTab
+    case addSplitView
+    case rotateSplitView
+    case separateSplitView
     case muteTab
     case unmuteTab
     case pauseMedia
@@ -87,6 +90,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case reopenClosedTab
     case newWindow
     case newPrivateWindow
+    case newLittleCove
     case showLibrary
     case showHistory
     case settings
@@ -102,6 +106,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: "New Space"
         case .editSpace: "Edit Space"
         case .duplicateTab: "Duplicate Tab"
+        case .addSplitView: "Add Split View"
+        case .rotateSplitView: "Rotate Split View"
+        case .separateSplitView: "Separate Split View"
         case .muteTab: "Mute Tab"
         case .unmuteTab: "Unmute Tab"
         case .pauseMedia: "Pause Media"
@@ -124,6 +131,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .reopenClosedTab: "Reopen Last Closed Tab"
         case .newWindow: "New Window"
         case .newPrivateWindow: "New Private Window"
+        case .newLittleCove: "New Little Cove Window"
         case .showLibrary: "Library"
         case .showHistory: "Show All History"
         case .settings: "Settings"
@@ -141,6 +149,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: ChromeSymbols.Settings.spaces
         case .editSpace: "pencil"
         case .duplicateTab: "plus.square.on.square"
+        case .addSplitView: ChromeSymbols.Tabs.splitView
+        case .rotateSplitView: ChromeSymbols.Tabs.splitVertically
+        case .separateSplitView: "rectangle"
         case .muteTab: ChromeSymbols.Tabs.muted
         case .unmuteTab: ChromeSymbols.Tabs.playingAudio
         case .pauseMedia: ChromeSymbols.Media.pause
@@ -162,6 +173,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .reopenClosedTab: "arrow.uturn.backward"
         case .newWindow: "macwindow.badge.plus"
         case .newPrivateWindow: ChromeSymbols.Navigation.privateBrowsing
+        case .newLittleCove: ChromeSymbols.Tabs.littleCove
         case .showLibrary: ChromeSymbols.Navigation.library
         case .showHistory: ChromeSymbols.Navigation.history
         case .settings: ChromeSymbols.Settings.general
@@ -180,6 +192,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newSpace: ["create", "add", "profile"]
         case .editSpace: ["rename", "icon", "color", "theme", "profile"]
         case .duplicateTab: ["copy", "clone"]
+        case .addSplitView: ["side by side", "pane", "tile"]
+        case .rotateSplitView: ["vertical", "horizontal", "stack", "side by side"]
+        case .separateSplitView: ["unsplit", "pane"]
         case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
         case .pauseMedia, .playMedia: ["music", "video", "audio", "resume", "stop"]
         case .closeOtherTabs: ["clean", "tidy"]
@@ -198,6 +213,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .reopenClosedTab: ["restore", "undo"]
         case .newWindow: []
         case .newPrivateWindow: ["incognito", "private browsing"]
+        case .newLittleCove: ["little arc", "mini", "small", "quick"]
         case .showLibrary: ["downloads", "archive", "history"]
         case .showHistory: ["recent", "visited"]
         case .settings: ["preferences", "options"]

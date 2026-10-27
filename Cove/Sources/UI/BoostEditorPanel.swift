@@ -1,5 +1,18 @@
 import SwiftUI
 
+/// The Boost editor over the page it edits: the page on screen, or its pane
+/// in a split, so it stays beside that page while another pane has focus.
+struct BoostEditorOverlay: View {
+    @ObservedObject var tabManager: TabManager
+    let page: TabSession
+
+    var body: some View {
+        if let editor = tabManager.boostEditor, editor.page === page {
+            BoostEditorPanel(editor: editor, onClose: tabManager.closeBoostEditor)
+        }
+    }
+}
+
 /// The Boost editor, floating at the page's trailing edge like Arc's: simple
 /// controls first (a tint, a font, elements zapped away), then the code.
 /// The page stays usable beside it, which zapping needs.

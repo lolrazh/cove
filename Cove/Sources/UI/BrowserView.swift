@@ -46,7 +46,7 @@ struct BrowserView: View {
                         activeTabContent(activeTab)
                     }
                     .overlay {
-                        CommandBarOverlay(model: tabManager.commandBar)
+                        CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
                     }
                 }
             }
@@ -71,14 +71,14 @@ struct BrowserView: View {
         // in a private window.
         .onChange(of: appearsActive, initial: true) { _, active in
             guard active, !tabManager.isPrivate, let window = NSApp.keyWindow else { return }
-            appServices.externalURLRouter.activate(tabManager, in: window)
+            appServices.externalURLRouter.activate(tabManager, in: window, openWindow: openWindow)
         }
         // Links from other apps come to an open window instead of each opening
         // a new one (SwiftUI opens one only if none exists), then go through
         // the router like everything else.
         .handlesExternalEvents(preferring: externalEvents, allowing: externalEvents)
         .onOpenURL { url in
-            appServices.externalURLRouter.open([url])
+            appServices.externalURLRouter.open([url], from: .otherApp)
         }
         .sheet(isPresented: isPresent($tabManager.spaceToEdit)) {
             if let id = tabManager.spaceToEdit {
@@ -124,43 +124,21 @@ struct BrowserView: View {
         !tabManager.hideTabs || areTabsVisible
     }
 
+    /// The page on screen, or the split holding it, with the drop zones for
+    /// splitting and the Peek over all of it.
     private func activeTabContent(_ tab: TabSession) -> some View {
-        ActiveTabView(tab: tab, appServices: appServices)
-            .id(tab.id)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .transaction { $0.animation = nil }
-    }
-}
-
-struct ActiveTabView: View {
-    @ObservedObject var tab: TabSession
-    private let appServices: AppServices
-
-    init(tab: TabSession, appServices: AppServices) {
-        self._tab = ObservedObject(wrappedValue: tab)
-        self.appServices = appServices
-    }
-
-    var body: some View {
         Group {
-            if tab.isNewTabPage {
-                NewTabPage(
-                    settingsStore: appServices.settingsStore,
-                    historyStore: appServices.historyStore,
-                    faviconStore: appServices.faviconStore
-                ) { input in
-                    tab.navigate(input)
-                }
-            } else if case .awake(let webView) = tab.page {
-                // Only the selected tab is shown, and it's always awake.
-                WebViewRepresentable(webView: webView, onAppear: tab.pageDidAppear)
-                    .overlay {
-                        if let failure = tab.loadFailure {
-                            LoadFailurePage(failure: failure, onRetry: tab.retry)
-                        }
-                    }
+            if let split = tabManager.activeSplit {
+                SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
+            } else {
+                PageView(tab: tab, appServices: appServices)
+                    .id(tab.id)
+                    .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transaction { $0.animation = nil }
+        .overlay { SplitDropZones(tabManager: tabManager) }
+        .overlay { PeekOverlay(tabManager: tabManager, appServices: appServices) }
     }
 }

@@ -6,7 +6,7 @@ struct PageToolsCommands: Commands {
     @FocusedObject private var tabManager: TabManager?
 
     var body: some Commands {
-        CommandGroup(after: .saveItem) {
+        CommandGroup(after: .newItem) {
             Group {
                 Button("Save Page As…") {
                     tabManager?.savePage()
