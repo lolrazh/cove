@@ -181,7 +181,8 @@ struct BrowserShellView<Content: View>: View {
             downloadManager: appServices.downloadManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
-            presentsSiteControls: isSidebarHideable,
+            // Only once it's out: a popover can't open from offscreen.
+            presentsSiteControls: showsFloatingSidebar,
             onToggleDocked: toggleDocked
         )
         .frame(width: sidebarWidth)
