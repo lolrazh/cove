@@ -186,10 +186,10 @@ final class CommandBarModel: ObservableObject {
         CommandBarCommand.allCases.filter { command in
             switch command {
             case .copyURL: !(tabManager.activeTab?.currentURL.isEmpty ?? true)
-            case .pinTab: activeSection == .today && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
-            case .addToFavorites: [.today, .pinned].contains(activeSection) && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .pinTab: canPin && activeSection == .today
+            case .addToFavorites: canPin && [.today, .pinned].contains(activeSection)
             case .unpinTab: [.pinned, .favorites].contains(activeSection)
-            case .newFolder: true
+            case .newFolder: !tabManager.isPrivate
             case .duplicateTab: true
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
             case .unmuteTab: tabManager.activeTab?.isMuted ?? false
@@ -213,6 +213,11 @@ final class CommandBarModel: ObservableObject {
 
     private var activeSection: TabManager.TabSection? {
         tabManager.activeTabID.flatMap(tabManager.section)
+    }
+
+    /// A page can be pinned, outside a private window, which keeps nothing.
+    private var canPin: Bool {
+        !tabManager.isPrivate && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
     }
 
     // MARK: - Ranking

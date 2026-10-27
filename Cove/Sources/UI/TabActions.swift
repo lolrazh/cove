@@ -15,9 +15,12 @@ struct TabActions: View {
     let placement: Placement
 
     var body: some View {
-        pinning
+        // A private window keeps nothing, pins included.
+        if !tabManager.isPrivate {
+            pinning
 
-        Divider()
+            Divider()
+        }
 
         Button("Duplicate Tab") {
             tabManager.duplicateTab(tab.id)

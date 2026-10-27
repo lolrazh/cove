@@ -129,13 +129,13 @@ struct SidebarTabView: View {
     }
 
     /// An empty section shows only while a tab is being dragged, as somewhere
-    /// to drop it.
+    /// to drop it; never in a private window, which keeps no pins.
     @ViewBuilder
     private var favorites: some View {
         if !tabManager.favorites.isEmpty {
             SidebarFavoritesGrid(tabs: tabManager.favorites, tabManager: tabManager, draggedTabID: $draggedTabID)
                 .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
-        } else if draggedTabID != nil {
+        } else if showsDropZones {
             SidebarDropZone(title: "Favorites")
                 .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $draggedTabID)
         }
@@ -146,10 +146,14 @@ struct SidebarTabView: View {
         if !tabManager.pinned.isEmpty {
             SidebarPinnedList(items: tabManager.pinned.items, tabManager: tabManager, draggedTabID: $draggedTabID)
                 .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
-        } else if draggedTabID != nil {
+        } else if showsDropZones {
             SidebarDropZone(title: "Pinned")
                 .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $draggedTabID)
         }
+    }
+
+    private var showsDropZones: Bool {
+        draggedTabID != nil && !tabManager.isPrivate
     }
 
     /// New Tab on top, then today's tabs newest first, so a new tab appears
