@@ -7,6 +7,20 @@ extension TabManager {
         activeTab.flatMap { $0.isNewTabPage ? nil : $0 }
     }
 
+    // MARK: - Find
+
+    func findInPage() {
+        activePage?.findInPage.present()
+    }
+
+    func findNext() {
+        activePage?.findInPage.findNext()
+    }
+
+    func findPrevious() {
+        activePage?.findInPage.findPrevious()
+    }
+
     // MARK: - Zoom
 
     func zoomIn() {

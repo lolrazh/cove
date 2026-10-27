@@ -40,6 +40,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published private(set) var isMuted = false
 
     private(set) var webView: WKWebView
+    /// The find bar's state. Follows the web view when it's replaced.
+    private(set) lazy var findInPage = FindInPage { [unowned self] in webView }
 
     private let settings: BrowserSettingsStore
     private let services: TabSessionServices
