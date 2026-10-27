@@ -228,7 +228,7 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       "Open in Cove" to move the page into the main window (setting).
       *(Little Cove: Settings › General › Links. A compact window with the
       site and Open in Cove, which moves the live tab, page and history,
-      into the last active window's Today. ⌥⌘N and the Command Bar open an
+      into the last active window's space's Today. ⌥⌘N and the Command Bar open an
       empty one. `ExternalURLRouter.open(_:from:)` is the one decision
       point, where Air Traffic Control can choose a space later.)*
 - [x] Peek: links opened from Favorites and Pinned tabs on another site open
@@ -241,8 +241,8 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       also Open in Split View in a tab's menu and dragging a tab onto the
       page's edge. Stack or side by side; one grouped entry in the sidebar
       and the strip; ⌘W closes the focused pane; saved with the session.
-      The active tab is the focused pane, so page tools, ⌘L, navigation,
-      site controls and Boosts act on it.)*
+      Splits belong to a space's Today. The active tab is the focused pane,
+      so page tools, ⌘L, navigation, site controls and Boosts act on it.)*
 
 ### 5g. Library, bookmarks, downloads
 - [x] Library panel: Downloads, Archive, History, in the sidebar footer.
