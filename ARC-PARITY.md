@@ -215,8 +215,12 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
 - [ ] Downloads also show progress in the sidebar footer.
 
 ### 5h. Media
-- [ ] Media player in the sidebar when a background tab plays audio or video:
-      title, site, play/pause, skip, open the tab.
+- [x] Media player in the sidebar when a background tab plays audio or video:
+      title, site, play/pause, skip, open the tab. *(A card above the footer,
+      also in the revealed hidden sidebar; a compact favicon + play/pause in
+      the navigation bar in top-tab mode. Skip changes track when the page's
+      Media Session handles it, else seeks 10 s. Mute, close, Command Bar
+      Play/Pause Media. No video thumbnail.)*
 
 ### 5i. Site controls
 - [ ] Per-site menu from the URL pill: permissions, content blocking on/off,
