@@ -129,5 +129,6 @@ struct BrowserView: View {
             .id(tab.id)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .transaction { $0.animation = nil }
+            .overlay { PeekOverlay(tabManager: tabManager, appServices: appServices) }
     }
 }

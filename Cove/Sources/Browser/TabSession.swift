@@ -603,6 +603,10 @@ extension TabSession: WKNavigationDelegate {
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
+        if navigationAction.targetFrame?.isMainFrame == true, opensInPeek(navigationAction), let peek = host?.peek {
+            peek(navigationAction.request)
+            return .cancel
+        }
         if navigationAction.targetFrame?.isMainFrame == true {
             updateFavicon(for: navigationAction.request.url)
             services.contentBlocker.update(
@@ -668,8 +672,21 @@ extension TabSession: WKUIDelegate {
 
         var request = navigationAction.request
         request.url = url
-        host?.openInNewTab(request)
+        if opensInPeek(navigationAction), let peek = host?.peek {
+            peek(request)
+        } else {
+            host?.openInNewTab(request)
+        }
         return nil
+    }
+
+    /// Arc's Peek: a link clicked with Shift, or one from a pinned tab or
+    /// favorite to another site, opens over the page instead of leaving it.
+    private func opensInPeek(_ action: WKNavigationAction) -> Bool {
+        guard action.navigationType == .linkActivated || action.targetFrame == nil, let host = action.request.url?.host() else { return false }
+        if action.modifierFlags.contains(.shift) { return true }
+        guard pinnedURL != nil, let site = Site(URL(string: currentURL)) else { return false }
+        return !site.contains(host)
     }
 
     /// The window to show one of the page's dialogs on. A page in a background

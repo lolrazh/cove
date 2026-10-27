@@ -34,6 +34,8 @@ final class TabManager: ObservableObject {
     /// others may sleep once they've been left alone long enough.
     @Published var activeTabID: UUID? {
         didSet {
+            // A Peek belongs to the page it was opened over.
+            closePeek()
             oldValue.flatMap(tab)?.markUsed()
             activeTab?.markUsed()
             activeTab?.wake()
@@ -43,6 +45,10 @@ final class TabManager: ObservableObject {
     @Published private(set) var hideTabs: Bool
     /// The background tab the media player controls.
     @Published private(set) var mediaTab: TabSession?
+    /// A link opened over the page, as in Arc's Peek: a tab of its own, in no
+    /// list, until it's closed or expanded into Today.
+    /// Set through `openPeek`, `closePeek` and `expandPeek`.
+    @Published var peek: Peek?
     /// Whether the active page's site controls are open.
     @Published var isShowingSiteControls = false
     /// The Boost editor, open over the page it was opened from.
@@ -50,8 +56,8 @@ final class TabManager: ObservableObject {
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
 
-    private let settings: BrowserSettingsStore
-    private let services: TabSessionServices
+    let settings: BrowserSettingsStore
+    let services: TabSessionServices
     /// Where this window's closed and idle tabs go: the shared archive, or a
     /// private window's own, kept in memory and gone with the window.
     let archive: TabArchive
@@ -336,7 +342,8 @@ final class TabManager: ObservableObject {
     private func host(for tabID: UUID) -> TabSession.Host {
         TabSession.Host(
             select: { [weak self] in self?.selectTab(tabID) },
-            openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: tabID) }
+            openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: tabID) },
+            peek: { [weak self] request in self?.openPeek(request, from: tabID) }
         )
     }
 
