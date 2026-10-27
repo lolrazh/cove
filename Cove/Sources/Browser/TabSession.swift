@@ -56,6 +56,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         /// Opens a link in a Peek over the page; nil where there's no page to
         /// peek over.
         var peek: (@MainActor (URLRequest) -> Void)? = nil
+        /// Starts Capture on the page, from its context menu; nil where
+        /// there's nowhere to capture to.
+        var capture: (@MainActor () -> Void)? = nil
     }
 
     let id: UUID
@@ -476,6 +479,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         webView.navigationDelegate = self
         webView.uiDelegate = self
         (webView as? BrowserWebView)?.onMouseDown = { [weak self] in self?.host?.select() }
+        (webView as? BrowserWebView)?.onCapture = { [weak self] in self?.host?.capture?() }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }

@@ -13,6 +13,11 @@ struct PageToolsCommands: Commands {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .option])
 
+                Button("Capture…") {
+                    tabManager?.startCapture()
+                }
+                .keyboardShortcut("2", modifiers: [.command, .shift])
+
                 Divider()
 
                 Button("Print…") {

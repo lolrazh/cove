@@ -370,12 +370,17 @@ final class TabManager: ObservableObject {
     }
 
     /// What a tab in this window does when it needs to be on screen or opens
-    /// a page: it's selected, and pages open beside it or in a Peek.
+    /// a page: it's selected, pages open beside it or in a Peek, and its
+    /// context menu captures it.
     private func host(for tabID: UUID) -> TabSession.Host {
         TabSession.Host(
             select: { [weak self] in self?.selectTab(tabID) },
             openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: tabID) },
-            peek: { [weak self] request in self?.openPeek(request, from: tabID) }
+            peek: { [weak self] request in self?.openPeek(request, from: tabID) },
+            capture: { [weak self] in
+                self?.selectTab(tabID)
+                self?.startCapture()
+            }
         )
     }
 

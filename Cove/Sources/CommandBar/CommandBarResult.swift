@@ -81,6 +81,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case actualSize
     case printPage
     case savePage
+    case capture
     case viewSource
     case pictureInPicture
     case siteSettings
@@ -123,6 +124,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: "Actual Size"
         case .printPage: "Print"
         case .savePage: "Save Page As"
+        case .capture: "Capture"
         case .viewSource: "View Source"
         case .pictureInPicture: "Picture in Picture"
         case .siteSettings: "Site Settings"
@@ -167,6 +169,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: "1.magnifyingglass"
         case .printPage: "printer"
         case .savePage: "square.and.arrow.down"
+        case .capture: ChromeSymbols.Capture.capture
         case .viewSource: "chevron.left.forwardslash.chevron.right"
         case .pictureInPicture: "pip.enter"
         case .siteSettings: "switch.2"
@@ -209,6 +212,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .actualSize: ["zoom", "reset"]
         case .printPage: ["pdf"]
         case .savePage: ["download", "archive", "html"]
+        case .capture: ["screenshot", "snapshot", "image", "clip", "region", "element"]
         case .viewSource: ["html", "code", "developer"]
         case .pictureInPicture: ["pip", "video", "float"]
         case .siteSettings: ["permissions", "camera", "microphone", "location", "cookies", "clear", "blocking", "security"]

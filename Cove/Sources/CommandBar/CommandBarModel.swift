@@ -191,6 +191,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.printPage()
         case .savePage:
             tabManager.savePage()
+        case .capture:
+            tabManager.startCapture()
         case .viewSource:
             tabManager.viewSource()
         case .pictureInPicture:
@@ -237,6 +239,7 @@ final class CommandBarModel: ObservableObject {
             case .playMedia: tabManager.mediaTab?.nowPlaying?.isPlaying == false
             case .closeOtherTabs: tabManager.tabs.count > 1
             case .findInPage, .printPage, .savePage, .viewSource, .pictureInPicture: tabManager.activePage != nil
+            case .capture: tabManager.activePage?.webView != nil
             case .zoomIn: tabManager.activePage.map { PageZoom.zoomedIn(from: $0.pageZoom) != nil } ?? false
             case .zoomOut: tabManager.activePage.map { PageZoom.zoomedOut(from: $0.pageZoom) != nil } ?? false
             case .actualSize: tabManager.activePage.map { $0.pageZoom != 1 } ?? false
