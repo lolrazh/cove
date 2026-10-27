@@ -49,6 +49,7 @@ private struct LittleCoveContent: View {
                     .padding(.horizontal, 6)
             }
             .buttonStyle(ChromeButtonStyle(size: .titlebar))
+            .disabled(tab.isNewTabPage)
             .help("Move this page into your browser window")
         }
         .padding(.leading, trafficLightInset + ChromeMetrics.trafficLightTrailingGap)
