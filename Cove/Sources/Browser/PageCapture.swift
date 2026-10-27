@@ -25,10 +25,7 @@ struct Capture {
     /// The image as PNG, at the screen's resolution and marked with it, so
     /// it opens at the size it was on screen.
     var pngData: Data? {
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-        let bitmap = NSBitmapImageRep(cgImage: cgImage)
-        bitmap.size = image.size
-        return bitmap.representation(using: .png, properties: [:])
+        image.pngData
     }
 }
 

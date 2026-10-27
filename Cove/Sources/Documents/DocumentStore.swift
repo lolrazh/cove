@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 
-/// Keeps the notes: an index of them, and each one's file beside it in
+/// Keeps the notes and easels: an index of them, and each one's file beside it in
 /// `Application Support/Cove/Documents`. One store for the app; what's open
 /// is loaded once and shared by every window showing it. Without a directory
 /// it keeps nothing, which is what tests want.
@@ -11,6 +11,7 @@ final class DocumentStore: ObservableObject {
 
     private let directory: URL?
     private var notes: [UUID: Note] = [:]
+    private var easels: [UUID: Easel] = [:]
     private var pendingSave: Task<Void, Never>?
     private var terminationObserver: NSObjectProtocol?
 
@@ -56,6 +57,7 @@ final class DocumentStore: ObservableObject {
     func delete(_ id: UUID) {
         guard let document = documents.removeValue(forKey: id) else { return }
         notes[id] = nil
+        easels[id] = nil
         fileURL(for: document).map { try? FileManager.default.removeItem(at: $0) }
         scheduleSave()
     }
@@ -72,6 +74,20 @@ final class DocumentStore: ObservableObject {
         }
         notes[id] = note
         return note
+    }
+
+    /// The easel, loaded on first use.
+    func easel(_ id: UUID) -> Easel? {
+        if let easel = easels[id] { return easel }
+        guard let document = documents[id], document.kind == .easel else { return nil }
+        let easel = Easel(id: id, packageURL: fileURL(for: document)) { [weak self] text in
+            self?.change(id) {
+                $0.text = text
+                $0.modifiedAt = .now
+            }
+        }
+        easels[id] = easel
+        return easel
     }
 
     // MARK: - Saving
@@ -101,6 +117,7 @@ final class DocumentStore: ObservableObject {
     /// second after the last of them.
     func save() {
         notes.values.forEach { $0.save() }
+        easels.values.forEach { $0.save() }
         pendingSave?.cancel()
         guard let directory else { return }
         let encoder = PropertyListEncoder()

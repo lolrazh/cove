@@ -1,13 +1,16 @@
 import Foundation
 
-/// What a document is: Arc's note, rich text in the page card.
+/// What a document is: Arc's note, rich text in the page card, or its easel,
+/// a freeform canvas.
 enum DocumentKind: String, Codable, CaseIterable {
     case note
+    case easel
 
     /// What one is called, as in "Pin Note".
     var name: String {
         switch self {
         case .note: "Note"
+        case .easel: "Easel"
         }
     }
 
@@ -15,12 +18,14 @@ enum DocumentKind: String, Codable, CaseIterable {
     var untitledName: String {
         switch self {
         case .note: "Untitled Note"
+        case .easel: "Untitled Easel"
         }
     }
 
     var symbol: String {
         switch self {
         case .note: ChromeSymbols.Documents.note
+        case .easel: ChromeSymbols.Documents.easel
         }
     }
 
@@ -28,11 +33,12 @@ enum DocumentKind: String, Codable, CaseIterable {
     var fileExtension: String {
         switch self {
         case .note: "rtfd"
+        case .easel: "easel"
         }
     }
 }
 
-/// A note as the index knows it: enough to list it in the sidebar and find
+/// A note or easel as the index knows it: enough to list it in the sidebar and find
 /// it from the Command Bar without opening its file.
 struct DocumentInfo: Identifiable, Codable, Hashable {
     let id: UUID
