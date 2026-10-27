@@ -53,6 +53,10 @@ struct CommandBarSection: Identifiable {
 /// elsewhere in the app, under the names their menu items use.
 enum CommandBarCommand: CaseIterable, Hashable {
     case copyURL
+    case duplicateTab
+    case muteTab
+    case unmuteTab
+    case closeOtherTabs
     case showTabsInSidebar
     case showTabsOnTop
     case hideTabs
@@ -65,6 +69,10 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var title: String {
         switch self {
         case .copyURL: "Copy URL"
+        case .duplicateTab: "Duplicate Tab"
+        case .muteTab: "Mute Tab"
+        case .unmuteTab: "Unmute Tab"
+        case .closeOtherTabs: "Close Other Tabs"
         case .showTabsInSidebar: "Show Tabs in Sidebar"
         case .showTabsOnTop: "Show Tabs on Top"
         case .hideTabs: "Hide Tabs"
@@ -79,6 +87,10 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var symbol: String {
         switch self {
         case .copyURL: "link"
+        case .duplicateTab: "plus.square.on.square"
+        case .muteTab: ChromeSymbols.Tabs.muted
+        case .unmuteTab: ChromeSymbols.Tabs.playingAudio
+        case .closeOtherTabs: "xmark.square"
         case .showTabsInSidebar, .showTabsOnTop: ChromeSymbols.Tabs.sidebarLayout
         case .hideTabs: "eye.slash"
         case .showTabs: "eye"
@@ -93,6 +105,9 @@ enum CommandBarCommand: CaseIterable, Hashable {
     var keywords: [String] {
         switch self {
         case .copyURL: ["link", "address"]
+        case .duplicateTab: ["copy", "clone"]
+        case .muteTab, .unmuteTab: ["sound", "audio", "silence"]
+        case .closeOtherTabs: ["clean", "tidy"]
         case .showTabsInSidebar, .showTabsOnTop: ["toggle", "layout", "vertical", "horizontal"]
         case .hideTabs, .showTabs: ["toggle", "sidebar", "immersive"]
         case .reopenClosedTab: ["restore", "undo"]

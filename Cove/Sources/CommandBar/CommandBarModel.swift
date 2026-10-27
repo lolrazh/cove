@@ -125,6 +125,12 @@ final class CommandBarModel: ObservableObject {
         switch command {
         case .copyURL:
             tabManager.copyURL()
+        case .duplicateTab:
+            if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
+        case .muteTab, .unmuteTab:
+            tabManager.activeTab?.toggleMuted()
+        case .closeOtherTabs:
+            if let id = tabManager.activeTabID { tabManager.closeOtherTabs(keeping: id) }
         case .showTabsInSidebar:
             withAnimation(ChromeMotion.shell) { tabManager.setLayout(.sidebar) }
         case .showTabsOnTop:
@@ -148,6 +154,10 @@ final class CommandBarModel: ObservableObject {
         CommandBarCommand.allCases.filter { command in
             switch command {
             case .copyURL: !(tabManager.activeTab?.currentURL.isEmpty ?? true)
+            case .duplicateTab: true
+            case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
+            case .unmuteTab: tabManager.activeTab?.isMuted ?? false
+            case .closeOtherTabs: tabManager.tabs.count > 1
             case .showTabsInSidebar: tabManager.tabLayout == .horizontal
             case .showTabsOnTop: tabManager.tabLayout == .sidebar
             case .hideTabs: !tabManager.hideTabs
@@ -166,7 +176,7 @@ final class CommandBarModel: ObservableObject {
 
         let tabs = tabManager.tabs
             .filter { $0.id != tabManager.activeTabID && !$0.currentURL.isEmpty }
-            .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.pageTitle, url: $0.currentURL) }
+            .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
         let history = trimmed.isEmpty
             ? historyStore.recentlyVisited.map { HistoryPage(url: $0.url, title: $0.title, frecency: 0) }
             : historyStore.pages(matching: trimmed)

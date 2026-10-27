@@ -24,6 +24,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var isNewTabPage: Bool
     @Published var currentURL: String = ""
     @Published var pageTitle: String = ""
+    /// A name the user gave the tab, shown instead of the page's title.
+    @Published private(set) var customTitle: String?
     @Published var canGoBack: Bool = false
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
@@ -32,6 +34,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published private(set) var loadFailure: LoadFailure?
     /// The link under the pointer, for the preview in the page's corner.
     @Published private(set) var hoveredLink: URL?
+    /// Whether the page is playing sound, muted or not.
+    @Published private(set) var isPlayingAudio = false
+    @Published private(set) var isMuted = false
 
     private(set) var webView: WKWebView
 
@@ -42,6 +47,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private let onSelect: (@MainActor () -> Void)?
     private var dialogWindowWaiters: [CheckedContinuation<NSWindow?, Never>] = []
     private let faviconFetcher: FaviconFetcher
+    private var audio: PageAudio?
     private var observers: [NSKeyValueObservation] = []
     private var webViewCanGoBack = false
     private var webViewCanGoForward = false
@@ -87,18 +93,32 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         }
     }
 
+    /// What the tab is called: the user's name for it, or the page's title.
+    var title: String {
+        customTitle ?? pageTitle
+    }
+
     /// The tab as saved for the next launch. A start page saves no URL.
     var savedTab: SavedTab {
         SavedTab(
             url: isNewTabPage ? "" : currentURL,
             title: isNewTabPage ? "" : pageTitle,
+            customTitle: customTitle,
             interactionState: isNewTabPage ? nil : webView.interactionState as? Data
         )
+    }
+
+    /// Fires whenever something in `savedTab` changes enough to save.
+    var savedTabChanges: AnyPublisher<Void, Never> {
+        $currentURL.map { _ in }
+            .merge(with: $customTitle.map { _ in })
+            .eraseToAnyPublisher()
     }
 
     /// Brings back a tab from the last session, back/forward list included. The
     /// saved title shows until the page loads its own.
     private func restore(_ saved: SavedTab) {
+        customTitle = saved.customTitle
         guard !isNewTabPage else { return }
         currentURL = saved.url
         pageTitle = saved.title
@@ -172,6 +192,17 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     func stopLoading() {
         webView.stopLoading()
+    }
+
+    /// Names the tab. An empty name gives it back the page's title.
+    func rename(_ title: String) {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        customTitle = title.isEmpty ? nil : title
+    }
+
+    func toggleMuted() {
+        isMuted.toggle()
+        audio?.setMuted(isMuted)
     }
 
     /// The page came on screen, so dialogs waiting for it can show.
@@ -256,6 +287,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
+        audio = PageAudio(webView: webView, isMuted: isMuted) { [weak self] isPlaying in
+            self?.isPlayingAudio = isPlaying
+        }
     }
 
     private func replaceWebViewForFreshNavigation() {
@@ -276,6 +310,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         estimatedProgress = 0
         loadFailure = nil
         hoveredLink = nil
+        isPlayingAudio = false
         faviconFetcher.reset()
         favicon = nil
         setupObservers()
@@ -336,6 +371,10 @@ extension TabSession: WKNavigationDelegate {
         hoveredLink = nil
         // URL changes were ignored while the failure showed.
         handleURLChange(webView.url)
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        audio?.reset()
     }
 
     func webView(

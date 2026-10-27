@@ -40,6 +40,13 @@ final class TabManager: ObservableObject {
         tabs.first { $0.id == activeTabID }
     }
 
+    /// The tabs as they're shown: top to bottom in the sidebar, where Today
+    /// lists the newest first, or left to right in the strip. Switching with
+    /// the keyboard, dragging, and Close Tabs Below all follow this order.
+    var tabsInDisplayOrder: [TabSession] {
+        tabLayout == .sidebar ? tabs.reversed() : tabs
+    }
+
     init(
         settings: BrowserSettingsStore,
         services: TabSessionServices,
@@ -226,9 +233,52 @@ final class TabManager: ObservableObject {
         activeTabID = id
     }
 
+    /// ⌃Tab and ⌃⇧Tab: the next or previous tab as shown, wrapping around.
+    func selectAdjacentTab(_ offset: Int) {
+        guard let activeTabID, let tab = tabsInDisplayOrder.element(offset, from: activeTabID) else { return }
+        selectTab(tab.id)
+    }
+
+    /// ⌘1 to ⌘8 select a tab by its place, ⌘9 the last one.
+    func selectTab(forShortcut number: Int) {
+        guard let tab = tabsInDisplayOrder.element(forShortcut: number) else { return }
+        selectTab(tab.id)
+    }
+
+    /// Drag and drop: the dragged tab takes the place of the one under it.
+    func moveTab(_ id: UUID, onto target: UUID) {
+        tabs.move(id, onto: target)
+    }
+
+    /// A copy of the tab beside it, back and forward history included.
+    func duplicateTab(_ id: UUID) {
+        guard let tab = tabs.first(where: { $0.id == id }) else { return }
+        open(makeTab(restoring: tab.savedTab), nextTo: id)
+    }
+
     func closeActiveTab() {
         guard let activeTabID else { return }
         closeTab(activeTabID)
+    }
+
+    /// Closes every tab but this one, which stays as the active tab.
+    func closeOtherTabs(keeping id: UUID) {
+        selectTab(id)
+        for tab in tabs where tab.id != id {
+            closeTab(tab.id)
+        }
+    }
+
+    /// Closes the tabs shown after this one: below it in the sidebar, to its
+    /// right in the strip. It becomes active if the active tab is among them.
+    func closeTabs(below id: UUID) {
+        let closing = tabsInDisplayOrder.elements(after: id)
+        if closing.contains(where: { $0.id == activeTabID }) {
+            selectTab(id)
+        }
+        for tab in closing {
+            closeTab(tab.id)
+        }
     }
 
     /// Arc's Clear: closes everything in Today and leaves a fresh tab.
@@ -240,9 +290,10 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// ⌘⇧C and the Command Bar: the page's address to the pasteboard.
-    func copyURL() {
-        guard let url = activeTab?.currentURL, !url.isEmpty else { return }
+    /// ⌘⇧C, the Command Bar and a tab's Copy Link: the page's address to the
+    /// pasteboard, the active tab's unless another is given.
+    func copyURL(of tab: TabSession? = nil) {
+        guard let url = (tab ?? activeTab)?.currentURL, !url.isEmpty else { return }
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url, forType: .string)
         toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)

@@ -21,7 +21,7 @@ final class WebKitEnvironment {
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
         contentBlockerManager.attach(to: configuration.userContentController)
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = BrowserWebView(frame: .zero, configuration: configuration)
         configure(webView)
         return webView
     }

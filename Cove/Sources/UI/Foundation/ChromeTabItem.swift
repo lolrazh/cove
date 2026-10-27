@@ -6,31 +6,34 @@ enum ChromeTabPresentation {
 }
 
 /// One tab, in the top strip or in the sidebar. Everything about a tab is shared
-/// between the two; a presentation only decides the tab's height and how the
-/// active tab is drawn.
+/// between the two, its context menu and renaming included; a presentation
+/// only decides the tab's height and how the active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
+    let tabManager: TabManager
     let presentation: ChromeTabPresentation
     let isActive: Bool
-    let onSelect: () -> Void
-    let onClose: () -> Void
     let canClose: Bool
     /// Fixed width for top tabs, which share the strip evenly. Sidebar tabs fill.
     var width: CGFloat? = nil
 
     @State private var isHovered = false
+    @State private var isRenaming = false
+    @State private var draftTitle = ""
+    @FocusState private var isTitleFieldFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             FaviconView(image: tab.favicon, size: 16)
 
-            Text(title)
-                .font(.callout)
-                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
-                .lineLimit(1)
+            titleView
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            closeButton
+            // Close together, so narrow top tabs keep room for the title.
+            HStack(spacing: 0) {
+                audioButton
+                closeButton
+            }
         }
         .padding(.leading, 8)
         .padding(.trailing, ChromeMetrics.tabAccessoryInset)
@@ -41,18 +44,78 @@ struct ChromeTabItem: View {
         .background { background }
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
+        .animation(ChromeMotion.hover, value: showsAudioButton)
         .onHover { isHovered = $0 }
-        .onTapGesture(perform: onSelect)
+        .onTapGesture { tabManager.selectTab(tab.id) }
+        // Alongside the single click, so selecting a tab never waits to see
+        // whether a second click follows.
+        .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .contextMenu {
+            TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: beginRenaming))
+        }
+    }
+
+    // MARK: - Title
+
+    @ViewBuilder
+    private var titleView: some View {
+        if isRenaming {
+            TextField("Tab Name", text: $draftTitle)
+                .textFieldStyle(.plain)
+                .font(.callout)
+                .focused($isTitleFieldFocused)
+                .onAppear { isTitleFieldFocused = true }
+                .onSubmit(finishRenaming)
+                .onExitCommand { isRenaming = false }
+                .onChange(of: isTitleFieldFocused) { _, isFocused in
+                    if !isFocused { finishRenaming() }
+                }
+        } else {
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func beginRenaming() {
+        draftTitle = tab.title
+        isRenaming = true
+    }
+
+    /// Return or clicking away keeps the new name; Escape leaves before this.
+    private func finishRenaming() {
+        guard isRenaming else { return }
+        isRenaming = false
+        tab.rename(draftTitle)
+    }
+
+    // MARK: - Accessories
+
+    /// Shows while the page plays sound, and while it's muted so it can be
+    /// unmuted. Clicking it toggles.
+    @ViewBuilder
+    private var audioButton: some View {
+        if showsAudioButton {
+            Button(action: tab.toggleMuted) {
+                Image(systemName: tab.isMuted ? ChromeSymbols.Tabs.muted : ChromeSymbols.Tabs.playingAudio)
+                    .foregroundStyle(.secondary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(accessoryStyle)
+            .help(tab.isMuted ? "Unmute Tab" : "Mute Tab")
+            .transition(.opacity)
+        }
     }
 
     private var closeButton: some View {
         let isVisible = canClose && isHovered
 
-        return Button(action: onClose) {
+        return Button { tabManager.closeTab(tab.id) } label: {
             Image(systemName: ChromeSymbols.Tabs.close)
                 .foregroundStyle(.secondary)
         }
-        .buttonStyle(ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2)))
+        .buttonStyle(accessoryStyle)
         .help("Close Tab")
         .opacity(isVisible ? 1 : 0)
         .allowsHitTesting(isVisible)
@@ -81,6 +144,14 @@ struct ChromeTabItem: View {
         }
     }
 
+    private var showsAudioButton: Bool {
+        tab.isPlayingAudio || tab.isMuted
+    }
+
+    private var accessoryStyle: ChromeButtonStyle {
+        ChromeButtonStyle(size: .accessory(side: height - ChromeMetrics.tabAccessoryInset * 2))
+    }
+
     private var shape: ConcentricRectangle {
         .chrome(minimum: ChromeRadius.tab)
     }
@@ -93,6 +164,6 @@ struct ChromeTabItem: View {
     }
 
     private var title: String {
-        tab.pageTitle.isEmpty ? "New Tab" : tab.pageTitle
+        tab.title.isEmpty ? "New Tab" : tab.title
     }
 }

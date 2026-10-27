@@ -24,6 +24,7 @@ struct CoveApp: App {
         .restorationBehavior(.disabled)
         .commands {
             BrowserViewCommands(appServices: appServices)
+            TabCommands()
         }
 
         Window("History", id: HistoryWindow.windowID) {

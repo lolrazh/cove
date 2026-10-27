@@ -14,6 +14,7 @@ struct SidebarTabView: View {
     let onToggleDocked: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var draggedTabID: UUID?
 
     private var tabOrder: [UUID] {
         tabManager.tabs.map(\.id)
@@ -111,6 +112,7 @@ struct SidebarTabView: View {
             }
             .padding(.horizontal, ChromeMetrics.sidebarInset)
             .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
+            .acceptsTabDrops(dragging: $draggedTabID)
             .animation(tabAnimation, value: tabOrder)
         }
     }
@@ -132,12 +134,12 @@ struct SidebarTabView: View {
             ForEach(tabs) { tab in
                 ChromeTabItem(
                     tab: tab,
+                    tabManager: tabManager,
                     presentation: .sidebar,
                     isActive: tab.id == tabManager.activeTabID,
-                    onSelect: { tabManager.selectTab(tab.id) },
-                    onClose: { tabManager.closeTab(tab.id) },
                     canClose: tabManager.tabs.count > 1
                 )
+                .reorderableTab(tab, in: tabManager, dragging: $draggedTabID)
                 .transition(.tabSlot(.vertical))
             }
         }
@@ -199,7 +201,7 @@ private struct SidebarFavoriteTile: View {
                 }
             }
             .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tile)
-            .help(tab.pageTitle)
+            .help(tab.title)
             .onTapGesture(perform: action)
     }
 }

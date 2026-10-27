@@ -151,13 +151,18 @@ Arc's signature: ⌘T and ⌘L open one floating palette instead of a new-tab pa
 Grouped by agent. ⭑ marks the more complex groups, which need the stronger model.
 
 ### 5a. Tab basics
-- [ ] Switch tabs: ⌃Tab / ⌃⇧Tab, ⌘1–8, ⌘9 for the last tab.
-- [ ] Drag to reorder (top strip and sidebar), and between sections.
-- [ ] Tab context menu: Pin, Duplicate, Rename, Copy Link, Mute, Close, Close
-      Others, Close Below.
-- [ ] Rename a tab (double-click); the custom title persists.
-- [ ] Audio indicator and mute button on tabs.
-- [ ] ⌘S toggles the sidebar; ⌘⇧C copies the URL.
+- [x] Switch tabs: ⌃Tab / ⌃⇧Tab, ⌘1–8, ⌘9 for the last tab. *(In the order
+      tabs are shown, so the sidebar's newest-first Today counts from the
+      top.)*
+- [x] Drag to reorder (top strip and sidebar), and between sections.
+      *(Within a list. Drops into Pinned and Favorites come with 5d, on the
+      same drag type.)*
+- [x] Tab context menu: Pin, Duplicate, Rename, Copy Link, Mute, Close, Close
+      Others, Close Below. *(Pin comes with 5d; the Tab menu has the same
+      actions for the active tab.)*
+- [x] Rename a tab (double-click); the custom title persists.
+- [x] Audio indicator and mute button on tabs.
+- [x] ⌘S toggles the sidebar; ⌘⇧C copies the URL.
 
 ### 5b. Page tools
 - [ ] Find in page (⌘F, ⌘G, ⌘⇧G), a find bar in the card.
