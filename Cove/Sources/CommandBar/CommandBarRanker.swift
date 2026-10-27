@@ -9,8 +9,15 @@ struct CommandBarRanker {
         let url: String
     }
 
+    /// Another space, offered as "Switch to" its name.
+    struct OtherSpace {
+        let id: UUID
+        let name: String
+    }
+
     struct Sources {
         var tabs: [OpenTab] = []
+        var spaces: [OtherSpace] = []
         var archive: [ArchivedTab] = []
         var history: [HistoryPage] = []
         var suggestions: [String] = []
@@ -76,8 +83,9 @@ struct CommandBarRanker {
             .prefix(Limit.suggestions)
             .map { CommandBarResult(kind: .suggestion, title: $0, destination: $0) }
 
-        let commands = sources.commands
-            .filter { match.matches(command: $0) }
+        let commands = sources.spaces.map(Self.spaceResult).filter { match.matches(title: $0.title, keywords: ["space"]) }
+            + sources.commands
+            .filter { match.matches(title: $0.title, keywords: $0.keywords) }
             .prefix(Limit.commands)
             .map(Self.commandResult)
 
@@ -95,7 +103,7 @@ struct CommandBarRanker {
     /// With nothing typed: recent pages to jump back to, and every command.
     private func rankEmpty(_ sources: Sources) -> Ranking {
         let recent = sources.history.prefix(Limit.recent).map(Self.historyResult)
-        let commands = sources.commands.map(Self.commandResult)
+        let commands = sources.commands.map(Self.commandResult) + sources.spaces.map(Self.spaceResult)
         let sections = [
             CommandBarSection(title: "Recent", results: Array(recent)),
             CommandBarSection(title: "Commands", results: commands),
@@ -180,6 +188,10 @@ struct CommandBarRanker {
     private static func commandResult(_ command: CommandBarCommand) -> CommandBarResult {
         CommandBarResult(kind: .command(command), title: command.title, destination: "")
     }
+
+    private static func spaceResult(_ space: OtherSpace) -> CommandBarResult {
+        CommandBarResult(kind: .space(space.id), title: "Switch to \(space.name)", destination: "")
+    }
 }
 
 /// The typed words, and how well a page or command answers them. The Library
@@ -211,9 +223,9 @@ struct QueryMatch {
         return 1
     }
 
-    /// Every typed word must start a word of the command's title or keywords.
-    func matches(command: CommandBarCommand) -> Bool {
-        let words = Self.words(of: command.title.lowercased()) + command.keywords
+    /// Every typed word must start a word of a command's title or keywords.
+    func matches(title: String, keywords: [String]) -> Bool {
+        let words = Self.words(of: title.lowercased()) + keywords
         return tokens.allSatisfy { token in words.contains { $0.hasPrefix(token) } }
     }
 
