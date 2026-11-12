@@ -54,6 +54,9 @@ struct SidebarTabView: View {
                 PrivateBadge()
             } else if let space = tabManager.activeSpace {
                 SidebarSpaceTitle(space: space, tabManager: tabManager)
+                    .anchorPreference(key: SpaceEditorAnchor.self, value: .bounds) {
+                        acceptsSpaceSwipes ? $0 : nil
+                    }
             }
             Spacer(minLength: 0)
         }

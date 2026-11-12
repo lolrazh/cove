@@ -1,9 +1,11 @@
 import SwiftUI
+import AppKit
 
 /// A small live editor. Closing the popover keeps the name and color.
 struct SpaceEditor: View {
     @ObservedObject var store: SpaceStore
     let spaceID: UUID
+    var onClose: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -29,7 +31,7 @@ struct SpaceEditor: View {
                     .onChange(of: name) { _, value in
                         update { $0.name = value }
                     }
-                    .onSubmit { dismiss() }
+                    .onSubmit { close() }
 
                 LazyVGrid(columns: columns, spacing: 4) {
                     ForEach(Array(ChromeTheme.presets.enumerated()), id: \.offset) { index, theme in
@@ -43,6 +45,7 @@ struct SpaceEditor: View {
             .padding(12)
             .frame(width: 260)
             .background(Color(nsColor: .windowBackgroundColor))
+            .onExitCommand { close() }
             .onAppear {
                 name = space.name
                 isNameFocused = true
@@ -76,5 +79,106 @@ struct SpaceEditor: View {
 
     private func update(_ change: (inout Space) -> Void) {
         store.change { $0.update(spaceID, change) }
+    }
+
+    private func close() {
+        if let onClose { onClose() } else { dismiss() }
+    }
+}
+
+/// Only the visible space control supplies an anchor to the window shell.
+struct SpaceEditorAnchor: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? { nil }
+
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        if let next = nextValue() { value = next }
+    }
+}
+
+/// A native transient popover with immediate presentation. The positioning view
+/// stays in the shell while sidebar layouts change, so there is one presenter.
+struct SpaceEditorPopover: NSViewRepresentable {
+    let store: SpaceStore
+    @Binding var spaceID: UUID?
+    let anchor: CGRect
+    let canPresent: Bool
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeNSView(context: Context) -> AnchorView { AnchorView() }
+
+    func updateNSView(_ view: AnchorView, context: Context) {
+        let coordinator = context.coordinator
+        view.present = { [weak view, weak coordinator] in
+            guard let view, let coordinator else { return }
+            updatePopover(view, coordinator: coordinator)
+        }
+        view.present?()
+    }
+
+    private func updatePopover(_ view: NSView, coordinator: Coordinator) {
+        coordinator.selection = $spaceID
+        guard let spaceID else {
+            coordinator.popover.close()
+            return
+        }
+        guard canPresent, view.window != nil else { return }
+        // SwiftUI's anchor is measured from the top; NSView's origin is below.
+        let rect = CGRect(x: anchor.minX, y: view.bounds.height - anchor.maxY,
+                          width: anchor.width, height: anchor.height)
+        if coordinator.presentedID == spaceID {
+            coordinator.popover.positioningRect = rect
+            return
+        }
+        coordinator.popover.close()
+        coordinator.presentedID = spaceID
+        let host = NSHostingController(rootView: SpaceEditor(store: store, spaceID: spaceID) { [weak coordinator] in
+            coordinator?.popover.performClose(nil)
+        })
+        coordinator.popover.contentViewController = host
+        coordinator.popover.contentSize = host.view.fittingSize
+        coordinator.popover.show(relativeTo: rect, of: view, preferredEdge: .minY)
+    }
+
+    static func dismantleNSView(_ view: AnchorView, coordinator: Coordinator) {
+        view.present = nil
+        coordinator.selection = nil
+        coordinator.popover.close()
+    }
+
+    final class AnchorView: NSView {
+        var present: (() -> Void)?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard window != nil else { return }
+            // A revealed sidebar can replace the preference-backed host.
+            // Retry after attachment, using the latest request and geometry.
+            DispatchQueue.main.async { [weak self] in self?.present?() }
+        }
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, NSPopoverDelegate {
+        let popover = NSPopover()
+        var selection: Binding<UUID?>?
+        var presentedID: UUID?
+
+        override init() {
+            super.init()
+            popover.behavior = .transient
+            popover.animates = false
+            popover.delegate = self
+        }
+
+        func popoverDidClose(_ notification: Notification) {
+            let closedID = presentedID
+            presentedID = nil
+            guard let selection else { return }
+            // Closing may occur during a SwiftUI update. Clear only this
+            // presentation, not a different space opened in the same turn.
+            DispatchQueue.main.async {
+                if selection.wrappedValue == closedID { selection.wrappedValue = nil }
+            }
+        }
     }
 }

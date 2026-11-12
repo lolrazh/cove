@@ -48,12 +48,11 @@ struct SidebarSpaceTitle: View {
     }
 
     var body: some View {
-        Button { tabManager.spaceToEdit = space.id } label: {
+        Button { tabManager.spaceToEdit = tabManager.spaceToEdit == space.id ? nil : space.id } label: {
             ZStack(alignment: .leading) {
                 ForEach(tabManager.spaces) { item in
                     Text(item.name)
                         .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                         .opacity(transition.state.weight(for: item.id, selected: space.id))
                         .accessibilityHidden(item.id != space.id)
                 }
@@ -62,7 +61,7 @@ struct SidebarSpaceTitle: View {
             .frame(height: ChromeMetrics.sidebarRowHeight - 8)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ChromeButtonStyle(size: .accessory(side: 26)))
         .help("Edit theme and space")
         .font(.callout.weight(.medium))
         .foregroundStyle(ChromePalette.onTheme)

@@ -61,12 +61,17 @@ struct BrowserShellView<Content: View>: View {
         .overlay {
             CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
         }
-        .popover(isPresented: Binding(
-            get: { tabManager.spaceToEdit != nil },
-            set: { if !$0 { tabManager.spaceToEdit = nil } }
-        ), attachmentAnchor: .rect(.rect(CGRect(x: 174, y: 36, width: 1, height: 1))), arrowEdge: .top) {
-            if let id = tabManager.spaceToEdit {
-                SpaceEditor(store: appServices.spaceStore, spaceID: id)
+        .backgroundPreferenceValue(SpaceEditorAnchor.self) { anchor in
+            GeometryReader { geometry in
+                SpaceEditorPopover(
+                    store: appServices.spaceStore,
+                    spaceID: $tabManager.spaceToEdit,
+                    anchor: anchor.map { geometry[$0] } ?? CGRect(
+                        x: tabRowLeadingInset, y: 0, width: ChromeMetrics.tabHeight,
+                        height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.cardInset
+                    ),
+                    canPresent: isTopMode || anchor != nil
+                )
             }
         }
         .contentShape(Rectangle())
@@ -86,6 +91,10 @@ struct BrowserShellView<Content: View>: View {
         }
         .onChange(of: tabManager.isShowingSiteControls) { _, isPresented in
             if !isPresented { hideIfOutside() }
+        }
+        .onChange(of: tabManager.spaceToEdit) { _, id in
+            if id != nil && isSidebarHideable { areTabsVisible = true }
+            if id == nil { hideIfOutside() }
         }
     }
 
@@ -270,7 +279,8 @@ struct BrowserShellView<Content: View>: View {
 
     private func hideIfOutside() {
         guard tabManager.hideTabs, areTabsVisible, !isPointerOverTabs,
-              !tabManager.isShowingSiteControls, !tabManager.library.isPresented else { return }
+              !tabManager.isShowingSiteControls, !tabManager.library.isPresented,
+              tabManager.spaceToEdit == nil else { return }
         areTabsVisible = false
     }
 

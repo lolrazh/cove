@@ -261,3 +261,30 @@ or separator for an absent section.
   header and footer on Virtual 16:9 and clicked both space dots successfully.
   Returned to Space 2 and moved Cove to Built-in Retina Display with the sidebar
   visible for review. No full-suite rerun for this small visual edit.
+
+## Compact, anchored space editor and resumed commits
+
+The user explicitly required bite-sized commits going forward. Saved accumulated
+browser work and its logs in checkpoint `671dab5`; this is a large checkpoint,
+not a claim that prior work had been committed in small steps. Existing prototype
+files remain outside that checkpoint. Subsequent changes are separate commits.
+
+- `c44c049`: compact editor layout. Width 316 → 260 pt, outer padding 16 → 12 pt,
+  section gap 16 → 10 pt, name text 15 → 13 pt with 8 pt horizontal/6 pt vertical
+  padding, color circles 26 → 22 pt within 26 pt targets. Debug build passed.
+- Replaced the hard-coded window anchor with the visible name control's bounds.
+  The title now sizes to its text and has the shared hover/press surface. Clicking
+  it again closes the editor. The hidden sidebar stays visible during editing.
+- Browser presentation uses one native transient NSPopover with `animates=false`.
+  This avoids the system zoom-in/out animation and retains native outside-click
+  dismissal. Return and Escape close through an explicit callback; the Settings
+  editor retains SwiftUI dismissal. Native attachment retries handle a newly
+  revealed sidebar without requiring a second click.
+- Reference: https://developer.apple.com/documentation/appkit/nspopover/animates
+  and the installed SDK. Mintlify was not exposed by the available tools.
+- Build passed (`/tmp/cove-anchored-theme-panel-build.log`). On Virtual 16:9,
+  verified placement below the name, repeat open/close, live name updates,
+  Return, Escape, color selection, and opening from Spaces → Edit Space when
+  the sidebar was hidden. Restored Space 2 / Blue after checks. No full-suite
+  rerun; physical hover, top-tab mode, and frame-by-frame timing were not checked.
+- Returned to Built-in Retina Display and left the compact panel open for review.
