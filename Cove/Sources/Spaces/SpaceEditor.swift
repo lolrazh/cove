@@ -9,18 +9,19 @@ struct SpaceEditor: View {
     @State private var name = ""
     @FocusState private var isNameFocused: Bool
 
-    private let columns = Array(repeating: GridItem(.fixed(32), spacing: 4), count: 8)
+    private let columns = Array(repeating: GridItem(.fixed(26), spacing: 4), count: 8)
 
     var body: some View {
         if let space = store.spaces.space(spaceID) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
                 TextField("Name", text: $name)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15, weight: .medium))
-                    .padding(10)
-                    .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
+                    .font(.system(size: 13, weight: .medium))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 6))
                     .overlay {
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 6)
                             .strokeBorder(isNameFocused ? Color.accentColor : .clear, lineWidth: 1)
                     }
                     .accessibilityLabel("Space name")
@@ -39,8 +40,8 @@ struct SpaceEditor: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Theme colors")
             }
-            .padding(16)
-            .frame(width: 316)
+            .padding(12)
+            .frame(width: 260)
             .background(Color(nsColor: .windowBackgroundColor))
             .onAppear {
                 name = space.name
@@ -58,16 +59,16 @@ struct SpaceEditor: View {
                 .overlay {
                     if selected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(.white)
-                            .padding(3)
+                            .padding(2)
                             .background(.black.opacity(0.65), in: Circle())
                     }
                 }
+                .frame(width: 22, height: 22)
                 .frame(width: 26, height: 26)
-                .frame(width: 32, height: 32)
         }
-        .buttonStyle(ChromeButtonStyle(size: .accessory(side: 32)))
+        .buttonStyle(ChromeButtonStyle(size: .accessory(side: 26)))
         .accessibilityLabel(name)
         .accessibilityAddTraits(selected ? .isSelected : [])
         .help(name)
