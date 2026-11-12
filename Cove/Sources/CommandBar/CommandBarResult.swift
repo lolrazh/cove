@@ -240,3 +240,17 @@ enum CommandBarCommand: CaseIterable, Hashable {
         }
     }
 }
+
+/// Find the typed part without assuming ASCII or equal UTF-16 lengths.
+/// The same row stays in place while this range grows with each keystroke.
+enum SuggestionMatch {
+    static func range(in suggestion: String, query: String) -> Range<String.Index>? {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return nil }
+        return suggestion.range(of: query, options: [.caseInsensitive, .diacriticInsensitive])
+    }
+
+    static func continuations(_ items: [String], for query: String) -> [String] {
+        items.filter { $0.range(of: query, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil }
+    }
+}

@@ -33,8 +33,10 @@ struct LibraryButton: View {
                 .animation(ChromeMotion.fade, value: downloads.hasActiveDownloads)
                 .animation(ChromeMotion.appear, value: downloads.hasUnseenDownloads)
         }
-        .buttonStyle(ChromeButtonStyle())
-        .help("Library")
+        .buttonStyle(ChromeButtonStyle(restingOpacity: popoverEdge == nil && !downloads.hasActiveDownloads ? 0.6 : 1))
+        .accessibilityLabel("Library")
+        .accessibilityValue(downloads.hasActiveDownloads ? "Downloading" : downloads.hasUnseenDownloads ? "New downloads" : "")
+        .help("Library — downloads, closed tabs, and history")
         .popover(isPresented: popoverBinding, arrowEdge: popoverEdge ?? .bottom) {
             LibraryView(model: library)
                 .padding(10)

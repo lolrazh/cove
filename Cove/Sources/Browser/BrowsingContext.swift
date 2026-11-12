@@ -13,6 +13,7 @@ final class BrowsingContext {
     let isPrivate: Bool
     let faviconStore: FaviconStore
     let sitePermissions = SitePermissions()
+    let pageBackgrounds = PageBackgroundCache()
     let extensions: ExtensionHost
 
     private init(dataStore: WKWebsiteDataStore, faviconStore: FaviconStore, extensions: ExtensionHost, isPrivate: Bool) {

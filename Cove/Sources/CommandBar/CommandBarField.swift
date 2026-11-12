@@ -34,7 +34,10 @@ struct CommandBarField: NSViewRepresentable {
         field.focusRingType = .none
         field.usesSingleLineMode = true
         field.cell?.isScrollable = true
-        field.font = .preferredFont(forTextStyle: .title2)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        field.font = .systemFont(ofSize: 20, weight: .regular)
+        field.setAccessibilityLabel("Search or enter URL")
         field.placeholderString = placeholder
         field.stringValue = text
         field.onCommandReturn = { [coordinator = context.coordinator] in
@@ -46,6 +49,7 @@ struct CommandBarField: NSViewRepresentable {
     func updateNSView(_ field: FieldView, context: Context) {
         let coordinator = context.coordinator
         coordinator.parent = self
+        field.placeholderString = placeholder
 
         if field.stringValue != text, field.stringValue != coordinator.shownCompletion {
             field.stringValue = text
@@ -97,7 +101,13 @@ struct CommandBarField: NSViewRepresentable {
             case #selector(NSResponder.cancelOperation(_:)):
                 parent.onKey(.cancel)
             case #selector(NSResponder.insertTab(_:)):
-                acceptCompletion(in: textView)
+                if shownCompletion != nil {
+                    acceptCompletion(in: textView)
+                } else {
+                    parent.onKey(.moveDown)
+                }
+            case #selector(NSResponder.insertBacktab(_:)):
+                parent.onKey(.moveUp)
             case #selector(NSResponder.moveRight(_:)), #selector(NSResponder.moveToEndOfLine(_:)):
                 // Moving past the suffix accepts it, as in Safari. Otherwise
                 // the caret moves as usual.
@@ -128,8 +138,15 @@ struct CommandBarField: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard let window else { return }
-            previousResponder = window.firstResponder
-            DispatchQueue.main.async {
+            // Capture the control now: the shared field editor changes its
+            // delegate as soon as this field takes focus.
+            if let editor = window.firstResponder as? NSTextView, editor.isFieldEditor {
+                previousResponder = editor.delegate as? NSResponder
+            } else {
+                previousResponder = window.firstResponder
+            }
+            DispatchQueue.main.async { [weak self, weak window] in
+                guard let self, let window, self.window === window else { return }
                 window.makeFirstResponder(self)
             }
         }
@@ -143,10 +160,7 @@ struct CommandBarField: NSViewRepresentable {
         /// The previous responder, if it's still a view in the window. A field
         /// editor stands in for the control it was editing, which may be gone.
         private func restorableResponder(in window: NSWindow) -> NSResponder? {
-            var candidate = previousResponder as? NSView
-            if let editor = candidate as? NSTextView, editor.isFieldEditor {
-                candidate = editor.delegate as? NSView
-            }
+            let candidate = previousResponder as? NSView
             return candidate?.window == window ? candidate : nil
         }
 

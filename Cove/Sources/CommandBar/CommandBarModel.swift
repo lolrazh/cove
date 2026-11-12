@@ -81,11 +81,6 @@ final class CommandBarModel: ObservableObject {
         selection = results[min(max(current + offset, 0), results.count - 1)]
     }
 
-    func openSelection(inNewTab: Bool) {
-        guard let selection else { return }
-        open(selection, inNewTab: inNewTab)
-    }
-
     func open(_ result: CommandBarResult, inNewTab: Bool) {
         switch result.kind {
         case .tab(let id) where mode == .splitView:
@@ -113,11 +108,6 @@ final class CommandBarModel: ObservableObject {
     }
 
     /// A space row's icon.
-    func spaceIcon(for result: CommandBarResult) -> SpaceIcon? {
-        guard case .space(let id) = result.kind else { return nil }
-        return tabManager.spaces.first { $0.id == id }?.icon
-    }
-
     /// Favicons for page rows: a tab's own, or the cached one for its site.
     /// An extension's row shows its button's icon.
     func icon(for result: CommandBarResult) -> NSImage? {
@@ -324,8 +314,10 @@ final class CommandBarModel: ObservableObject {
     }
 
     private func currentSuggestions(for query: String) -> [String] {
-        guard let fetched = fetchedSuggestions, query.hasPrefix(fetched.query) else { return [] }
-        return fetched.items
+        guard settings.showSearchSuggestions, let fetched = fetchedSuggestions else { return [] }
+        if query == fetched.query { return fetched.items }
+        guard query.range(of: fetched.query, options: [.anchored, .caseInsensitive]) != nil else { return [] }
+        return SuggestionMatch.continuations(fetched.items, for: query)
     }
 
     /// Asks the engine after a short pause in typing, and only for input that
@@ -342,7 +334,8 @@ final class CommandBarModel: ObservableObject {
             try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
             let items = await suggestions.fetch(query, from: engine)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, isPresented, engine == searchEngine,
+                  self.query.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
             fetchedSuggestions = (query, items)
             refresh()
         }

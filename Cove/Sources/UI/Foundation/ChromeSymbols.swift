@@ -20,7 +20,6 @@ enum ChromeSymbols {
         static let add = "plus"
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
-        static let clear = "chevron.down"
         static let playingAudio = "speaker.wave.2.fill"
         static let muted = "speaker.slash.fill"
         static let pin = "pin"
@@ -68,7 +67,6 @@ enum ChromeSymbols {
     enum Extensions {
         static let extensions = "puzzlepiece.extension"
         static let permission = "checkmark.circle"
-        static let overflow = "chevron.right.2"
     }
 
     enum Settings {

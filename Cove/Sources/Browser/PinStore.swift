@@ -32,7 +32,7 @@ final class PinStore: ObservableObject {
     /// The live tab behind each pin, by the pin's ID, as last recorded.
     private var tabs: [String: SavedTab]
     private var pendingSave: Task<Void, Never>?
-    private var terminationObserver: NSObjectProtocol?
+    private var terminationObserver: AnyCancellable?
 
     init(fileURL: URL? = PinStore.defaultFileURL) {
         self.fileURL = fileURL
@@ -44,13 +44,10 @@ final class PinStore: ObservableObject {
         layout = saved?.layout ?? PinLayout()
         tabs = saved?.tabs ?? [:]
 
-        terminationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.save() }
-        }
+        terminationObserver = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification, object: nil)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.save() }
+            }
     }
 
     static var defaultFileURL: URL {

@@ -1,5 +1,39 @@
 # Arc Parity
 
+## Current review — 2026-11-12
+
+This is the original feature plan. Checked boxes below mean implemented, not
+fully tested in daily use. The later Dia review replaces the old layout and
+motion references where they conflict: navigation is above the page, the
+sidebar Clear divider is removed, and closing the last tab keeps a start page.
+
+Current order:
+
+1. Tabs, page host, cached page color, sidebar reveal, and command bar: reviewed
+   in the November agent logs; continue to fix reported use failures.
+2. Theme polish: quieter footer icons, hover brightness, a finite start-page
+   light wash, and clearer Library section labels. Built and checked on
+   Virtual 16:9. See `agent-logs/2026-11-12_theme-polish-and-library.md`.
+   Follow-up: shared frame/sidebar gradients, live theme controls, and typed-text
+   emphasis in search suggestions. See
+   `agent-logs/2026-11-12_shared-themes-and-suggestions.md` for checks and limits.
+   Latest: one primary color now generates the full vivid theme. The measured
+   title drift during sidebar close is fixed. See
+   `agent-logs/2026-11-12_vibrant-themes-and-stable-tab-text.md` for recorded
+   before/after measurements, tests, and remaining coverage limits.
+   November 13: compact 220 pt sidebar and simpler theme entry are built.
+   Fine grain is now the selected native surface: eight color pairs, 100%
+   default intensity, static grain, and soft glass with an 8 pt softening pass.
+   New-tab light rises from the bottom and stays clear of the toolbar.
+   The editor is now a compact live popover: name and 16 color choices.
+   Spaces use dots; the frame colors have less white dilution. The sunrise has a wider falloff. Consolidated history:
+   `agent-logs/2026-11-13_browser-polish-roundup.md`.
+3. Next: test download → Finder, close → restore, and History search as complete
+   tasks. Then review profile creation and theme editing across light/dark
+   appearance and accessibility settings.
+
+The historical plan follows.
+
 An audit of Cove against Arc (as last shipped, before The Browser Company moved
 to Dia), and the plan to close the gap. Cove keeps what it does better (WebKit,
 native window chrome, top tabs, built-in blocking) and takes Arc's layout,

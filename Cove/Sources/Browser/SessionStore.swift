@@ -115,7 +115,7 @@ final class SessionStore {
     private var didReopenWindows = false
     private var trackedWindows: [TrackedWindow] = []
     private var pendingSave: Task<Void, Never>?
-    private var terminationObserver: NSObjectProtocol?
+    private var terminationObserver: AnyCancellable?
 
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -123,17 +123,14 @@ final class SessionStore {
         restorableWindows = StoreFile.read(fileURL) { try? PropertyListDecoder().decode([SavedWindow].self, from: $0) } ?? []
 
         // A change in the last second before quitting would miss the debounce.
-        terminationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.save()
-                // Windows close after this, and the saved session must keep them.
-                self?.trackedWindows.removeAll()
+        terminationObserver = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification, object: nil)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.save()
+                    // Windows close after this, and the saved session must keep them.
+                    self?.trackedWindows.removeAll()
+                }
             }
-        }
     }
 
     /// The next window saved last session, if any are left to restore.
@@ -216,6 +213,7 @@ final class SessionStore {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         guard let data = try? encoder.encode(windows) else { return }
+        try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: fileURL, options: .atomic)
     }
 }

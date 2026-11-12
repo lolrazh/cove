@@ -188,3 +188,31 @@ struct NavigationDestinationTests {
         #expect(builder.destination(for: "   ") == nil)
     }
 }
+
+struct SuggestionMatchTests {
+    @Test func `the typed part grows one letter at a time without changing the suggestion`() throws {
+        let suggestion = "swift programming"
+        for query in ["s", "sw", "swift", "swift p", "swift programming"] {
+            let match = try #require(SuggestionMatch.range(in: suggestion, query: query))
+            #expect(String(suggestion[match]) == query)
+        }
+    }
+
+    @Test func `matching preserves original accents case and composed characters`() throws {
+        for (suggestion, query, expected) in [
+            ("Café guide", "cafe", "Café"),
+            ("👩🏽‍💻 Swift", "👩🏽‍💻 s", "👩🏽‍💻 S"),
+            ("best swift tutorials", "swift", "swift")
+        ] {
+            let match = try #require(SuggestionMatch.range(in: suggestion, query: query))
+            #expect(String(suggestion[match]) == expected)
+        }
+        #expect(SuggestionMatch.range(in: "swift", query: "   ") == nil)
+        #expect(SuggestionMatch.range(in: "swift", query: "rust") == nil)
+    }
+
+    @Test func `cached suggestions drop branches that no longer match the input`() {
+        #expect(SuggestionMatch.continuations(["swift ui", "Swift programming", "swift package"], for: "swift p")
+            == ["Swift programming", "swift package"])
+    }
+}

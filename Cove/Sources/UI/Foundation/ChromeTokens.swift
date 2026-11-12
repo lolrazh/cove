@@ -10,8 +10,8 @@ enum ChromeMetrics {
     static let titlebarHeight: CGFloat = 40
     /// Gap between the window edge and the tab row, and around floating chrome.
     static let gutter: CGFloat = 6
-    /// Gap between the window edge and the page card, like Arc's floating page.
-    static let cardInset: CGFloat = 8
+    /// Thin theme frame between the window edge and the page card.
+    static let cardInset: CGFloat = 4
     /// Tabs sit closer to the page than to the window edge, so they read as
     /// belonging to it. This leaves them a point below the traffic lights'
     /// centerline, which looks centered next to the lights' larger glyph.
@@ -32,35 +32,39 @@ enum ChromeMetrics {
     /// The sidebar is resized by dragging its trailing edge; the lower bound
     /// keeps the header's four controls clear of the traffic lights.
     static let sidebarWidthRange: ClosedRange<CGFloat> = 220...400
-    static let sidebarDefaultWidth: CGFloat = 240
-    /// Horizontal inset of the sidebar's rows: the same gap to the page card as
-    /// the card keeps from the window.
-    static let sidebarInset: CGFloat = cardInset
-    static let sidebarRowHeight: CGFloat = 32
+    static let sidebarDefaultWidth: CGFloat = sidebarWidthRange.lowerBound
+    /// Room around sidebar rows, independent of the thin page frame.
+    static let sidebarInset: CGFloat = 8
+    static let sidebarRowHeight: CGFloat = 34
+    static let sidebarRowSpacing: CGFloat = 3
     /// A favorite's tile; as many fit a row as the sidebar's width allows.
     static let favoriteTileRange: ClosedRange<CGFloat> = 30...40
     /// How far a folder's contents sit in from the folder's row.
     static let sidebarFolderIndent: CGFloat = 14
-    /// Space between the sidebar's sections, and above and below the Clear line.
+    /// Space between the sidebar's sections.
     static let sidebarSectionSpacing: CGFloat = 8
     static let sidebarFooterHeight: CGFloat = 36
     /// Width of the invisible edge that reveals hidden tabs.
     static let revealEdge: CGFloat = 8
+    /// A wider approach area for the sidebar, without taking clicks from the page.
+    static let sidebarRevealWidth: CGFloat = 24
 
-    static let navigationBarHeight: CGFloat = 44
+    static let navigationBarHeight: CGFloat = 40
     static let iconButtonSize: CGFloat = 28
-    /// The loading bar along the top edge of the page.
-    static let progressHeight: CGFloat = 2
+    static let navigationSpacing: CGFloat = 2
+    static let addressFieldHeight: CGFloat = 32
+    /// The crisp core of the loading line; its glow does not affect layout.
+    static let progressHeight: CGFloat = 1
 }
 
-/// Colors come from the system, so light and dark mode, increased contrast and
-/// the accent color all work without any code of ours.
+/// Shared roles for system surfaces and the space's generated theme.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for
     /// the area behind a page, tinted by the window's `ChromeTheme`. On macOS 27
     /// the plain window color matches the page color exactly, which would make
     /// the card vanish.
     static var shell: some ShapeStyle { ChromeFrameStyle() }
+    static var onTheme: some ShapeStyle { ChromeOnThemeStyle() }
     /// The content card, and anything standing in for a web page.
     static let content = Color(nsColor: .textBackgroundColor)
     /// The selected thing in the sidebar, lifted off the frame.
@@ -78,19 +82,25 @@ enum ChromeMotion {
     static let press = Animation.easeOut(duration: 0.08)
     /// The frame rearranging itself: sidebar to top tabs, docked to hidden.
     static let shell = Animation.smooth(duration: 0.26)
-    /// Hidden chrome sliding in from a window edge; the overshoot reads as
-    /// arriving rather than extending.
-    static let slide = Animation.spring(duration: 0.34, bounce: 0.18)
+    /// Hidden chrome follows the edge without overshooting the page.
+    static let slide = Animation.easeOut(duration: 0.14)
+    static let chromeExit = Animation.easeOut(duration: 0.09)
     /// A tab opening or closing, and its neighbors making room.
     static let tab = Animation.smooth(duration: 0.18)
-    /// The Command Bar scaling and fading in. Quick: it answers a keystroke.
-    static let commandBar = Animation.smooth(duration: 0.18)
+    /// Dia's collection snapshot timing, checked against recorded row motion.
+    static let sidebarTab = Animation.timingCurve(0.25, 0.46, 0.45, 0.94, duration: 0.12)
+    /// Small page tools appearing within the content card.
+    static let pageTool = Animation.smooth(duration: 0.18)
     /// The sidebar paging from one space to the next.
-    static let page = Animation.spring(duration: 0.36, bounce: 0.12)
+    static let page = Animation.spring(duration: 0.26, bounce: 0)
+    static let spaceSettleResponse: CGFloat = 0.18
+    static let spaceSettleMaxDuration: TimeInterval = 0.28
+    static let spaceChange = Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.18)
+    static let themeChange = Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.22)
     /// A toast appearing over the page.
     static let appear = Animation.spring(duration: 0.3, bounce: 0.2)
     static let fade = Animation.easeOut(duration: 0.25)
-    static let progress = Animation.linear(duration: 0.2)
+    static let progress = Animation.easeOut(duration: 0.2)
 }
 
 /// Elevation, in four steps. Shadows are the only thing that lifts a surface;

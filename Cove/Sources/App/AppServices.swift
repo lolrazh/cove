@@ -32,7 +32,7 @@ final class AppServices {
         let historyStore = HistoryStore(settings: settingsStore)
         let faviconStore = FaviconStore()
         let downloadManager = DownloadManager(settings: settingsStore)
-        let contentBlockerManager = ContentBlockerManager(settings: settingsStore)
+        let contentBlockerManager = ContentBlockerManager(settings: settingsStore, defaults: defaults)
         let extensionLibrary = ExtensionLibrary()
 
         self.settingsStore = settingsStore
@@ -83,10 +83,5 @@ final class AppServices {
             await extensionLibrary.loadInstalled()
         }
 
-        guard settingsStore.contentBlockingEnabled else { return }
-
-        Task { [contentBlockerManager] in
-            await contentBlockerManager.load()
-        }
     }
 }

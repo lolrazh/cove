@@ -52,7 +52,10 @@ final class BrowserSettingsStore: ObservableObject {
         self.homePageURL = defaults.string(forKey: BrowserSettingKeys.homePageURL) ?? "https://www.google.com"
         self.showsTabsInSidebar = Self.resolveShowsTabsInSidebar(defaults)
         self.hideTabs = defaults.bool(forKey: BrowserSettingKeys.hideTabs)
-        self.sidebarWidth = defaults.double(forKey: BrowserSettingKeys.sidebarWidth)
+        let savedSidebarWidth = defaults.double(forKey: BrowserSettingKeys.sidebarWidth)
+        // Adopt the narrower default for the previous default-sized sidebar.
+        // Keep widths that the user resized to another value.
+        self.sidebarWidth = savedSidebarWidth == 240 ? ChromeMetrics.sidebarDefaultWidth : savedSidebarWidth
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)

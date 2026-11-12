@@ -7,12 +7,15 @@ import SwiftUI
 struct PageView: View {
     @ObservedObject var tab: TabSession
     let appServices: AppServices
+    var showsLoadingProgress = true
 
     var body: some View {
         ZStack(alignment: .top) {
             page
-            PageProgressBar(progress: tab.estimatedProgress, isLoading: tab.isLoading)
-                .id(tab.id)
+            if showsLoadingProgress {
+                PageProgressBar(progress: tab.estimatedProgress, isLoading: tab.isLoading)
+                    .id(tab.id)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay { LinkPreview(url: tab.hoveredLink) }

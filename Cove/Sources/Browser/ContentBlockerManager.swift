@@ -18,15 +18,13 @@ final class ContentBlockerManager {
     private let settings: BrowserSettingsStore
     private let defaults: UserDefaults
     private var ruleList: WKContentRuleList?
+    private var isLoading = false
     private var trackedControllers = NSHashTable<WKUserContentController>.weakObjects()
-    private var pendingControllers = NSHashTable<WKUserContentController>.weakObjects()
     /// Controllers whose page is on a site with blocking turned off.
     private var exemptControllers = NSHashTable<WKUserContentController>.weakObjects()
     /// Sites with blocking turned off, by domain.
     private var exceptions: Set<String>
     private var cancellables: Set<AnyCancellable> = []
-
-    var isLoaded: Bool { ruleList != nil }
 
     /// Whether blocking is on in Settings, for every site.
     var isEnabled: Bool { settings.contentBlockingEnabled }
@@ -56,6 +54,9 @@ final class ContentBlockerManager {
             return
         }
 
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
         let store = WKContentRuleListStore.default()!
 
         if let cached = try? await store.contentRuleList(forIdentifier: Self.identifier) {
@@ -108,7 +109,6 @@ final class ContentBlockerManager {
 
         if isExempt {
             exemptControllers.add(controller)
-            pendingControllers.remove(controller)
             ruleList.map(controller.remove)
         } else {
             exemptControllers.remove(controller)
@@ -125,13 +125,12 @@ final class ContentBlockerManager {
 
         if let ruleList {
             attach(ruleList, to: controller)
-        } else {
-            pendingControllers.add(controller)
         }
     }
 
     func detach(from controller: WKUserContentController) {
         trackedControllers.remove(controller)
+        exemptControllers.remove(controller)
         guard let ruleList else { return }
         controller.remove(ruleList)
     }
@@ -142,11 +141,6 @@ final class ContentBlockerManager {
         for controller in trackedControllers.allObjects where !exemptControllers.contains(controller) {
             attach(ruleList, to: controller)
         }
-
-        for controller in pendingControllers.allObjects {
-            attach(ruleList, to: controller)
-        }
-        pendingControllers.removeAllObjects()
     }
 
     private func attach(_ ruleList: WKContentRuleList, to controller: WKUserContentController) {
@@ -155,7 +149,6 @@ final class ContentBlockerManager {
     }
 
     private func detachFromTrackedControllers() {
-        pendingControllers.removeAllObjects()
         guard let ruleList else { return }
 
         for controller in trackedControllers.allObjects {

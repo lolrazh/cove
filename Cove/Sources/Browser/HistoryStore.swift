@@ -56,10 +56,10 @@ final class HistoryStore: ObservableObject {
     private let db: Database?
     private let recentlyVisitedLimit = 8
 
-    init(settings: BrowserSettingsStore) {
+    init(settings: BrowserSettingsStore, databasePath: String? = nil) {
         self.settings = settings
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dbPath = appSupport.appendingPathComponent("Cove/history.db").path
+        let dbPath = databasePath ?? appSupport.appendingPathComponent("Cove/history.db").path
 
         do {
             db = try Database(path: dbPath)

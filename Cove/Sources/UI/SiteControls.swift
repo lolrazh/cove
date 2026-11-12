@@ -22,7 +22,7 @@ struct SiteControlsButton: View {
             } label: {
                 glyphImage
             }
-            .buttonStyle(ChromeButtonStyle(size: .accessory(side: Self.side)))
+            .buttonStyle(ChromeButtonStyle())
             .help("Site Settings")
             .popover(isPresented: isPresented, arrowEdge: .bottom) {
                 VStack(spacing: 0) {
@@ -40,7 +40,7 @@ struct SiteControlsButton: View {
         }
     }
 
-    static let side: CGFloat = 20
+    static let side = ChromeMetrics.iconButtonSize
 
     private var isPresented: Binding<Bool> {
         Binding(
@@ -57,6 +57,7 @@ struct SiteControlsButton: View {
 
     private var glyphImage: some View {
         Image(systemName: glyph)
+            .font(.body.weight(.medium))
             .foregroundStyle(.secondary)
     }
 

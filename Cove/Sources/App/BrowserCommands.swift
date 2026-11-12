@@ -126,9 +126,7 @@ struct BrowserViewCommands: Commands {
                 isOn: Binding(
                     get: { tabManager?.tabLayout == .sidebar },
                     set: { show in
-                        withAnimation(ChromeMotion.shell) {
-                            tabManager?.setLayout(show ? .sidebar : .horizontal)
-                        }
+                        tabManager?.setLayout(show ? .sidebar : .horizontal)
                     }
                 )
             )
@@ -139,9 +137,7 @@ struct BrowserViewCommands: Commands {
                 isOn: Binding(
                     get: { tabManager?.hideTabs ?? false },
                     set: { hide in
-                        withAnimation(ChromeMotion.shell) {
-                            tabManager?.setHideTabs(hide)
-                        }
+                        tabManager?.setHideTabs(hide)
                     }
                 )
             )

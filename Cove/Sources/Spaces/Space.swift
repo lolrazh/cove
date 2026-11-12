@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// What a space is drawn as in the footer and its menus: an SF Symbol, or an
-/// emoji the user typed.
+/// Legacy icon values remain decodable for saved spaces. The interface uses dots.
 enum SpaceIcon: Codable, Hashable {
     case symbol(String)
     case emoji(String)
@@ -9,12 +8,7 @@ enum SpaceIcon: Codable, Hashable {
     /// A small dot, like Arc's spaces before they're given an icon.
     static let dot = SpaceIcon.symbol("circle.fill")
 
-    /// The symbols the space editor offers.
-    static let symbols: [SpaceIcon] = [
-        "circle.fill", "house", "briefcase", "book", "graduationcap", "star",
-        "heart", "bolt", "leaf", "flame", "moon", "hammer",
-        "paintbrush", "music.note", "gamecontroller", "airplane",
-    ].map(SpaceIcon.symbol)
+
 }
 
 /// Who is browsing: a profile keeps its own cookies, logins and site data,

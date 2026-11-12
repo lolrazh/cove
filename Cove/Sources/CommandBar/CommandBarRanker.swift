@@ -54,7 +54,7 @@ struct CommandBarRanker {
         static let documents = 3
         static let archive = 3
         static let history = 5
-        static let recent = 6
+        static let recent = 4
         static let suggestions = 4
         static let commands = 3
     }

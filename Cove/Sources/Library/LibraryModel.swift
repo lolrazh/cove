@@ -20,6 +20,14 @@ final class LibraryModel: ObservableObject {
             case .history: "History"
             }
         }
+
+        var explanation: String {
+            switch self {
+            case .downloads: "Files downloaded in Cove."
+            case .archive: "Closed tabs. Select one to reopen it."
+            case .history: "Pages you visited."
+            }
+        }
     }
 
     @Published private(set) var isPresented = false

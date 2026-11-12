@@ -1,20 +1,12 @@
 import SwiftUI
 
-/// A space's icon at the size of the text around it: its symbol, or its emoji.
+/// A shared, quiet marker for spaces. Stored legacy symbols do not affect it.
 struct SpaceIconView: View {
-    let icon: SpaceIcon
+    var diameter: CGFloat = 7
 
     var body: some View {
-        switch icon {
-        case .symbol(let name) where icon == .dot:
-            // A dot reads as Arc's space dot only when it's small.
-            Image(systemName: name)
-                .imageScale(.small)
-                .scaleEffect(0.6)
-        case .symbol(let name):
-            Image(systemName: name)
-        case .emoji(let emoji):
-            Text(emoji)
-        }
+        Circle()
+            .frame(width: diameter, height: diameter)
+            .accessibilityHidden(true)
     }
 }

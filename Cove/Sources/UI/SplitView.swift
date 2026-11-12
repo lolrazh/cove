@@ -56,7 +56,7 @@ private struct SplitPane: View {
     let onFocus: () -> Void
 
     var body: some View {
-        PageView(tab: tab, appServices: appServices)
+        PageView(tab: tab, appServices: appServices, showsLoadingProgress: !isFocused)
             .simultaneousGesture(TapGesture().onEnded(onFocus))
             .chromeCard()
             .overlay {

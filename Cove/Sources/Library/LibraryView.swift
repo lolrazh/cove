@@ -10,6 +10,13 @@ struct LibraryView: View {
         VStack(spacing: 8) {
             LibrarySectionPicker(selection: $model.section)
 
+            Text(model.section.explanation)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
+
             switch model.section {
             case .downloads:
                 LibraryDownloads(manager: model.downloads)
@@ -71,6 +78,7 @@ struct SidebarLibrary: View {
                     Image(systemName: ChromeSymbols.Navigation.back)
                 }
                 .buttonStyle(ChromeButtonStyle())
+                .accessibilityLabel("Back to Tabs")
                 .help("Back to Tabs")
 
                 Text("Library")
@@ -160,20 +168,28 @@ struct LibraryRow<Icon: View, Detail: View, Accessory: View>: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            icon()
-                .frame(width: 24, height: 24)
+            Button(action: action) {
+                HStack(spacing: 8) {
+                    icon()
+                        .frame(width: 24, height: 24)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.callout)
-                    .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title)
+                            .font(.callout)
+                            .lineLimit(1)
 
-                detail()
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                        detail()
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.plain)
+            .help(title)
 
             accessory(isHovered)
         }
@@ -191,7 +207,6 @@ struct LibraryRow<Icon: View, Detail: View, Accessory: View>: View {
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
-        .onTapGesture(perform: action)
     }
 }
 

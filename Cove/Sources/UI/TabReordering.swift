@@ -2,30 +2,32 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension UTType {
-    /// A tab dragged inside Cove, declared in Info.plist. It carries nothing:
-    /// the list being dragged in knows which tab it is.
+    /// A tab dragged inside Cove, declared in Info.plist.
     static let coveTab = UTType(exportedAs: "com.cove.browser.tab")
+}
+
+private nonisolated struct TabDragItem: Transferable, Identifiable {
+    let id: UUID
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .coveTab) { item in
+            Data(item.id.uuidString.utf8)
+        }
+        .visibility(.ownProcess)
+    }
 }
 
 extension View {
     /// Lets a tab or folder be dragged. The list holds the dragged item's ID.
-    func draggableTab(_ id: UUID, dragging draggedTabID: Binding<UUID?>) -> some View {
-        onDrag {
-            draggedTabID.wrappedValue = id
-            let item = NSItemProvider()
-            item.registerDataRepresentation(forTypeIdentifier: UTType.coveTab.identifier, visibility: .ownProcess) { load in
-                load(Data(), nil)
-                return nil
-            }
-            return item
-        }
+    func draggableTab(_ id: UUID) -> some View {
+        draggable(TabDragItem.self, item: TabDragItem(id: id))
     }
 
     /// Lets a tab be dragged to a new place, in its list or another: while
     /// dragging, the tab takes the place of each tab it passes over and the
     /// others make room, as in Arc, so dropping only ends the drag.
     func reorderableTab(_ id: UUID, in tabManager: TabManager, dragging draggedTabID: Binding<UUID?>) -> some View {
-        draggableTab(id, dragging: draggedTabID)
+        draggableTab(id)
             .onDrop(of: [.coveTab], delegate: TabDropDelegate(target: id, tabManager: tabManager, draggedTabID: draggedTabID))
     }
 
@@ -55,6 +57,18 @@ extension View {
         onDrop(of: [.coveTab], isTargeted: nil) { _ in
             draggedTabID.wrappedValue = nil
             return true
+        }
+        .onDragSessionUpdated { session in
+            // The list remains in place while its rows move. It also receives
+            // session completion for cancellation or a drop outside the list.
+            switch session.phase {
+            case .initial, .active:
+                draggedTabID.wrappedValue = session.draggedItemIDs(for: UUID.self).first
+            case .ended:
+                draggedTabID.wrappedValue = nil
+            default:
+                break
+            }
         }
     }
 }

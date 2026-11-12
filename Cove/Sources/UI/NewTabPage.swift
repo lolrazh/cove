@@ -34,6 +34,7 @@ struct NewTabPage: View {
 
                 TextField("Search or enter URL", text: $searchText)
                     .textFieldStyle(.plain)
+                    .accessibilityLabel("Search or enter URL")
                     .focused($isSearchFocused)
                     .onSubmit {
                         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
@@ -44,6 +45,7 @@ struct NewTabPage: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 11)
             .chromeFieldStyle(focused: isSearchFocused, minimumRadius: ChromeRadius.tile)
+            .background(ChromePalette.content.opacity(0.85), in: .chrome(minimum: ChromeRadius.tile))
             .frame(maxWidth: 520)
             .padding(.horizontal, 40)
 
@@ -51,7 +53,7 @@ struct NewTabPage: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recent")
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.primary)
                         .padding(.leading, 4)
                         .padding(.top, 28)
                         .padding(.bottom, 4)
@@ -64,6 +66,7 @@ struct NewTabPage: View {
                                 RecentSiteCard(entry: entry, faviconStore: faviconStore)
                             }
                             .buttonStyle(.plain)
+                            .help(entry.url)
                         }
                     }
                 }
@@ -74,7 +77,7 @@ struct NewTabPage: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(ChromePalette.content)
+        .background { NewTabLight() }
         .onAppear {
             isSearchFocused = true
             loadRecent()
@@ -109,6 +112,65 @@ struct NewTabPage: View {
     }
 }
 
+/// A brief wash of the space's color. The search field is ready immediately;
+/// this decorative layer never moves controls or receives input.
+private struct NewTabLight: View {
+    @Environment(\.chromeTheme) private var theme
+    @Environment(\.chromePrimaryLight) private var primary
+    @Environment(\.chromeSecondaryLight) private var secondary
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hasSettled = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            let tint = primary ?? theme.primaryLight
+            let second = secondary ?? theme.secondaryLight
+            let settled = hasSettled || reduceMotion
+            ZStack {
+                ChromePalette.content
+                if contrast != .increased {
+                    ZStack {
+                        Ellipse()
+                            .fill(RadialGradient(colors: [tint.opacity(0.15), .clear],
+                                center: .center, startRadius: 0, endRadius: geometry.size.width * 0.6))
+                            .frame(width: geometry.size.width * 1.2, height: geometry.size.width * 1.2)
+                            .scaleEffect(x: 1, y: 0.78)
+                            .position(x: geometry.size.width * 0.35, y: geometry.size.height * 1.02)
+                        Ellipse()
+                            .fill(RadialGradient(colors: [second.opacity(0.10), .clear],
+                                center: .center, startRadius: 0, endRadius: geometry.size.width * 0.5))
+                            .frame(width: geometry.size.width, height: geometry.size.width)
+                            .scaleEffect(x: 1, y: 0.82)
+                            .position(x: geometry.size.width * 0.8, y: geometry.size.height * 1.04)
+                    }
+                    // A fixed mask keeps even a very wide window's wash away
+                    // from the toolbar. The page-color cache needs no special case.
+                    .mask(LinearGradient(stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .clear, location: 0.25),
+                        .init(color: .white, location: 0.80),
+                        .init(color: .white, location: 1),
+                    ], startPoint: .top, endPoint: .bottom))
+                    .opacity(settled ? 1 : 0)
+                    .offset(y: settled ? 0 : 16)
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .task {
+            guard !hasSettled else { return }
+            if reduceMotion { hasSettled = true; return }
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 1.2)) { hasSettled = true }
+        }
+    }
+}
+
 struct RecentSiteCard: View {
     let entry: HistoryEntry
     private let faviconStore: FaviconStore
@@ -131,7 +193,7 @@ struct RecentSiteCard: View {
 
             Text(domainName)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity)

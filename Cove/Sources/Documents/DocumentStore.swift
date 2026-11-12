@@ -13,7 +13,7 @@ final class DocumentStore: ObservableObject {
     private var notes: [UUID: Note] = [:]
     private var easels: [UUID: Easel] = [:]
     private var pendingSave: Task<Void, Never>?
-    private var terminationObserver: NSObjectProtocol?
+    private var terminationObserver: AnyCancellable?
 
     init(directory: URL? = DocumentStore.defaultDirectory) {
         self.directory = directory
@@ -21,13 +21,10 @@ final class DocumentStore: ObservableObject {
         let saved = StoreFile.read(index) { try? PropertyListDecoder().decode([DocumentInfo].self, from: $0) } ?? []
         documents = Dictionary(saved.map { ($0.id, $0) }) { first, _ in first }
 
-        terminationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.save() }
-        }
+        terminationObserver = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification, object: nil)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.save() }
+            }
     }
 
     static var defaultDirectory: URL {

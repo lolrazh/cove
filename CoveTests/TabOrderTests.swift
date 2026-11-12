@@ -27,6 +27,18 @@ struct TabOrderTests {
         #expect(one.element(-1, from: "a")?.id == "a")
     }
 
+    @Test func `closing the newest tab selects the adjacent older tab`() {
+        #expect(tabs.neighborWhenClosing("e")?.id == "d")
+        #expect(tabs.neighborWhenClosing("c")?.id == "d")
+        #expect(tabs.neighborWhenClosing("a")?.id == "b")
+    }
+
+    @Test func `closing has no neighbor for a lone or unknown tab`() {
+        #expect([Tab(id: "a")].neighborWhenClosing("a") == nil)
+        #expect([Tab]().neighborWhenClosing("a") == nil)
+        #expect(tabs.neighborWhenClosing("z") == nil)
+    }
+
     @Test func `command digits pick by place and nine picks the last`() {
         #expect(tabs.element(forShortcut: 1)?.id == "a")
         #expect(tabs.element(forShortcut: 5)?.id == "e")
@@ -100,20 +112,27 @@ struct TabOrderTests {
         let sidebar = TabLayout.sidebar.displayOrder(favorites: favorites, pinned: pinned, today: today)
         let strip = TabLayout.horizontal.displayOrder(favorites: favorites, pinned: pinned, today: today)
 
-        // The sidebar skips the folded folder's tab and lists Today newest first.
-        #expect(names(sidebar) == "fgadbzyx")
+        // The sidebar skips the folded folder's tab. New Today tabs go below
+        // the existing tabs in both layouts, without reversing saved order.
+        #expect(names(sidebar) == "fgadbxyz")
         #expect(names(strip) == "fgacdbxyz")
         // ⌘1 is the first favorite, or the first pinned tab without any.
         #expect(sidebar.element(forShortcut: 1)?.name == "f")
         #expect(TabLayout.sidebar.displayOrder(favorites: [], pinned: pinned, today: today).element(forShortcut: 1)?.name == "a")
-        #expect(sidebar.element(forShortcut: 9)?.name == "x")
+        #expect(sidebar.element(forShortcut: 9)?.name == "z")
     }
 
-    @Test func `moving works the same in a list shown reversed`() {
-        // The sidebar shows the newest tab first ("edcba"). The move is made
-        // on the stored order and must land the tab where c was on screen.
-        var stored = tabs
-        stored.move("a", onto: "c")
-        #expect(ids(stored.reversed()) == "edacb")
+    @Test func `new tabs append downward and shortcuts and close below follow the visible order`() {
+        struct Item: Identifiable { let id = UUID() }
+        let a = Item(), b = Item(), c = Item()
+        var today = [a, b]
+        today.append(c)
+        let shown = TabLayout.sidebar.displayOrder(favorites: [], pinned: SidebarTree<Item>(), today: today)
+        #expect(shown.map(\.id) == [a.id, b.id, c.id])
+        #expect(shown.element(forShortcut: 1)?.id == a.id)
+        #expect(shown.element(1, from: a.id)?.id == b.id)
+        #expect(shown.elements(after: b.id).map(\.id) == [c.id])
+        today.move(c.id, onto: a.id)
+        #expect(TabLayout.sidebar.displayOrder(favorites: [], pinned: SidebarTree<Item>(), today: today).map(\.id) == [c.id, a.id, b.id])
     }
 }

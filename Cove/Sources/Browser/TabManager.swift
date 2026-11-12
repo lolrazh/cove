@@ -12,15 +12,12 @@ final class TabManager: ObservableObject {
     /// The space the window shows, whose tabs everything below is about. A
     /// private window has one space, which it never names or leaves.
     @Published private(set) var activeSpaceID: UUID
-    /// Which way the sidebar last paged between spaces: 1 toward later
-    /// spaces, -1 toward earlier ones.
-    @Published private(set) var spacePagingDirection = 1
     /// A space being named or edited, for the window's space editor.
     @Published var spaceToEdit: UUID?
     /// A space waiting for its deletion to be confirmed.
     @Published var spaceToDelete: UUID?
-    /// The space's Today, oldest first: the top strip's order. The sidebar
-    /// lists it newest first. Mostly tabs, and the notes kept among them.
+    /// The space's Today in display order, shared by the sidebar and top strip.
+    /// New tabs append; links open next to their opener. Notes keep their places.
     @Published var today: [TodayItem<TabSession>] = [] {
         // A tab that leaves Today leaves its split.
         didSet { pruneSplits() }
@@ -78,6 +75,7 @@ final class TabManager: ObservableObject {
     @Published var capture: CaptureSession?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
+    let spaceTransition = SpaceTransition()
     /// The window as extensions see it.
     let extensionWindow = ExtensionWindow()
 
@@ -252,10 +250,6 @@ final class TabManager: ObservableObject {
         settings.setShowsTabsInSidebar(layout == .sidebar)
     }
 
-    func toggleLayout() {
-        setLayout(tabLayout == .horizontal ? .sidebar : .horizontal)
-    }
-
     func setHideTabs(_ hide: Bool) {
         guard hideTabs != hide else { return }
         hideTabs = hide
@@ -278,7 +272,7 @@ final class TabManager: ObservableObject {
         commandBar.present(activeDocumentID == nil ? .editURL : .newTab)
     }
 
-    /// Opens a tab at the end of the strip, which is the top of Today. Tabs
+    /// Opens a tab at the end of the strip or bottom of Today. Tabs
     /// opened from a link instead go next to their opener.
     func addTab(url: String? = nil) {
         let tab: TabSession
@@ -422,7 +416,7 @@ final class TabManager: ObservableObject {
         activeTabID = tab.id
     }
 
-    /// Closes a Today tab, unless it's the last tab in the window. The next
+    /// Closes a Today tab. The last tab leaves a fresh start page. The next
     /// newer tab takes its place on screen, else the next older, else the
     /// pinned tab nearest Today. A pinned tab is kept: closing it resets it.
     func closeTab(_ id: UUID) {
@@ -430,26 +424,29 @@ final class TabManager: ObservableObject {
             closePinnedTab(tab)
             return
         }
-        guard allTabs.count > 1, let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab else { return }
+        guard let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab else { return }
+        if allTabs.count == 1 {
+            // Install the start page first so observers never see an invalid selection.
+            open(makeTab(showsStartPage: true))
+        }
 
         let wasActive = (id == activeTabID)
         // In a split, the neighboring pane takes the focus.
         let neighbor = split(containing: id)?.neighbor(of: id)
+            ?? tabs.neighborWhenClosing(id)?.id
         // Into the archive, as in Arc, where it keeps its back/forward list
         // for Reopen Last Closed Tab.
+        if wasActive {
+            activeTabID = neighbor ?? allTabs.first(where: { $0.id != id })?.id
+        }
         today.remove(at: index)
         retire(tab, reason: .closed)
-
-        if wasActive {
-            activeTabID = neighbor ?? (today[index...].lazy.compactMap(\.tab).first ?? tabsInDisplayOrder.last)?.id
-        }
     }
 
-    /// Whether a tab's close button does anything: a Today tab closes unless
-    /// it's the last tab; a pinned tab resets, while awake or away from its pin.
+    /// Today tabs can always close. A pinned tab resets while awake or away from its pin.
     func canCloseTab(_ id: UUID) -> Bool {
         if let tab = pinnedTabs[id] { return !tab.isAsleep || tab.isAwayFromPin }
-        return allTabs.count > 1
+        return today.contains { $0.id == id && $0.tab != nil }
     }
 
     /// Reopens the most recently closed tab.
@@ -522,6 +519,8 @@ final class TabManager: ObservableObject {
         if tab(id) == nil, let space = parkedSpaces.first(where: { $0.value.today.contains { $0.id == id } })?.key {
             show(space)
         }
+        // A closing row can deliver its click after the tab has left Today.
+        guard tab(id) != nil else { return }
         activeTabID = id
     }
 
@@ -582,17 +581,6 @@ final class TabManager: ObservableObject {
         for tab in closing {
             closeTab(tab.id)
         }
-    }
-
-    /// Arc's Clear: closes everything in Today and leaves a fresh tab. Notes
-    /// leave Today too; they're kept, and the Command Bar finds them.
-    func clearTodayTabs() {
-        let closed = tabs
-        addTab()
-        for tab in closed {
-            closeTab(tab.id)
-        }
-        today.removeAll { $0.documentID != nil }
     }
 
     /// ⌘⇧C, the Command Bar and a tab's Copy Link: the page's address to the
@@ -787,7 +775,11 @@ final class TabManager: ObservableObject {
     /// A pin's tab browses with its space's profile; one left on another
     /// profile's data store, as after the space changed profile, is rebuilt.
     private func liveTab(for pin: Pin) -> TabSession {
-        let services = services(for: activeSpace)
+        liveTab(for: pin, in: activeSpace)
+    }
+
+    private func liveTab(for pin: Pin, in space: Space?) -> TabSession {
+        let services = services(for: space)
         let existing = pinnedTabs[pin.id]
         if let tab = existing, tab.services.context === services.context {
             if tab.pinnedURL != pin.url { tab.pinnedURL = pin.url }
@@ -863,6 +855,25 @@ final class TabManager: ObservableObject {
         knownSpaces.spaces.flatMap { parkedSpaces[$0.id]?.today.compactMap(\.tab) ?? [] }
     }
 
+    var activeSidebarPage: SpaceSidebarPage {
+        SpaceSidebarPage(id: activeSpaceID, favorites: favorites, pinned: pinned,
+                         today: today, splits: splits, selection: activeDocumentID ?? activeTabID)
+    }
+
+    /// Prepare a neighboring sidebar without selecting it or waking its pages.
+    /// Called once when a gesture starts, never from a view's render pass.
+    func sidebarPage(for space: Space) -> SpaceSidebarPage {
+        if space.id == activeSpaceID { return activeSidebarPage }
+        let pins = pinStore.layout[PinScope(space: space.id, profile: space.profileID)]
+        let parked = parkedSpaces[space.id]
+        return SpaceSidebarPage(
+            id: space.id, favorites: pins.favorites.map { liveTab(for: $0, in: space) },
+            pinned: pins.pinned.map { liveTab(for: $0, in: space) },
+            today: parked?.today ?? [], splits: parked?.splits ?? [],
+            selection: parked?.activeDocumentID ?? parked?.activeTabID
+        )
+    }
+
     /// Footer icons, the Spaces menu (⌃1–9) and the Command Bar: shows another
     /// space, with its Today and selected tab as this window left them.
     func switchToSpace(_ id: UUID) {
@@ -917,24 +928,15 @@ final class TabManager: ObservableObject {
         return services.with(spaceStore.context(for: space))
     }
 
-    /// Switches spaces with the sidebar paging toward the new one. A page
-    /// leaving keeps the transition it was last drawn with, so a change of
-    /// direction is published a turn before the switch itself.
+    /// Change selection synchronously. Each visual surface owns its motion;
+    /// delayed model changes can replay an older click after a rapid reversal.
     private func page(to id: UUID) {
-        let order = knownSpaces.spaces.map(\.id)
-        guard id != activeSpaceID, let from = order.firstIndex(of: activeSpaceID), let to = order.firstIndex(of: id) else { return }
-        let direction = to > from ? 1 : -1
-        guard direction != spacePagingDirection else {
-            withAnimation(ChromeMotion.page) { show(id) }
-            return
-        }
-        spacePagingDirection = direction
-        DispatchQueue.main.async { [weak self] in
-            withAnimation(ChromeMotion.page) { self?.show(id) }
-        }
+        guard knownSpaces.space(id) != nil else { return }
+        show(id)
     }
 
     private func show(_ id: UUID) {
+        if spaceTransition.state.isActive && !spaceTransition.isCommitting { spaceTransition.reset() }
         guard id != activeSpaceID else { return }
         activeTab?.markUsed()
         parkedSpaces[activeSpaceID] = shownSpace

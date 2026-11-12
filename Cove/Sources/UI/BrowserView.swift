@@ -9,6 +9,7 @@ struct BrowserView: View {
     @State private var areTabsVisible = true
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(appServices: AppServices, isPrivate: Bool = false) {
         self.appServices = appServices
@@ -47,14 +48,11 @@ struct BrowserView: View {
                     ) {
                         activeTabContent(activeTab)
                     }
-                    .overlay {
-                        CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
-                    }
                 }
             }
         }
-        .background(ChromePalette.shell)
-        .environment(\.chromeTheme, tabManager.isPrivate ? .privateBrowsing : tabManager.activeSpace?.theme ?? .system)
+        .animatedChromeTheme(tabManager.isPrivate ? .privateBrowsing : tabManager.activeSpace?.theme ?? .system,
+                             spaces: tabManager.spaces, transition: tabManager.spaceTransition)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
         .onAppear {
@@ -83,11 +81,6 @@ struct BrowserView: View {
         .onOpenURL { url in
             appServices.externalURLRouter.open([url], from: .otherApp)
         }
-        .sheet(isPresented: isPresent($tabManager.spaceToEdit)) {
-            if let id = tabManager.spaceToEdit {
-                SpaceEditor(store: appServices.spaceStore, spaceID: id)
-            }
-        }
         .confirmationDialog(
             "Delete \u{201C}\(spaceToDelete?.name ?? "")\u{201D}?",
             isPresented: isPresent($tabManager.spaceToDelete),
@@ -111,12 +104,12 @@ struct BrowserView: View {
             Text("It's removed from every space, and can't be brought back.")
         }
         .onChange(of: tabManager.hideTabs) { _, hide in
-            withAnimation(ChromeMotion.shell) {
+            withAnimation(reduceMotion ? nil : ChromeMotion.shell) {
                 areTabsVisible = !hide
             }
         }
         .onChange(of: tabManager.tabLayout) { _, _ in
-            withAnimation(ChromeMotion.shell) {
+            withAnimation(reduceMotion ? nil : ChromeMotion.shell) {
                 areTabsVisible = !tabManager.hideTabs
             }
         }
@@ -152,8 +145,7 @@ struct BrowserView: View {
             } else if let split = tabManager.activeSplit {
                 SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
             } else {
-                PageView(tab: tab, appServices: appServices)
-                    .id(tab.id)
+                PageView(tab: tab, appServices: appServices, showsLoadingProgress: false)
                     .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
                     .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
             }

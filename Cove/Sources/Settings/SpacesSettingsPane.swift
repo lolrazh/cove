@@ -42,9 +42,6 @@ struct SpacesSettingsPane: View {
                 Text("Each profile keeps its own cookies, logins and site data. Spaces in a profile share its Favorites.")
             }
         }
-        .sheet(item: $editing) { space in
-            SpaceEditor(store: store, spaceID: space.id)
-        }
         .confirmationDialog(
             "Delete \u{201C}\(deletingSpace?.name ?? "")\u{201D}?",
             isPresented: isPresent($deletingSpace),
@@ -71,16 +68,28 @@ struct SpacesSettingsPane: View {
 
     private func spaceRow(_ space: Space) -> some View {
         HStack(spacing: 10) {
-            SpaceIconView(icon: space.icon)
+            SpaceIconView()
                 .foregroundStyle(space.theme.tint ?? .secondary)
                 .frame(width: 20)
             Text(space.name)
             if store.spaces.profiles.count > 1 {
-                Text(store.spaces.profile(space.profileID)?.name ?? "")
-                    .foregroundStyle(.secondary)
+                Picker("Profile", selection: Binding(
+                    get: { space.profileID },
+                    set: { id in store.change { $0.update(space.id) { $0.profileID = id } } }
+                )) {
+                    ForEach(store.spaces.profiles) { profile in
+                        Text(profile.name).tag(profile.id)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
             }
             Spacer()
             Button("Edit…") { editing = space }
+                .popover(isPresented: Binding(
+                    get: { editing?.id == space.id },
+                    set: { if !$0 { editing = nil } }
+                )) { SpaceEditor(store: store, spaceID: space.id) }
             Button {
                 deletingSpace = space
             } label: {
