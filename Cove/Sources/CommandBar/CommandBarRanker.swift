@@ -9,8 +9,8 @@ struct CommandBarRanker {
         let url: String
     }
 
-    /// Another space, offered as "Switch to" its name.
-    struct OtherSpace {
+    /// Another profile, offered as "Switch to" its name.
+    struct OtherProfile {
         let id: UUID
         let name: String
     }
@@ -32,7 +32,7 @@ struct CommandBarRanker {
     struct Sources {
         var tabs: [OpenTab] = []
         var documents: [Document] = []
-        var spaces: [OtherSpace] = []
+        var profiles: [OtherProfile] = []
         var extensionActions: [ExtensionAction] = []
         var archive: [ArchivedTab] = []
         var history: [HistoryPage] = []
@@ -54,7 +54,7 @@ struct CommandBarRanker {
         static let documents = 3
         static let archive = 3
         static let history = 5
-        static let recent = 6
+        static let recent = 4
         static let suggestions = 4
         static let commands = 3
     }
@@ -112,7 +112,7 @@ struct CommandBarRanker {
         let namedCommand = completion == nil && primary.kind == .search ? namedCommand(by: match, in: sources) : nil
         let topHits = [completion?.result, namedCommand, primary].compactMap { $0 }
 
-        let commands = (sources.spaces.map(Self.spaceResult).filter { match.matches(title: $0.title, keywords: ["space"]) }
+        let commands = (sources.profiles.map(Self.profileResult).filter { match.matches(title: $0.title, keywords: ["profile"]) }
             + sources.extensionActions.map(Self.extensionResult).filter { match.matches(title: $0.title, keywords: ["extension"]) }
             + sources.commands
             .filter { match.matches(title: $0.title, keywords: $0.keywords) }
@@ -136,7 +136,7 @@ struct CommandBarRanker {
     private func rankEmpty(_ sources: Sources) -> Ranking {
         let recent = sources.history.prefix(Limit.recent).map(Self.historyResult)
         let commands = sources.commands.map(Self.commandResult)
-            + sources.spaces.map(Self.spaceResult)
+            + sources.profiles.map(Self.profileResult)
             + sources.extensionActions.map(Self.extensionResult)
         let sections = [
             CommandBarSection(title: "Recent", results: Array(recent)),
@@ -145,10 +145,10 @@ struct CommandBarRanker {
         return Ranking(sections: sections.filter { !$0.results.isEmpty }, completion: nil)
     }
 
-    /// The command, space or extension whose name the input best spells out.
+    /// The command, profile or extension whose name the input best spells out.
     private func namedCommand(by match: QueryMatch, in sources: Sources) -> CommandBarResult? {
         let candidates = sources.commands.map(Self.commandResult)
-            + sources.spaces.map(Self.spaceResult)
+            + sources.profiles.map(Self.profileResult)
             + sources.extensionActions.map(Self.extensionResult)
         return candidates
             .compactMap { result in match.naming(result.title).map { ($0, result) } }
@@ -233,8 +233,8 @@ struct CommandBarRanker {
         CommandBarResult(kind: .command(command), title: command.title, destination: "")
     }
 
-    private static func spaceResult(_ space: OtherSpace) -> CommandBarResult {
-        CommandBarResult(kind: .space(space.id), title: "Switch to \(space.name)", destination: "")
+    private static func profileResult(_ profile: OtherProfile) -> CommandBarResult {
+        CommandBarResult(kind: .profile(profile.id), title: "Switch to \(profile.name)", destination: "")
     }
 
     private static func extensionResult(_ action: ExtensionAction) -> CommandBarResult {

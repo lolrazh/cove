@@ -16,7 +16,7 @@ enum BrowserSettingKeys {
     static let archiveTabsAfter = "browser.archiveTabsAfter"
     static let opensLinksInLittleCove = "browser.opensLinksInLittleCove"
     static let legacyPreferredTabLayout = "browser.preferredTabLayout"
-    /// The frame color from before each space had its own; the first space's.
+    /// The frame color from before each profile had its own; the first profile's.
     static let legacyThemeColor = "browser.themeColor"
 }
 

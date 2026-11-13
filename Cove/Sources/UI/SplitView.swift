@@ -38,7 +38,7 @@ struct SplitPageView: View {
                         )
                 }
             }
-            .coordinateSpace(.named(SplitDivider.space))
+            .coordinateSpace(.named(SplitDivider.profile))
         }
         .background(ChromePalette.shell)
     }
@@ -56,7 +56,7 @@ private struct SplitPane: View {
     let onFocus: () -> Void
 
     var body: some View {
-        PageView(tab: tab, appServices: appServices)
+        PageView(tab: tab, appServices: appServices, showsLoadingProgress: !isFocused)
             .simultaneousGesture(TapGesture().onEnded(onFocus))
             .chromeCard()
             .overlay {
@@ -72,10 +72,10 @@ private struct SplitPane: View {
 
 /// The gap between two panes: drag it to give one more room than the other.
 private struct SplitDivider: View {
-    static let space = "split"
+    static let profile = "split"
 
     let axis: SplitAxis
-    /// The pointer's place along the split's axis, in the split's space.
+    /// The pointer's place along the split's axis, in the split's profile.
     let onDrag: (CGFloat) -> Void
 
     var body: some View {
@@ -87,7 +87,7 @@ private struct SplitDivider: View {
             .contentShape(Rectangle())
             .pointerStyle(axis == .horizontal ? .columnResize : .rowResize)
             .gesture(
-                DragGesture(minimumDistance: 1, coordinateSpace: .named(Self.space))
+                DragGesture(minimumDistance: 1, coordinateSpace: .named(Self.profile))
                     .onChanged { drag in
                         onDrag(axis == .horizontal ? drag.location.x : drag.location.y)
                     }

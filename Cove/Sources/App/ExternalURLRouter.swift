@@ -35,6 +35,15 @@ final class ExternalURLRouter {
         self.littleCove = littleCove
     }
 
+    var activeTabManager: TabManager? { browserWindows.last(where: { $0.tabManager != nil })?.tabManager }
+
+    func open(_ urls: [URL], in profileID: UUID) {
+        inBrowserWindow { manager in
+            manager.switchToProfile(profileID)
+            for url in urls where Self.canOpen(url) { manager.openExternalURL(url) }
+        }
+    }
+
     /// Called whenever a browser window becomes active.
     func activate(_ tabManager: TabManager, in window: NSWindow, openWindow: OpenWindowAction) {
         browserWindows.removeAll { $0.tabManager == nil || $0.tabManager === tabManager }
@@ -46,7 +55,7 @@ final class ExternalURLRouter {
     }
 
     /// The decision point for every page from outside a window: Little Cove
-    /// or a tab. Air Traffic Control's rules, choosing a space, slot in here.
+    /// or a tab. Air Traffic Control's rules, choosing a profile, slot in here.
     func open(_ urls: [URL], from source: Source) {
         for url in urls where Self.canOpen(url) {
             if source == .otherApp && settings.opensLinksInLittleCove {

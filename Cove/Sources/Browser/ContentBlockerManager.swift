@@ -17,24 +17,28 @@ final class ContentBlockerManager {
 
     private let settings: BrowserSettingsStore
     private let defaults: UserDefaults
+    private let exceptionsURL: URL?
     private var ruleList: WKContentRuleList?
+    private var isLoading = false
     private var trackedControllers = NSHashTable<WKUserContentController>.weakObjects()
-    private var pendingControllers = NSHashTable<WKUserContentController>.weakObjects()
     /// Controllers whose page is on a site with blocking turned off.
     private var exemptControllers = NSHashTable<WKUserContentController>.weakObjects()
     /// Sites with blocking turned off, by domain.
     private var exceptions: Set<String>
     private var cancellables: Set<AnyCancellable> = []
 
-    var isLoaded: Bool { ruleList != nil }
-
     /// Whether blocking is on in Settings, for every site.
     var isEnabled: Bool { settings.contentBlockingEnabled }
 
-    init(settings: BrowserSettingsStore, defaults: UserDefaults = .standard) {
+    init(settings: BrowserSettingsStore, defaults: UserDefaults = .standard, exceptionsURL: URL? = nil) {
         self.settings = settings
         self.defaults = defaults
-        self.exceptions = Set(defaults.stringArray(forKey: Self.exceptionsKey) ?? [])
+        self.exceptionsURL = exceptionsURL
+        if let exceptionsURL {
+            self.exceptions = Set(StoreFile.read(exceptionsURL) { try? PropertyListDecoder().decode([String].self, from: $0) } ?? [])
+        } else {
+            self.exceptions = Set(defaults.stringArray(forKey: Self.exceptionsKey) ?? [])
+        }
         settings.$contentBlockingEnabled
             .removeDuplicates()
             .sink { [weak self] isEnabled in
@@ -56,6 +60,9 @@ final class ContentBlockerManager {
             return
         }
 
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
         let store = WKContentRuleListStore.default()!
 
         if let cached = try? await store.contentRuleList(forIdentifier: Self.identifier) {
@@ -96,7 +103,12 @@ final class ContentBlockerManager {
         } else {
             exceptions.insert(site.domain)
         }
-        defaults.set(exceptions.sorted(), forKey: Self.exceptionsKey)
+        if let exceptionsURL {
+            try? FileManager.default.createDirectory(at: exceptionsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if let data = try? PropertyListEncoder().encode(exceptions.sorted()) { try? data.write(to: exceptionsURL, options: .atomic) }
+        } else {
+            defaults.set(exceptions.sorted(), forKey: Self.exceptionsKey)
+        }
     }
 
     /// Gives the controller's web view the list or takes it away, for the site
@@ -108,7 +120,6 @@ final class ContentBlockerManager {
 
         if isExempt {
             exemptControllers.add(controller)
-            pendingControllers.remove(controller)
             ruleList.map(controller.remove)
         } else {
             exemptControllers.remove(controller)
@@ -125,13 +136,12 @@ final class ContentBlockerManager {
 
         if let ruleList {
             attach(ruleList, to: controller)
-        } else {
-            pendingControllers.add(controller)
         }
     }
 
     func detach(from controller: WKUserContentController) {
         trackedControllers.remove(controller)
+        exemptControllers.remove(controller)
         guard let ruleList else { return }
         controller.remove(ruleList)
     }
@@ -142,11 +152,6 @@ final class ContentBlockerManager {
         for controller in trackedControllers.allObjects where !exemptControllers.contains(controller) {
             attach(ruleList, to: controller)
         }
-
-        for controller in pendingControllers.allObjects {
-            attach(ruleList, to: controller)
-        }
-        pendingControllers.removeAllObjects()
     }
 
     private func attach(_ ruleList: WKContentRuleList, to controller: WKUserContentController) {
@@ -155,7 +160,6 @@ final class ContentBlockerManager {
     }
 
     private func detachFromTrackedControllers() {
-        pendingControllers.removeAllObjects()
         guard let ruleList else { return }
 
         for controller in trackedControllers.allObjects {

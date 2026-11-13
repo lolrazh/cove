@@ -20,24 +20,31 @@ final class LibraryModel: ObservableObject {
             case .history: "History"
             }
         }
+
+        var explanation: String {
+            switch self {
+            case .downloads: "Files downloaded in Cove."
+            case .archive: "Closed tabs. Select one to reopen it."
+            case .history: "Pages you visited."
+            }
+        }
     }
 
     @Published private(set) var isPresented = false
+    @Published var downloadsPresented = false
+    @Published var downloadFeedbackActive = false
+    @Published var downloadPulse = 0
     @Published var section: Section = .downloads
 
-    let downloads: DownloadManager
-    let archive: TabArchive
-    let historyStore: HistoryStore
-    let faviconStore: FaviconStore
+    var downloads: DownloadManager { tabManager.services.downloadManager }
+    var archive: TabArchive { tabManager.archive }
+    var historyStore: HistoryStore { tabManager.services.historyStore }
+    var faviconStore: FaviconStore { tabManager.services.faviconStore }
     private unowned let tabManager: TabManager
     private var cancellables: Set<AnyCancellable> = []
 
-    init(tabManager: TabManager, services: TabSessionServices, archive: TabArchive) {
+    init(tabManager: TabManager) {
         self.tabManager = tabManager
-        self.downloads = services.downloadManager
-        self.archive = archive
-        self.historyStore = services.historyStore
-        self.faviconStore = services.faviconStore
 
         // The Library lives somewhere else in the other layout; switching
         // closes it rather than carrying it across.
@@ -53,10 +60,20 @@ final class LibraryModel: ObservableObject {
         isPresented && tabManager.tabLayout == .horizontal
     }
 
+    var profileID: UUID { tabManager.activeProfileID }
+
     // MARK: - Presenting
 
     /// ⌘⇧L and the Library button. Opens on Downloads while something is
     /// downloading or has just finished, since that's what the button shows.
+    func toggleDownloads() {
+        if downloads.hasSessionDownloads {
+            downloadsPresented.toggle()
+        } else {
+            present(.downloads)
+        }
+    }
+
     func toggle() {
         isPresented ? dismiss() : present(downloads.hasActiveDownloads || downloads.hasUnseenDownloads ? .downloads : nil)
     }
@@ -69,6 +86,7 @@ final class LibraryModel: ObservableObject {
     }
 
     func dismiss() {
+        downloadsPresented = false
         isPresented = false
     }
 

@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 /// Keeps the notes and easels: an index of them, and each one's file beside it in
-/// `Application Support/Cove/Documents`. One store for the app; what's open
+/// the profile directory. One store per profile; what's open
 /// is loaded once and shared by every window showing it. Without a directory
 /// it keeps nothing, which is what tests want.
 @MainActor
@@ -13,7 +13,7 @@ final class DocumentStore: ObservableObject {
     private var notes: [UUID: Note] = [:]
     private var easels: [UUID: Easel] = [:]
     private var pendingSave: Task<Void, Never>?
-    private var terminationObserver: NSObjectProtocol?
+    private var terminationObserver: AnyCancellable?
 
     init(directory: URL? = DocumentStore.defaultDirectory) {
         self.directory = directory
@@ -21,13 +21,10 @@ final class DocumentStore: ObservableObject {
         let saved = StoreFile.read(index) { try? PropertyListDecoder().decode([DocumentInfo].self, from: $0) } ?? []
         documents = Dictionary(saved.map { ($0.id, $0) }) { first, _ in first }
 
-        terminationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.save() }
-        }
+        terminationObserver = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification, object: nil)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.save() }
+            }
     }
 
     static var defaultDirectory: URL {

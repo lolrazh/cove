@@ -2,7 +2,7 @@ import SwiftUI
 
 enum ChromeTabPresentation {
     case horizontal
-    /// A pinned tab or favorite in the top strip: the favicon alone.
+    /// A pinned tab in the top strip: the favicon alone.
     case compact
     case sidebar
 }
@@ -77,7 +77,8 @@ struct ChromeTabItem: View {
         } else {
             Text(title)
                 .font(.callout)
-                .foregroundStyle(isActive || isHovered ? .primary : .secondary)
+                .foregroundStyle(presentation == .sidebar ? AnyShapeStyle(ChromePalette.onTheme)
+                                 : AnyShapeStyle(isActive || isHovered ? .primary : .secondary))
                 .lineLimit(1)
         }
     }
@@ -202,5 +203,8 @@ extension View {
                 }
             }
             .contentShape(Rectangle())
+            // Resolve row motion once. Otherwise SwiftUI can animate the title
+            // and favicon in separate coordinate profiles during list removal.
+            .geometryGroup()
     }
 }

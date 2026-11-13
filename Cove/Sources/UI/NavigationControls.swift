@@ -1,13 +1,11 @@
 import SwiftUI
 
-/// Back, forward and reload/stop for one tab. The navigation bar shows them in
-/// top-tab mode; the sidebar header shows them in sidebar mode.
+/// Back, forward and reload/stop for one tab, above the page in every layout.
 struct NavigationControls: View {
     @ObservedObject var session: TabSession
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: ChromeMetrics.navigationSpacing) {
             Button(action: session.goBack) {
                 Image(systemName: ChromeSymbols.Navigation.back)
             }
@@ -23,22 +21,11 @@ struct NavigationControls: View {
             Button {
                 session.isLoading ? session.stopLoading() : session.reload()
             } label: {
-                reloadIcon
+                Image(systemName: session.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
             }
             .help(session.isLoading ? "Stop" : "Reload")
         }
         .buttonStyle(ChromeButtonStyle())
     }
 
-    private var reloadIcon: some View {
-        let icon = Image(systemName: session.isLoading ? ChromeSymbols.Navigation.stop : ChromeSymbols.Navigation.reload)
-
-        return Group {
-            if reduceMotion {
-                icon
-            } else {
-                icon.symbolEffect(.bounce, value: session.isLoading)
-            }
-        }
-    }
 }

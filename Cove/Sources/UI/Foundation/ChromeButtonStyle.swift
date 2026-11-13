@@ -16,28 +16,33 @@ struct ChromeButtonStyle: ButtonStyle {
     }
 
     var size: Size = .icon
+    var restingOpacity: Double = 1
 
     func makeBody(configuration: Configuration) -> some View {
-        ChromeButtonBody(configuration: configuration, size: size)
+        ChromeButtonBody(configuration: configuration, size: size, restingOpacity: restingOpacity)
     }
 }
 
 private struct ChromeButtonBody: View {
     let configuration: ButtonStyle.Configuration
     let size: ChromeButtonStyle.Size
+    let restingOpacity: Double
 
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
     var body: some View {
         configuration.label
             .font(font)
+            .opacity(isHovered || configuration.isPressed || contrast == .increased ? 1 : restingOpacity)
             .frame(minWidth: side, minHeight: side)
             .frame(maxWidth: size == .row ? .infinity : nil, alignment: size == .row ? .leading : .center)
             .background(fill, in: shape)
             .contentShape(Rectangle())
             .opacity(isEnabled ? 1 : 0.4)
-            .scaleEffect(configuration.isPressed && size != .row ? 0.96 : 1)
+            .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion && size != .row ? 0.96 : 1)
             .animation(ChromeMotion.hover, value: isHovered)
             .animation(ChromeMotion.press, value: configuration.isPressed)
             .onHover { isHovered = $0 }

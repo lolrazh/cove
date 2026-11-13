@@ -75,25 +75,11 @@ struct TabActions: View {
             .keyboardShortcut(pinShortcut)
             .disabled(tab.currentURL.isEmpty)
 
-            Button("Add to Favorites") {
-                tabManager.pinTab(tab.id, to: .favorites)
-            }
-            .disabled(tab.currentURL.isEmpty)
         } else {
             Button("Unpin Tab") {
                 tabManager.unpinTab(tab.id)
             }
             .keyboardShortcut(pinShortcut)
-
-            if section == .favorites {
-                Button("Move to Pinned") {
-                    tabManager.moveTab(tab.id, toEndOf: .pinned)
-                }
-            } else {
-                Button("Add to Favorites") {
-                    tabManager.moveTab(tab.id, toEndOf: .favorites)
-                }
-            }
 
             if tab.isAwayFromPin {
                 Button("Back to Pinned Page", action: tab.returnToPin)
@@ -127,7 +113,7 @@ struct TabActions: View {
             Button("Add Split View") {
                 tabManager.addSplitView()
             }
-            .keyboardShortcut("=", modifiers: [.control, .shift])
+            .keyboardShortcut("s", modifiers: [.control, .option])
             .disabled(!tabManager.canAddSplitPane)
 
             if let split = tabManager.activeSplit {

@@ -16,7 +16,7 @@ struct FindBar: View {
         }
         .padding(ChromeMetrics.cardInset)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-        .animation(reduceMotion ? ChromeMotion.hover : ChromeMotion.commandBar, value: find.isPresented)
+        .animation(reduceMotion ? ChromeMotion.hover : ChromeMotion.pageTool, value: find.isPresented)
     }
 
     private var bar: some View {

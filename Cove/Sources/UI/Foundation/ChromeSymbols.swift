@@ -20,12 +20,10 @@ enum ChromeSymbols {
         static let add = "plus"
         static let close = "xmark"
         static let sidebarLayout = "sidebar.left"
-        static let clear = "chevron.down"
         static let playingAudio = "speaker.wave.2.fill"
         static let muted = "speaker.slash.fill"
         static let pin = "pin"
         static let unpin = "pin.slash"
-        static let favorite = "star"
         static let folder = "folder"
         static let backToPin = "arrow.uturn.backward"
         static let collapsed = "chevron.right"
@@ -50,8 +48,8 @@ enum ChromeSymbols {
         static let easel = "scribble.variable"
     }
 
-    enum Spaces {
-        static let newSpace = "plus"
+    enum Profiles {
+        static let newProfile = "plus"
         static let profile = "person.crop.circle"
     }
 
@@ -68,7 +66,6 @@ enum ChromeSymbols {
     enum Extensions {
         static let extensions = "puzzlepiece.extension"
         static let permission = "checkmark.circle"
-        static let overflow = "chevron.right.2"
     }
 
     enum Settings {
@@ -76,7 +73,7 @@ enum ChromeSymbols {
         static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
-        static let spaces = "square.stack"
+        static let profiles = "square.stack"
         static let extensions = "puzzlepiece.extension"
     }
 }

@@ -74,10 +74,10 @@ struct BrowserViewCommands: Commands {
         CommandMenu("History") {
             HistoryMenu(
                 tabManager: tabManager,
-                historyStore: appServices.historyStore,
-                archive: tabManager?.archive ?? appServices.tabArchive,
-                faviconStore: appServices.faviconStore,
-                onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
+                historyStore: tabManager?.services.historyStore ?? appServices.defaultData.history,
+                archive: tabManager?.archive ?? appServices.defaultData.archive,
+                faviconStore: tabManager?.services.faviconStore ?? appServices.defaultData.favicons,
+                onShowAllHistory: { openWindow(id: HistoryWindow.windowID, value: tabManager?.activeProfileID ?? Profile.defaultID) }
             )
         }
 
@@ -98,6 +98,12 @@ struct BrowserViewCommands: Commands {
                 tabManager?.copyURL()
             }
             .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled(tabManager == nil)
+
+            Button("Downloads") {
+                tabManager?.library.toggleDownloads()
+            }
+            .keyboardShortcut("j", modifiers: [.command, .shift])
             .disabled(tabManager == nil)
 
             Button("Library") {
@@ -126,9 +132,7 @@ struct BrowserViewCommands: Commands {
                 isOn: Binding(
                     get: { tabManager?.tabLayout == .sidebar },
                     set: { show in
-                        withAnimation(ChromeMotion.shell) {
-                            tabManager?.setLayout(show ? .sidebar : .horizontal)
-                        }
+                        tabManager?.setLayout(show ? .sidebar : .horizontal)
                     }
                 )
             )
@@ -139,9 +143,7 @@ struct BrowserViewCommands: Commands {
                 isOn: Binding(
                     get: { tabManager?.hideTabs ?? false },
                     set: { hide in
-                        withAnimation(ChromeMotion.shell) {
-                            tabManager?.setHideTabs(hide)
-                        }
+                        tabManager?.setHideTabs(hide)
                     }
                 )
             )

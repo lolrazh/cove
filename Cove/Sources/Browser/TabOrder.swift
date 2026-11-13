@@ -1,18 +1,17 @@
 import Foundation
 
 extension TabLayout {
-    /// The tabs as they're shown in this layout: Favorites, then Pinned, then
-    /// Today. The sidebar keeps collapsed folders' tabs out of sight and lists
-    /// Today newest first; the strip flattens the folders and runs oldest
-    /// first. ⌃Tab, ⌘1–9, dragging and Close Tabs Below all follow this.
+    /// The tabs as they're shown in this layout: Pinned, then
+    /// Today. The sidebar keeps collapsed folders' tabs out of sight; the strip
+    /// flattens the folders. Both keep Today in stored order, with new tabs at
+    /// the end. ⌃Tab, ⌘1–9, dragging and Close Tabs Below all follow this.
     func displayOrder<Tab: Identifiable>(
-        favorites: [Tab],
         pinned: SidebarTree<Tab>,
         today: [Tab]
     ) -> [Tab] where Tab.ID == UUID {
         switch self {
-        case .sidebar: favorites + pinned.visibleTabs + today.reversed()
-        case .horizontal: favorites + pinned.tabs + today
+        case .sidebar: pinned.visibleTabs + today
+        case .horizontal: pinned.tabs + today
         }
     }
 }
@@ -20,6 +19,14 @@ extension TabLayout {
 /// Moving through and rearranging tabs in the order they're shown, which is
 /// what keyboard switching, drag and drop and Close Tabs Below all follow.
 extension Array where Element: Identifiable {
+    /// The next item in stored order, or the preceding one at the end.
+    /// Closing the newest Today tab must not jump to the oldest sidebar row.
+    func neighborWhenClosing(_ id: Element.ID) -> Element? {
+        guard let index = firstIndex(where: { $0.id == id }) else { return nil }
+        if index + 1 < count { return self[index + 1] }
+        return index > 0 ? self[index - 1] : nil
+    }
+
     /// The element `offset` places on from the one with `id`, wrapping around
     /// either end, as ⌃Tab and ⌃⇧Tab move.
     func element(_ offset: Int, from id: Element.ID) -> Element? {

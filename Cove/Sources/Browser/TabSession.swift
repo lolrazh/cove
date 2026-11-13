@@ -20,16 +20,16 @@ struct TabSessionServices {
     let boosts: BoostInjector
 
     /// The same services, browsing with another context.
-    func with(_ context: BrowsingContext) -> TabSessionServices {
+    @MainActor func with(_ context: BrowsingContext) -> TabSessionServices {
         TabSessionServices(
-            historyStore: historyStore,
+            historyStore: context.profileData?.history ?? historyStore,
             faviconStore: context.faviconStore,
-            downloadManager: downloadManager,
-            webKitEnvironment: webKitEnvironment,
-            contentBlocker: contentBlocker,
+            downloadManager: context.profileData?.downloads ?? downloadManager,
+            webKitEnvironment: context.profileData?.environment ?? webKitEnvironment,
+            contentBlocker: context.profileData?.blocker ?? contentBlocker,
             context: context,
-            siteZoom: siteZoom,
-            boosts: boosts
+            siteZoom: context.profileData?.zoom ?? siteZoom,
+            boosts: context.profileData?.boosts ?? boosts
         )
     }
 }
@@ -70,14 +70,18 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var pageTitle: String = ""
     /// A name the user gave the tab, shown instead of the page's title.
     @Published private(set) var customTitle: String?
-    /// The address a pinned tab or favorite stands for: where closing it goes
+    /// The address a pinned tab stands for: where closing it goes
     /// back to. Nil for a Today tab.
     @Published var pinnedURL: String?
     @Published var canGoBack: Bool = false
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
     @Published var estimatedProgress: Double = 0
+    @Published private(set) var zoomFeedback: Double?
+    private var zoomFeedbackDismissal: Task<Void, Never>?
     @Published var favicon: NSImage?
+    /// Resolved document color, cached across selections, parking, and sleep.
+    @Published private(set) var pageBackgroundColor: NSColor?
     @Published private(set) var loadFailure: LoadFailure?
     /// The link under the pointer, for the preview in the page's corner.
     @Published private(set) var hoveredLink: URL?
@@ -137,6 +141,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         self.customTitle = saved?.customTitle
         self.lastUsedAt = saved?.lastUsedAt ?? .now
         super.init()
+        if let address = saved?.url ?? initialRequest?.url?.absoluteString ?? initialURL {
+            pageBackgroundColor = services.context.pageBackgrounds.color(for: address)
+        }
 
         refreshNavigationState()
         if let saved, !isNewTabPage {
@@ -237,6 +244,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// A tab from the last session, or the archive, shows what it showed until
     /// it's selected and woken; its back/forward list comes back with it.
     private func restore(_ saved: SavedTab) {
+        pageBackgroundColor = services.context.pageBackgrounds.color(for: saved.url)
         currentURL = saved.url
         pageTitle = saved.title
         updateFavicon(for: URL(string: saved.url))
@@ -323,8 +331,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         }
 
         isNewTabPage = false
-        let webView = webView(loading: request.url)
-        webView.load(request)
+        let webView = loadRequest(request)
         refreshNavigationState()
         // Typing a destination hands focus to the page, as in Safari, which also
         // ends editing in the address field so it can show the new URL.
@@ -336,8 +343,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         loadRequest(request)
     }
 
-    func loadRequest(_ request: URLRequest) {
-        webView(loading: request.url).load(request)
+    @discardableResult
+    func loadRequest(_ request: URLRequest) -> WKWebView {
+        let webView = webView(loading: request.url)
+        loadFailure = nil
+        // Keep the destination before WebKit starts. Closing immediately must
+        // archive this request, not an empty or previous address.
+        handleURLChange(request.url)
+        webView.load(request)
+        return webView
     }
 
     func goBack() {
@@ -399,7 +413,20 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             if !services.context.isPrivate {
                 services.siteZoom.setZoom(newValue, for: webView.url)
             }
+            zoomFeedback = newValue
+            zoomFeedbackDismissal?.cancel()
+            zoomFeedbackDismissal = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled else { return }
+                self?.zoomFeedback = nil
+            }
         }
+    }
+
+    private func clearZoomFeedback() {
+        zoomFeedbackDismissal?.cancel()
+        zoomFeedbackDismissal = nil
+        zoomFeedback = nil
     }
 
     /// The page came on screen, so dialogs waiting for it can show.
@@ -410,6 +437,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     /// The tab closed: dialogs waiting for it are dismissed, as if cancelled.
     func close() {
+        clearZoomFeedback()
         pageDidAppear(in: nil)
     }
 
@@ -418,28 +446,42 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private func setupObservers(for webView: WKWebView) {
         observers = [
             webView.observe(\.url) { [weak self] webView, _ in
-                Task { @MainActor in self?.handleURLChange(webView.url) }
+                Task { @MainActor in
+                    guard let self, self.webView === webView else { return }
+                    self.handleURLChange(webView.url)
+                }
             },
             webView.observe(\.title) { [weak self] webView, _ in
-                Task { @MainActor in self?.handleTitleChange(webView.title) }
+                Task { @MainActor in
+                    guard let self, self.webView === webView else { return }
+                    self.handleTitleChange(webView.title)
+                }
             },
             webView.observe(\.canGoBack) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.webViewCanGoBack = webView.canGoBack
-                    self?.refreshNavigationState()
+                    guard let self, self.webView === webView else { return }
+                    self.webViewCanGoBack = webView.canGoBack
+                    self.refreshNavigationState()
                 }
             },
             webView.observe(\.canGoForward) { [weak self] webView, _ in
                 Task { @MainActor in
-                    self?.webViewCanGoForward = webView.canGoForward
-                    self?.refreshNavigationState()
+                    guard let self, self.webView === webView else { return }
+                    self.webViewCanGoForward = webView.canGoForward
+                    self.refreshNavigationState()
                 }
             },
             webView.observe(\.isLoading) { [weak self] webView, _ in
-                Task { @MainActor in self?.handleLoadingChange(webView.isLoading) }
+                Task { @MainActor in
+                    guard let self, self.webView === webView else { return }
+                    self.handleLoadingChange(webView.isLoading)
+                }
             },
             webView.observe(\.estimatedProgress) { [weak self] webView, _ in
-                Task { @MainActor in self?.handleEstimatedProgressChange(webView.estimatedProgress) }
+                Task { @MainActor in
+                    guard let self, self.webView === webView else { return }
+                    self.handleEstimatedProgressChange(webView.estimatedProgress)
+                }
             },
         ]
     }
@@ -448,7 +490,11 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         // After a failed load the web view returns to its last page, but the
         // address bar keeps showing the page that failed, as in Safari.
         guard !isShowingSyntheticStartPage, loadFailure == nil else { return }
-        currentURL = url?.absoluteString ?? ""
+        let address = url?.absoluteString ?? ""
+        if address != currentURL, let cached = services.context.pageBackgrounds.color(for: address) {
+            pageBackgroundColor = cached
+        }
+        currentURL = address
         updateFavicon(for: url)
     }
 
@@ -483,6 +529,13 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         webView.uiDelegate = self
         (webView as? BrowserWebView)?.onMouseDown = { [weak self] in self?.host?.select() }
         (webView as? BrowserWebView)?.onCapture = { [weak self] in self?.host?.capture?() }
+        PageBackground.install(in: webView.configuration.userContentController) { [weak self] source, color in
+            guard let self, self.webView === source else { return }
+            if let url = source.url?.absoluteString {
+                self.services.context.pageBackgrounds.store(color, for: url)
+            }
+            if self.pageBackgroundColor != color { self.pageBackgroundColor = color }
+        }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
         }
@@ -577,6 +630,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        clearZoomFeedback()
+        guard self.webView === webView else { return }
         extensionWait = nil
         loadFailure = nil
         hoveredLink = nil
@@ -588,6 +643,7 @@ extension TabSession: WKNavigationDelegate {
     /// A new page: its audio starts fresh, and its site opens at the zoom it
     /// was left at.
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard self.webView === webView else { return }
         media?.reset()
         webView.pageZoom = services.siteZoom.zoom(for: webView.url)
     }
@@ -597,10 +653,12 @@ extension TabSession: WKNavigationDelegate {
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
+        guard self.webView === webView else { return }
         showFailure(error)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard self.webView === webView else { return }
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
         // An extension's pages aren't places to go back to.
@@ -614,6 +672,7 @@ extension TabSession: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        guard self.webView === webView else { return }
         showFailure(error)
     }
 
@@ -720,11 +779,11 @@ extension TabSession: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
-        services.downloadManager.handleDownload(download)
+        services.downloadManager.handleDownload(download, from: webView)
     }
 
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
-        services.downloadManager.handleDownload(download)
+        services.downloadManager.handleDownload(download, from: webView)
     }
 }
 
@@ -753,7 +812,7 @@ extension TabSession: WKUIDelegate {
     }
 
     /// Arc's Peek: a link clicked with Shift, or one from a pinned tab or
-    /// favorite to another site, opens over the page instead of leaving it.
+    /// pinned tab to another site, opens over the page instead of leaving it.
     private func opensInPeek(_ action: WKNavigationAction) -> Bool {
         guard action.navigationType == .linkActivated || action.targetFrame == nil, let host = action.request.url?.host() else { return false }
         if action.modifierFlags.contains(.shift) { return true }

@@ -21,7 +21,7 @@ final class LittleCove {
             initialURL: url?.absoluteString,
             showsStartPage: url == nil,
             settings: appServices.settingsStore,
-            services: appServices.tabSessionServices(in: appServices.browsingContext)
+            services: appServices.tabSessionServices(in: appServices.currentContext)
         )
         let window = LittleCoveWindow(tab: tab, appServices: appServices) { [weak self] window in
             self?.windows.removeAll { $0 === window }

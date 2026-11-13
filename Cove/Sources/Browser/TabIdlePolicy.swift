@@ -35,7 +35,7 @@ struct TabIdlePolicy {
         return policy
     }
 
-    /// For pinned tabs and favorites, which are kept for good: they sleep like
+    /// For pinned tabs, which are kept for good: they sleep like
     /// any other tab but are never archived.
     var neverArchiving: Self {
         var policy = self

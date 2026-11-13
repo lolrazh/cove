@@ -14,13 +14,13 @@ struct SavedTab: Codable {
     let lastUsedAt: Date?
 }
 
-/// One space's Today in a window, and what it had selected.
-struct SavedSpace: Codable {
-    let spaceID: UUID
+/// One profile's Today in a window, and what it had selected.
+struct SavedProfile: Codable {
+    let profileID: UUID
     let tabs: [SavedTab]
     /// The selected tab, if it was one of `tabs`.
     let activeTabIndex: Int?
-    /// The selected tab, if it was a pinned tab or favorite: its pin's ID.
+    /// The selected tab, if it was a pinned tab: its pin's ID.
     let activePinID: UUID?
     /// Splits by their tabs' places in `tabs`. Absent in sessions saved
     /// before Split View.
@@ -32,39 +32,18 @@ struct SavedSpace: Codable {
     var activeDocumentID: UUID? = nil
 }
 
-/// A window: every space's Today as it was left there, and the space shown.
+/// A window: every profile's Today as it was left there, and the profile shown.
 struct SavedWindow: Codable {
-    let spaces: [SavedSpace]
-    let activeSpaceID: UUID
+    let profiles: [SavedProfile]
+    let activeProfileID: UUID
     var placement: WindowPlacement?
 
-    init(spaces: [SavedSpace], activeSpaceID: UUID) {
-        self.spaces = spaces
-        self.activeSpaceID = activeSpaceID
+    init(profiles: [SavedProfile], activeProfileID: UUID) {
+        self.profiles = profiles
+        self.activeProfileID = activeProfileID
     }
 
-    private enum UnscopedKeys: String, CodingKey {
-        case tabs, activeTabIndex
-    }
 
-    /// A window saved before Spaces had one Today, which is the first space's.
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        placement = try container.decodeIfPresent(WindowPlacement.self, forKey: .placement)
-        if let spaces = try container.decodeIfPresent([SavedSpace].self, forKey: .spaces) {
-            self.spaces = spaces
-            activeSpaceID = try container.decode(UUID.self, forKey: .activeSpaceID)
-        } else {
-            let unscoped = try decoder.container(keyedBy: UnscopedKeys.self)
-            spaces = [SavedSpace(
-                spaceID: Space.defaultID,
-                tabs: try unscoped.decode([SavedTab].self, forKey: .tabs),
-                activeTabIndex: try unscoped.decode(Int.self, forKey: .activeTabIndex),
-                activePinID: nil
-            )]
-            activeSpaceID = Space.defaultID
-        }
-    }
 }
 
 /// Where a window was on screen. The frame is the window's size outside full
@@ -115,25 +94,21 @@ final class SessionStore {
     private var didReopenWindows = false
     private var trackedWindows: [TrackedWindow] = []
     private var pendingSave: Task<Void, Never>?
-    private var terminationObserver: NSObjectProtocol?
+    private var terminationObserver: AnyCancellable?
 
     init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        fileURL = appSupport.appendingPathComponent("Cove/session.plist")
+        fileURL = ProfileMigration.root.appendingPathComponent("session.plist")
         restorableWindows = StoreFile.read(fileURL) { try? PropertyListDecoder().decode([SavedWindow].self, from: $0) } ?? []
 
         // A change in the last second before quitting would miss the debounce.
-        terminationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.willTerminateNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.save()
-                // Windows close after this, and the saved session must keep them.
-                self?.trackedWindows.removeAll()
+        terminationObserver = NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification, object: nil)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated {
+                    self?.save()
+                    // Windows close after this, and the saved session must keep them.
+                    self?.trackedWindows.removeAll()
+                }
             }
-        }
     }
 
     /// The next window saved last session, if any are left to restore.
@@ -149,7 +124,7 @@ final class SessionStore {
         return restorableWindows.count
     }
 
-    /// Saves the window whenever its Today, splits, selection, space or any
+    /// Saves the window whenever its Today, splits, selection, profile or any
     /// saved tab change. A restored window's placement applies once its
     /// window is known.
     func track(_ tabManager: TabManager, placement: WindowPlacement?) {
@@ -160,7 +135,7 @@ final class SessionStore {
             todayChanged,
             tabManager.$activeTabID.map { _ in },
             tabManager.$activeDocumentID.map { _ in },
-            tabManager.$activeSpaceID.map { _ in },
+            tabManager.$activeProfileID.map { _ in },
             tabManager.$splits.map { _ in }
         )
             .sink { [weak self] in self?.scheduleSave() }
@@ -215,7 +190,8 @@ final class SessionStore {
         }
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
-        guard let data = try? encoder.encode(windows) else { return }
+        guard let data = try? encoder.encode(windows + restorableWindows) else { return }
+        try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: fileURL, options: .atomic)
     }
 }

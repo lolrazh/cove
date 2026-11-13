@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 /// A note's text, live. Every editor showing the note lays out this one text
 /// storage, so a note open in two windows changes in both as it's typed. It's
@@ -11,7 +12,7 @@ final class Note {
     /// Told the note's words after each save, for the index.
     private let onSave: (String) -> Void
     private var pendingSave: Task<Void, Never>?
-    private var editObserver: NSObjectProtocol?
+    private var editObserver: AnyCancellable?
 
     /// What new text looks like.
     static var bodyFont: NSFont { NoteTextStyle.body.font }
@@ -27,13 +28,10 @@ final class Note {
         // in light and dark mode alike.
         text.addAttribute(.foregroundColor, value: NSColor.textColor, range: NSRange(location: 0, length: text.length))
 
-        editObserver = NotificationCenter.default.addObserver(
-            forName: NSTextStorage.didProcessEditingNotification,
-            object: text,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.scheduleSave() }
-        }
+        editObserver = NotificationCenter.default.publisher(for: NSTextStorage.didProcessEditingNotification, object: text)
+            .sink { [weak self] _ in
+                MainActor.assumeIsolated { self?.scheduleSave() }
+            }
     }
 
     /// Adds a capture at the end: the image, then where it came from.

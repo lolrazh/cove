@@ -8,8 +8,8 @@ struct CommandBarResult: Identifiable, Hashable {
         case tab(UUID)
         /// A tab in the archive, reopened with its back/forward list.
         case archived(UUID)
-        /// Another space, to switch to.
-        case space(UUID)
+        /// Another profile, to switch to.
+        case profile(UUID)
         /// An extension's button, by its context's unique identifier.
         case extensionAction(String)
         /// A note, found by its title or its words.
@@ -63,13 +63,12 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case copyURL
     case pinTab
     case unpinTab
-    case addToFavorites
     case newFolder
     case newNote
     case newEasel
     case importBookmarks
-    case newSpace
-    case editSpace
+    case newProfile
+    case editProfile
     case duplicateTab
     case addSplitView
     case rotateSplitView
@@ -108,13 +107,12 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .copyURL: "Copy URL"
         case .pinTab: "Pin Tab"
         case .unpinTab: "Unpin Tab"
-        case .addToFavorites: "Add to Favorites"
         case .newFolder: "New Folder"
         case .newNote: "New Note"
         case .newEasel: "New Easel"
         case .importBookmarks: "Import Bookmarks"
-        case .newSpace: "New Space"
-        case .editSpace: "Edit Space"
+        case .newProfile: "New Profile"
+        case .editProfile: "Edit Profile"
         case .duplicateTab: "Duplicate Tab"
         case .addSplitView: "Add Split View"
         case .rotateSplitView: "Rotate Split View"
@@ -155,13 +153,12 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .copyURL: "link"
         case .pinTab: ChromeSymbols.Tabs.pin
         case .unpinTab: ChromeSymbols.Tabs.unpin
-        case .addToFavorites: ChromeSymbols.Tabs.favorite
         case .newFolder: ChromeSymbols.Tabs.folder
         case .newNote: ChromeSymbols.Documents.newNote
         case .newEasel: ChromeSymbols.Documents.easel
         case .importBookmarks: "square.and.arrow.down.on.square"
-        case .newSpace: ChromeSymbols.Settings.spaces
-        case .editSpace: "pencil"
+        case .newProfile: ChromeSymbols.Settings.profiles
+        case .editProfile: "pencil"
         case .duplicateTab: "plus.square.on.square"
         case .addSplitView: ChromeSymbols.Tabs.splitView
         case .rotateSplitView: ChromeSymbols.Tabs.splitVertically
@@ -202,13 +199,12 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .copyURL: ["link", "address"]
         case .pinTab: ["bookmark", "keep"]
         case .unpinTab: ["bookmark", "today"]
-        case .addToFavorites: ["favourite", "bookmark", "star"]
         case .newFolder: ["pinned", "group"]
         case .newNote: ["write", "text", "document", "jot"]
         case .newEasel: ["canvas", "board", "draw", "sketch", "whiteboard", "clipping"]
         case .importBookmarks: ["safari", "chrome", "pinned"]
-        case .newSpace: ["create", "add", "profile"]
-        case .editSpace: ["rename", "icon", "color", "theme", "profile"]
+        case .newProfile: ["create", "add", "profile"]
+        case .editProfile: ["rename", "icon", "color", "theme", "profile"]
         case .duplicateTab: ["copy", "clone"]
         case .addSplitView: ["side by side", "pane", "tile"]
         case .rotateSplitView: ["vertical", "horizontal", "stack", "side by side"]
@@ -238,5 +234,19 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .extensions: ["add-ons", "plugins", "manage", "load", "unpacked"]
         case .settings: ["preferences", "options"]
         }
+    }
+}
+
+/// Find the typed part without assuming ASCII or equal UTF-16 lengths.
+/// The same row stays in place while this range grows with each keystroke.
+enum SuggestionMatch {
+    static func range(in suggestion: String, query: String) -> Range<String.Index>? {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return nil }
+        return suggestion.range(of: query, options: [.caseInsensitive, .diacriticInsensitive])
+    }
+
+    static func continuations(_ items: [String], for query: String) -> [String] {
+        items.filter { $0.range(of: query, options: [.anchored, .caseInsensitive, .diacriticInsensitive]) != nil }
     }
 }

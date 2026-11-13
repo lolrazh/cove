@@ -1,0 +1,159 @@
+# Pinned tabs — 13 November 2026
+
+## Result
+
+Top-level pins now use rounded, full-width tile rows. The selected tile has a
+soft fill from the favicon, with the crisp favicon centered above it.
+This is a local Debug build. Nothing was pushed or released.
+
+The user asked what Favorites and pins mean. Explained the current model:
+
+- Favorites appear in each space within one profile.
+- Pins appear only in their own space.
+- Neither type crosses profile boundaries.
+
+Kept those storage rules. Pin Tab still creates a space pin. Existing Favorites
+keep their separate compact grid. Tabs inside folders keep their named rows.
+No migration, page-host change, or new state store was added.
+
+## Changes and commits
+
+- `e6a7337 ui: arrange space pins in balanced full-width rows`
+  - Rows: 1, 2, 3, 2+2, 3+2, 3+3; larger counts stay balanced, at most three per row.
+  - Tile height 40 pt, gap 6 pt, corner radius 10 pt, favicon 16 pt.
+  - One flat SwiftUI Layout keeps tile identity when a tile changes rows.
+  - 120 ms ease-out reflow. Reduce Motion removes the added movement animation.
+  - Native buttons have names and selected traits. Context-menu rename works.
+  - Reused the existing drag/drop path and stable parent drag-session observer.
+- `07d2ec2 ui: soften selected pins with favicon color`
+  - A separate clipped favicon layer supplies the selected fill: 14 pt blur,
+    24% opacity. The source is the existing cached favicon. No page sampling,
+    average-color calculation, or extra cache was added.
+  - Hover uses a short fill change. No heavy colored rim or scale bounce.
+  - Removed an extra 8 pt gap caused by an empty folder-list view below the grid.
+
+## Dia comparison
+
+Used the Reverse Engineer Anything skill's bounded static fallback. The REA
+service and CLI were not available. This is ordinary native-tool evidence,
+not REA-engine output. The binary hash was checked before prior metadata was reused.
+Read-only helper work was limited to the installed executable; no profile files.
+
+- Dia 1.56.2 / 90792 has a dock-layout path with 120 ms ease-out timing.
+- Its selected outline can use an image mask and a saturation filter.
+- Verified filter values: saturation 2.0 and brightness −0.1. An appearance
+  branch chooses alpha 0.75 or 1.0. The light/dark mapping remains unknown.
+- The exact upstream image source, blur settings, and row-balancing algorithm
+  were not recovered. Cove's row rules come from the user's explicit request.
+- Cove's soft interior fill is a deliberate alternative to Dia's strong rim.
+
+[Static evidence and exact addresses](2026-11-13_dia-pinned-tabs-evidence.md).
+[Frame comparison and three active-state options](artifacts/pinned-tabs-comparison.html).
+The options are illustrative CSS previews. Only Soft color is in the native app.
+
+Recorded both apps using the previously approved virtual-only capture helper.
+Both windows were fully inside Virtual 16:9; no main-display recording was made.
+The recorder targeted 60 fps, but actual frame intervals vary.
+
+Tracked existing icon positions during row reflow:
+
+| Recording | Captured movement interval |
+| --- | --- |
+| Dia, two pins to three | 120 ms |
+| Dia, three pins to two | 135 ms |
+| Cove, one pin to two | 132 ms |
+| Cove, two pins to three | 135 ms |
+| Cove, three pins to four | 135 ms |
+| Cove, four pins to five | 122 ms |
+
+Times run from the last still sample to the last detected position change.
+They are capture estimates, not input latency or proof of exact frame parity.
+Reviewed original frame strips for the two-to-three case. Icons move into the
+new columns and settle without a scale bounce. The app widths differ; the
+comparison preserves the same display scale.
+
+Raw recordings, frame tracks, measurement script, and strips:
+`build/pinned-tabs-study/`. The checked-in comparison embeds the cropped frames.
+Its captures precede the final spacing-only correction below the grid.
+
+## Validation
+
+- Targeted layout checks passed for row counts 0–8, geometry for 1–30 pins at
+  both sidebar width limits, no overlaps, full-width rows, and RTL mirroring.
+- Full Debug suite passed: 198 tests in 43 suites.
+  Result: `build/dia-polish/Logs/Test/Test-Cove-2026.11.13_14-38-40-+0530.xcresult`.
+- Live virtual-display checks: create and pin six public test pages; select pins;
+  unpin into a normal row; rename a pin; switch spaces and return; restart and
+  confirm saved pins and the renamed title; remove all test pins.
+- Returned Cove to its original empty start page. Existing spaces were retained.
+  The latest build remains on Virtual 16:9. Dia's test tab was removed, its
+  auto-hide setting restored, and its window returned to the main display.
+- Physical trackpad drag/reorder feel, physical hover, VoiceOver reading order,
+  and live Reduce Motion were not verified. Their code paths were preserved or
+  inspected; the geometric RTL test is not a full mirrored-interface test.
+- `git diff --check` passed. Existing untracked `prototypes/` files were excluded.
+
+Used Better Layout and Better UI for the focused layout and surface pass.
+Mintlify was not available. Checked the custom layout contract in
+[Apple's Layout documentation](https://developer.apple.com/documentation/swiftui/layout).
+
+## Follow-up: color edge and glass options
+
+The user preferred Color edge and asked to compare three finishes before the
+next native change: Color edge, Soft color + edge, and Darker glass + edge.
+
+- Added a [separate interactive study](artifacts/pinned-tab-active-states.html)
+  and linked it from the original comparison. It uses the same 220 pt sidebar,
+  40 pt tiles, 16 pt icons, and three sample favicons for every option.
+- The edge uses a blurred image inside a 1.5 px border mask. It takes the sample
+  favicon's colors rather than a fixed rainbow. Selection stays in sync across
+  the three options. Five background themes are available.
+- Soft color adds a 26% favicon wash. Darker glass uses a 33% dark base, a 30%
+  wash with reduced brightness, an 8 px backdrop blur, and a light inner sheen.
+  Reduced the first dark base after the visual check: it was too heavy.
+- Tested in a separate private Cove window on Virtual 16:9. Checked all theme
+  controls and all three icon selections. Checked narrow stacked layout and
+  wide side-by-side layout. Captured the final purple comparison after the
+  lighter glass adjustment. Closed the private window afterward; the user's
+  current tabs and pins were preserved.
+- This is a CSS visual study, not the native material implementation. No app
+  source changed in this follow-up, and the full native suite was not rerun.
+  The next native change will use the user's chosen finish.
+
+## Selected finish: stronger soft color and a continuous edge
+
+The user chose Soft color + edge. Requested a stronger fill, a slightly thicker
+rim, and smooth color through the transparent grooves in logos such as Gmail.
+
+- `5251ff6`: added `PinColorField`. It samples a favicon into a 16×16 sRGB image,
+  blends premultiplied colors in linear light with a separable Gaussian, then
+  normalizes by alpha. Every output pixel is opaque if any source pixel has
+  color. Transparent parts therefore create neither holes nor black seams.
+- Missing, fully transparent, or template icons use the neutral selected edge.
+  Colors are not invented for monochrome template glyphs.
+- `44a8076`: applied the field to the native fill and rim. Fill opacity is 40%;
+  the selected preview used 26% and the earlier native fill used 24%. Rim width
+  is 2 pt, up from the 1.5 px preview. The same field keeps both layers aligned.
+- Each mounted tile retains the field until its favicon changes. Selection and
+  hover reuse it. No persistent cache, background task, page sampling, or new
+  preference was added. The sharp favicon remains separate.
+- Local optimized processing of the three study icons averaged about 0.019 ms
+  per field over 100 iterations each. This is a small helper measurement, not an
+  end-to-end UI frame-time claim.
+- Full Debug suite passed: 201 tests in 44 suites. New checks cover transparent
+  grooves, smooth adjacent colors, no dark center seam, sparse semitransparent
+  marks, fully opaque edges, and empty/template fallbacks.
+  Result: `build/dia-polish/Logs/Test/Test-Cove-2026.11.13_15-14-37-+0530.xcresult`.
+- Native checks ran on Virtual 16:9. A temporary local page supplied the study's
+  Gmail-shaped favicon. Recorded the continuous top/bottom rim, then checked
+  selection with Wikipedia and Swift. Removed the temporary pin and page,
+  stopped the local fixture server, restored the previous selected page, and
+  returned the window to the main display. Existing user pins were preserved.
+- [Native selected tile capture](artifacts/pinned-continuous-edge.png).
+  The HTML study now uses color fields produced by the same native helper;
+  its CSS rendering remains a preview. Native code and captured output are the
+  source of truth. The final HTML asset update was syntax-checked, not replayed.
+- Used the Write Swift skill. Mintlify was unavailable; checked Apple's AppKit
+  and Core Graphics documentation and validated with the installed SDK. The
+  implementation uses explicit sRGB Core Graphics data, avoiding the installed
+  OS's `NSBitmapImageRep.setColor` failure found during the first test run.

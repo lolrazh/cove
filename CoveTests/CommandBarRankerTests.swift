@@ -66,7 +66,7 @@ struct CommandBarRankerTests {
     }
 
     @Test(arguments: ["gi ", "git hub", "hub"])
-    func `nothing is completed for multiple words, a trailing space, or a mid-word match`(query: String) {
+    func `nothing is completed for multiple words, a trailing profile, or a mid-word match`(query: String) {
         #expect(rank(query, .init(history: [github])).completion == nil)
     }
 
@@ -120,11 +120,11 @@ struct CommandBarRankerTests {
         #expect(ranking.results.filter { $0.kind == .command(command) }.count == 1)
     }
 
-    @Test func `spaces and extensions lead when named too`() {
-        let work = CommandBarRanker.OtherSpace(id: UUID(), name: "Work")
+    @Test func `profiles and extensions lead when named too`() {
+        let work = CommandBarRanker.OtherProfile(id: UUID(), name: "Work")
         let action = CommandBarRanker.ExtensionAction(id: "dark", name: "Dark Reader")
-        let sources = CommandBarRanker.Sources(spaces: [work], extensionActions: [action])
-        #expect(rank("work", sources).results.first?.kind == .space(work.id))
+        let sources = CommandBarRanker.Sources(profiles: [work], extensionActions: [action])
+        #expect(rank("work", sources).results.first?.kind == .profile(work.id))
         #expect(rank("dark re", sources).results.first?.kind == .extensionAction("dark"))
     }
 
@@ -142,12 +142,12 @@ struct CommandBarRankerTests {
         #expect(ranking.results.first?.kind == .history)
     }
 
-    @Test func `other spaces are offered by name`() {
-        let work = CommandBarRanker.OtherSpace(id: UUID(), name: "Work")
-        let sources = CommandBarRanker.Sources(spaces: [work])
-        #expect(rank("work", sources).results.contains { $0.kind == .space(work.id) && $0.title == "Switch to Work" })
-        #expect(rank("space", sources).results.contains { $0.kind == .space(work.id) })
-        #expect(!rank("home", sources).results.contains { $0.kind == .space(work.id) })
+    @Test func `other profiles are offered by name`() {
+        let work = CommandBarRanker.OtherProfile(id: UUID(), name: "Work")
+        let sources = CommandBarRanker.Sources(profiles: [work])
+        #expect(rank("work", sources).results.contains { $0.kind == .profile(work.id) && $0.title == "Switch to Work" })
+        #expect(rank("profile", sources).results.contains { $0.kind == .profile(work.id) })
+        #expect(!rank("home", sources).results.contains { $0.kind == .profile(work.id) })
     }
 
     @Test func `extensions' buttons are offered by name, and all of them with nothing typed`() {
@@ -186,5 +186,33 @@ struct NavigationDestinationTests {
 
     @Test func `blank input is nothing`() {
         #expect(builder.destination(for: "   ") == nil)
+    }
+}
+
+struct SuggestionMatchTests {
+    @Test func `the typed part grows one letter at a time without changing the suggestion`() throws {
+        let suggestion = "swift programming"
+        for query in ["s", "sw", "swift", "swift p", "swift programming"] {
+            let match = try #require(SuggestionMatch.range(in: suggestion, query: query))
+            #expect(String(suggestion[match]) == query)
+        }
+    }
+
+    @Test func `matching preserves original accents case and composed characters`() throws {
+        for (suggestion, query, expected) in [
+            ("Café guide", "cafe", "Café"),
+            ("👩🏽‍💻 Swift", "👩🏽‍💻 s", "👩🏽‍💻 S"),
+            ("best swift tutorials", "swift", "swift")
+        ] {
+            let match = try #require(SuggestionMatch.range(in: suggestion, query: query))
+            #expect(String(suggestion[match]) == expected)
+        }
+        #expect(SuggestionMatch.range(in: "swift", query: "   ") == nil)
+        #expect(SuggestionMatch.range(in: "swift", query: "rust") == nil)
+    }
+
+    @Test func `cached suggestions drop branches that no longer match the input`() {
+        #expect(SuggestionMatch.continuations(["swift ui", "Swift programming", "swift package"], for: "swift p")
+            == ["Swift programming", "swift package"])
     }
 }

@@ -9,25 +9,26 @@ struct BrowserView: View {
     @State private var areTabsVisible = true
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(appServices: AppServices, isPrivate: Bool = false) {
         self.appServices = appServices
         self._tabManager = StateObject(wrappedValue: Self.makeTabManager(appServices: appServices, isPrivate: isPrivate))
     }
 
-    /// A normal window shows the shared spaces, each browsing with its
+    /// A normal window shows the shared profiles, each browsing with its
     /// profile's context, and is saved with the session. A private window
-    /// gets a context of its own and keeps nothing: no spaces, no session, no
+    /// gets a context of its own and keeps nothing: no profiles, no session, no
     /// pins, no notes, and an archive of its own, in memory, for its closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
         let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
         return TabManager(
             settings: appServices.settingsStore,
             services: appServices.tabSessionServices(in: context),
-            archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
+            archive: isPrivate ? TabArchive(directory: nil) : appServices.defaultData.archive,
             pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
-            spaces: isPrivate ? nil : appServices.spaceStore,
-            documents: isPrivate ? nil : appServices.documentStore,
+            profiles: isPrivate ? nil : appServices.profileStore,
+            documents: isPrivate ? nil : appServices.defaultData.documents,
             session: isPrivate ? nil : appServices.sessionStore
         )
     }
@@ -47,16 +48,31 @@ struct BrowserView: View {
                     ) {
                         activeTabContent(activeTab)
                     }
-                    .overlay {
-                        CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
-                    }
                 }
             }
         }
-        .background(ChromePalette.shell)
-        .environment(\.chromeTheme, tabManager.isPrivate ? .privateBrowsing : tabManager.activeSpace?.theme ?? .system)
+        .animatedChromeTheme(tabManager.isPrivate ? .privateBrowsing : tabManager.activeProfile?.theme ?? .system,
+                             profiles: tabManager.profiles, transition: tabManager.profileTransition)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
+        .background {
+            // Extra spellings of the View menu's zoom shortcuts.
+            Group {
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("=", modifiers: .command)
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("+", modifiers: .control)
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("=", modifiers: .control)
+                Button("Zoom Out", action: tabManager.zoomOut)
+                    .keyboardShortcut("-", modifiers: .control)
+                Button("Actual Size", action: tabManager.resetZoom)
+                    .keyboardShortcut("0", modifiers: .control)
+            }
+            .disabled(tabManager.activePage == nil)
+            .hidden()
+            .accessibilityHidden(true)
+        }
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
             guard !tabManager.isPrivate else { return }
@@ -83,21 +99,16 @@ struct BrowserView: View {
         .onOpenURL { url in
             appServices.externalURLRouter.open([url], from: .otherApp)
         }
-        .sheet(isPresented: isPresent($tabManager.spaceToEdit)) {
-            if let id = tabManager.spaceToEdit {
-                SpaceEditor(store: appServices.spaceStore, spaceID: id)
-            }
-        }
         .confirmationDialog(
-            "Delete \u{201C}\(spaceToDelete?.name ?? "")\u{201D}?",
-            isPresented: isPresent($tabManager.spaceToDelete),
-            presenting: spaceToDelete
-        ) { space in
-            Button("Delete Space", role: .destructive) {
-                tabManager.deleteSpace(space.id)
+            "Delete \u{201C}\(profileToDelete?.name ?? "")\u{201D}?",
+            isPresented: isPresent($tabManager.profileToDelete),
+            presenting: profileToDelete
+        ) { profile in
+            Button("Delete Profile", role: .destructive) {
+                tabManager.deleteProfile(profile.id)
             }
         } message: { _ in
-            Text("Its open tabs move to the archive, and its pinned tabs are removed.")
+            Text("This deletes its tabs, history, and site data. Other profiles are not changed.")
         }
         .confirmationDialog(
             "Delete \u{201C}\(documentToDelete?.displayTitle ?? "")\u{201D}?",
@@ -108,15 +119,15 @@ struct BrowserView: View {
                 tabManager.deleteDocument(document.id)
             }
         } message: { _ in
-            Text("It's removed from every space, and can't be brought back.")
+            Text("It's removed from every profile, and can't be brought back.")
         }
         .onChange(of: tabManager.hideTabs) { _, hide in
-            withAnimation(ChromeMotion.shell) {
+            withAnimation(reduceMotion ? nil : ChromeMotion.shell) {
                 areTabsVisible = !hide
             }
         }
         .onChange(of: tabManager.tabLayout) { _, _ in
-            withAnimation(ChromeMotion.shell) {
+            withAnimation(reduceMotion ? nil : ChromeMotion.shell) {
                 areTabsVisible = !tabManager.hideTabs
             }
         }
@@ -126,8 +137,8 @@ struct BrowserView: View {
         tabManager.documentToDelete.flatMap { tabManager.documentStore?.documents[$0] }
     }
 
-    private var spaceToDelete: Space? {
-        tabManager.spaces.first { $0.id == tabManager.spaceToDelete }
+    private var profileToDelete: Profile? {
+        tabManager.profiles.first { $0.id == tabManager.profileToDelete }
     }
 
     private func isPresent(_ id: Binding<UUID?>) -> Binding<Bool> {
@@ -152,8 +163,7 @@ struct BrowserView: View {
             } else if let split = tabManager.activeSplit {
                 SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
             } else {
-                PageView(tab: tab, appServices: appServices)
-                    .id(tab.id)
+                PageView(tab: tab, appServices: appServices, showsLoadingProgress: false)
                     .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
                     .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
             }

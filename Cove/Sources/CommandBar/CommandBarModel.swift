@@ -26,9 +26,9 @@ final class CommandBarModel: ObservableObject {
 
     private unowned let tabManager: TabManager
     private let settings: BrowserSettingsStore
-    private let historyStore: HistoryStore
-    private let faviconStore: FaviconStore
-    private let archive: TabArchive
+    private var historyStore: HistoryStore { tabManager.services.historyStore }
+    private var faviconStore: FaviconStore { tabManager.services.faviconStore }
+    private var archive: TabArchive { tabManager.archive }
     private let ranker = CommandBarRanker()
     private let suggestions = SearchSuggestions()
     private var suggestionTask: Task<Void, Never>?
@@ -36,23 +36,16 @@ final class CommandBarModel: ObservableObject {
     /// query it answered so rows don't vanish between keystrokes.
     private var fetchedSuggestions: (query: String, items: [String])?
 
-    init(
-        tabManager: TabManager,
-        settings: BrowserSettingsStore,
-        historyStore: HistoryStore,
-        faviconStore: FaviconStore,
-        archive: TabArchive
-    ) {
+    init(tabManager: TabManager, settings: BrowserSettingsStore) {
         self.tabManager = tabManager
         self.settings = settings
-        self.historyStore = historyStore
-        self.faviconStore = faviconStore
-        self.archive = archive
     }
 
     var searchEngine: SearchEngine { settings.searchEngine }
 
     var results: [CommandBarResult] { sections.flatMap(\.results) }
+
+    var profileID: UUID { tabManager.activeProfileID }
 
     // MARK: - Presenting
 
@@ -81,11 +74,6 @@ final class CommandBarModel: ObservableObject {
         selection = results[min(max(current + offset, 0), results.count - 1)]
     }
 
-    func openSelection(inNewTab: Bool) {
-        guard let selection else { return }
-        open(selection, inNewTab: inNewTab)
-    }
-
     func open(_ result: CommandBarResult, inNewTab: Bool) {
         switch result.kind {
         case .tab(let id) where mode == .splitView:
@@ -94,8 +82,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.selectTab(id)
         case .archived(let id):
             tabManager.reopenArchivedTab(id)
-        case .space(let id):
-            tabManager.switchToSpace(id)
+        case .profile(let id):
+            tabManager.switchToProfile(id)
         case .extensionAction(let id):
             tabManager.extensionHost.extensionContext(id: id).map(tabManager.performExtensionAction)
         case .document(let id, _):
@@ -112,12 +100,7 @@ final class CommandBarModel: ObservableObject {
         dismiss()
     }
 
-    /// A space row's icon.
-    func spaceIcon(for result: CommandBarResult) -> SpaceIcon? {
-        guard case .space(let id) = result.kind else { return nil }
-        return tabManager.spaces.first { $0.id == id }?.icon
-    }
-
+    /// A profile row's icon.
     /// Favicons for page rows: a tab's own, or the cached one for its site.
     /// An extension's row shows its button's icon.
     func icon(for result: CommandBarResult) -> NSImage? {
@@ -158,8 +141,6 @@ final class CommandBarModel: ObservableObject {
             } else if let id = tabManager.activeTabID {
                 tabManager.togglePinned(id)
             }
-        case .addToFavorites:
-            if let id = tabManager.activeTabID { tabManager.moveTab(id, toEndOf: .favorites) }
         case .newFolder:
             tabManager.newFolder()
         case .newNote:
@@ -168,10 +149,10 @@ final class CommandBarModel: ObservableObject {
             tabManager.newDocument(.easel)
         case .importBookmarks:
             tabManager.importBookmarks()
-        case .newSpace:
-            tabManager.newSpace()
-        case .editSpace:
-            tabManager.spaceToEdit = tabManager.activeSpaceID
+        case .newProfile:
+            tabManager.newProfile()
+        case .editProfile:
+            tabManager.profileToEdit = tabManager.activeProfileID
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .addSplitView:
@@ -239,9 +220,8 @@ final class CommandBarModel: ObservableObject {
             switch command {
             case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
-            case .addToFavorites: showsPage && canPin && [.today, .pinned].contains(activeSection)
-            case .unpinTab: [.pinned, .favorites].contains(activeSection)
-            case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
+            case .unpinTab: activeSection == .pinned
+            case .newFolder, .importBookmarks, .newProfile, .editProfile: !tabManager.isPrivate
             case .newNote, .newEasel: tabManager.documentStore != nil
             case .duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView where !showsPage: false
             case .duplicateTab: true
@@ -284,9 +264,9 @@ final class CommandBarModel: ObservableObject {
         guard isPresented else { return }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
-        // This space's tabs first, then those open in the window's others;
+        // This profile's tabs first, then those open in the window's others;
         // in Split View mode, only the tabs that can join the split.
-        let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherSpaces)
+        let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherProfiles)
             .filter { mode == .splitView ? tabManager.canOpenInSplitView($0.id) : $0.id != tabManager.activeTabID }
             .filter { !$0.currentURL.isEmpty }
             .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
@@ -301,9 +281,9 @@ final class CommandBarModel: ObservableObject {
                 documents: (tabManager.documentStore?.documents.values.sorted { $0.modifiedAt > $1.modifiedAt } ?? [])
                     .filter { $0.id != tabManager.activeDocumentID }
                     .map { CommandBarRanker.Document(id: $0.id, kind: $0.kind, title: $0.displayTitle, text: $0.text) },
-                spaces: tabManager.spaces
-                    .filter { $0.id != tabManager.activeSpaceID }
-                    .map { CommandBarRanker.OtherSpace(id: $0.id, name: $0.name) },
+                profiles: tabManager.profiles
+                    .filter { $0.id != tabManager.activeProfileID }
+                    .map { CommandBarRanker.OtherProfile(id: $0.id, name: $0.name) },
                 extensionActions: tabManager.extensionContexts.map { context in
                     CommandBarRanker.ExtensionAction(id: context.uniqueIdentifier, name: context.webExtension.displayName ?? "")
                 },
@@ -324,8 +304,10 @@ final class CommandBarModel: ObservableObject {
     }
 
     private func currentSuggestions(for query: String) -> [String] {
-        guard let fetched = fetchedSuggestions, query.hasPrefix(fetched.query) else { return [] }
-        return fetched.items
+        guard settings.showSearchSuggestions, let fetched = fetchedSuggestions else { return [] }
+        if query == fetched.query { return fetched.items }
+        guard query.range(of: fetched.query, options: [.anchored, .caseInsensitive]) != nil else { return [] }
+        return SuggestionMatch.continuations(fetched.items, for: query)
     }
 
     /// Asks the engine after a short pause in typing, and only for input that
@@ -342,7 +324,8 @@ final class CommandBarModel: ObservableObject {
             try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
             let items = await suggestions.fetch(query, from: engine)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, isPresented, engine == searchEngine,
+                  self.query.trimmingCharacters(in: .whitespacesAndNewlines) == query else { return }
             fetchedSuggestions = (query, items)
             refresh()
         }

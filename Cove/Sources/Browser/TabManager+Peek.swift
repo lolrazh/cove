@@ -1,6 +1,6 @@
 import Foundation
 
-/// Arc's Peek: a link from a pinned tab or favorite to another site, or any
+/// Arc's Peek: a link from a pinned tab to another site, or any
 /// link clicked with Shift, opens in a card over the page. Close it and the
 /// page underneath is as it was; expand it and the same tab, page and all,
 /// moves into Today beside the tab it came from.

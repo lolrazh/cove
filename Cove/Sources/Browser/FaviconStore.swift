@@ -7,10 +7,10 @@ final class FaviconStore {
     private let shared: FaviconStore?
     private var memoryCache: [String: NSImage] = [:]
 
-    init() {
+    init(databasePath: String? = nil) {
         shared = nil
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dbPath = appSupport.appendingPathComponent("Cove/favicons.db").path
+        let dbPath = databasePath ?? appSupport.appendingPathComponent("Cove/favicons.db").path
 
         do {
             db = try Database(path: dbPath)

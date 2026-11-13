@@ -23,7 +23,7 @@ private struct ChromeHoverSurface: ViewModifier {
     }
 }
 
-/// Hidden chrome arriving from a window edge: a spring slide, or a crossfade
+/// Hidden chrome arriving from a window edge: a short slide, or a crossfade
 /// under Reduce Motion.
 private struct ChromeSlide: ViewModifier {
     let isShown: Bool
@@ -36,7 +36,8 @@ private struct ChromeSlide: ViewModifier {
             .offset(isShown || reduceMotion ? .zero : hiddenOffset)
             .opacity(isShown || !reduceMotion ? 1 : 0)
             .allowsHitTesting(isShown)
-            .animation(reduceMotion ? ChromeMotion.fade : ChromeMotion.slide, value: isShown)
+            .accessibilityHidden(!isShown)
+            .animation(reduceMotion ? ChromeMotion.chromeExit : (isShown ? ChromeMotion.slide : ChromeMotion.chromeExit), value: isShown)
     }
 }
 
@@ -55,13 +56,19 @@ extension View {
     /// A page's card: the page's color, clipped to the window's concentric
     /// corners and lifted off the frame by the card shadow.
     func chromeCard() -> some View {
-        clipShape(.chrome())
+        // Each corner follows its own window corner. A docked sidebar or top
+        // tab strip moves only some corners away from the window edge.
+        let shape = ConcentricRectangle(
+            corners: .concentric(minimum: .fixed(ChromeRadius.control)),
+            isUniform: false
+        )
+        return clipShape(shape)
             // A concentric clip also becomes the hit area, and resolves in the
             // wrong place: without this the card swallows clicks meant for the tabs.
             .contentShape(Rectangle())
             // The shadow sits behind the clip, or the clip would cut it off.
             .background {
-                ConcentricRectangle.chrome()
+                shape
                     .fill(ChromePalette.content)
                     .chromeShadow(.card)
             }
@@ -71,8 +78,8 @@ extension View {
     /// the shell color, raised by a shadow alone, with no outline.
     func chromeFloatingSurface(minimumRadius: CGFloat = ChromeRadius.control) -> some View {
         background {
-            ConcentricRectangle.chrome(minimum: minimumRadius)
-                .fill(ChromePalette.shell)
+            ChromeAmbientBackground()
+                .clipShape(ConcentricRectangle.chrome(minimum: minimumRadius))
                 .chromeShadow(.floating)
         }
     }

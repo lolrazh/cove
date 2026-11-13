@@ -2,17 +2,17 @@ import AppKit
 import Combine
 import WebKit
 
-/// A browser window as extensions see it: the tabs of the space it shows,
-/// Favorites, Pinned and Today, with its active tab. It follows its
-/// `TabManager` and tells the space's `ExtensionHost` about tabs opening,
+/// A browser window as extensions see it: the tabs of the profile it shows,
+/// Pinned and Today, with its active tab. It follows its
+/// `TabManager` and tells the profile's `ExtensionHost` about tabs opening,
 /// closing and being selected, and about the window moving to another
-/// profile's space. Owned by the `TabManager`; the toolbar watches it for
+/// profile. Owned by the `TabManager`; the toolbar watches it for
 /// the active tab, whose actions it shows.
 @MainActor
 final class ExtensionWindow: NSObject, ObservableObject {
     private(set) weak var tabManager: TabManager?
     private(set) weak var window: NSWindow?
-    /// The host the window reports to: its space's profile's.
+    /// The host the window reports to: its profile's host.
     private(set) weak var host: ExtensionHost?
     /// The tabs extensions know of, by tab ID.
     private var tabs: [UUID: ExtensionTab] = [:]
@@ -32,7 +32,7 @@ final class ExtensionWindow: NSObject, ObservableObject {
     /// Starts following a window's tabs.
     func track(_ tabManager: TabManager) {
         self.tabManager = tabManager
-        Publishers.CombineLatest4(tabManager.$today, tabManager.$favorites, tabManager.$pinned, tabManager.$activeTabID)
+        Publishers.CombineLatest3(tabManager.$today, tabManager.$pinned, tabManager.$activeTabID)
             .map { _ in }
             // `@Published` announces changes before making them.
             .receive(on: DispatchQueue.main)

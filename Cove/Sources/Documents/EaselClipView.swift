@@ -11,7 +11,7 @@ import WebKit
 /// at another height, or for a signed-out visitor, or that moves content
 /// after it loads (feeds, ads, lazy images), shows something else in the
 /// region. Pages that scroll inside an element rather than the document
-/// can't be scrolled to the region. It browses with the space's profile, so
+/// can't be scrolled to the region. It browses with the profile, so
 /// signed-in pages stay signed in, but without extensions: a clipping is a
 /// view of a page, not a tab. It doesn't take clicks; the canvas does.
 final class EaselClipView: NSView {

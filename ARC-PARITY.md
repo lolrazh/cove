@@ -1,5 +1,46 @@
 # Arc Parity
 
+## Current review — 2026-11-13
+
+This is the original feature plan. Checked boxes below mean implemented, not
+fully tested in daily use. The later Dia review replaces the old layout and
+motion references where they conflict: navigation is above the page, the
+sidebar Clear divider is removed, and closing the last tab keeps a start page.
+
+Current order:
+
+1. Tabs, page host, cached page color, sidebar reveal, and command bar: reviewed
+   in the November agent logs; continue to fix reported use failures.
+2. Theme polish: quieter footer icons, hover brightness, a finite start-page
+   light wash, and clearer Library section labels. Built and checked on
+   Virtual 16:9. See `agent-logs/2026-11-12_theme-polish-and-library.md`.
+   Follow-up: shared frame/sidebar gradients, live theme controls, and typed-text
+   emphasis in search suggestions. See
+   `agent-logs/2026-11-12_shared-themes-and-suggestions.md` for checks and limits.
+   Latest: one primary color now generates the full vivid theme. The measured
+   title drift during sidebar close is fixed. See
+   `agent-logs/2026-11-12_vibrant-themes-and-stable-tab-text.md` for recorded
+   before/after measurements, tests, and remaining coverage limits.
+   November 13: compact 220 pt sidebar and simpler theme entry are built.
+   Fine grain is now the selected native surface: eight color pairs, 100%
+   default intensity, static grain, and soft glass with an 8 pt softening pass.
+   New-tab light rises from the bottom and stays clear of the toolbar.
+   The editor is now a compact live popover: name and 16 color choices.
+   Profiles use dots; the frame colors have less white dilution. The sunrise has a wider falloff. Consolidated history:
+   `agent-logs/2026-11-13_browser-polish-roundup.md`.
+3. Product simplification is implemented: **profiles, pinned tabs, regular tabs**.
+   Spaces and Favorites are removed. Each former space becomes a profile with
+   its name, theme, and tabs. Shared Favorites become independent pins.
+   History, archives, downloads, documents, site settings, and login stores
+   are separate per profile. See `agent-logs/2026-11-13_profile-simplification.md`.
+   Future, not implemented: an explicit profile-creation option to share
+   sign-ins with another profile. Tabs and themes must stay separate.
+4. Next: test download → Finder, close → restore, and History search as complete
+   tasks. Then review profile creation and theme editing across light/dark
+   appearance and accessibility settings.
+
+The historical plan follows.
+
 An audit of Cove against Arc (as last shipped, before The Browser Company moved
 to Dia), and the plan to close the gap. Cove keeps what it does better (WebKit,
 native window chrome, top tabs, built-in blocking) and takes Arc's layout,
@@ -187,6 +228,9 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       also holds tabs closed by hand.)*
 
 ### 5d. Pinned tabs and Favorites ⭑
+
+Historical design. Favorites were removed on November 13; see the current review above.
+
 - [x] Pin a tab (⌘D): moves to Pinned, persists across launches. *(Also
       the context menu and the Command Bar. Pins live in `pins.plist`,
       apart from the Today session; each keeps its live tab's page and
@@ -205,6 +249,9 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       is remembered. Private windows have no pins at all.)*
 
 ### 5e. Spaces and profiles ⭑
+
+Historical design. The two layers were replaced by profiles on November 13.
+
 - [x] Spaces: each has a name, icon, theme color, its own Pinned and Today.
       *(Icon is an SF Symbol or an emoji. Each window keeps every space's
       Today and selected tab, saved with the session. Favorites belong to the

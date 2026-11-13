@@ -46,7 +46,7 @@ struct TabSplit<Pane: Hashable & Codable>: Identifiable, Hashable, Codable {
         keeping { $0 != pane }
     }
 
-    /// The split with only the panes that pass, grown to fill the space, or
+    /// The split with only the panes that pass, grown to fill the profile, or
     /// nil if fewer than two are left.
     func keeping(_ isKept: (Pane) -> Bool) -> TabSplit? {
         let kept = panes.indices.filter { isKept(panes[$0]) }
