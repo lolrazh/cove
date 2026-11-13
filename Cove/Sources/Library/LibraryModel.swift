@@ -31,6 +31,7 @@ final class LibraryModel: ObservableObject {
     }
 
     @Published private(set) var isPresented = false
+    @Published var downloadsPresented = false
     @Published var section: Section = .downloads
 
     var downloads: DownloadManager { tabManager.services.downloadManager }
@@ -75,6 +76,7 @@ final class LibraryModel: ObservableObject {
     }
 
     func dismiss() {
+        downloadsPresented = false
         isPresented = false
     }
 

@@ -98,6 +98,7 @@
 		7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */; };
 		78A6C56CB939C419F9144687 /* TabArchiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695B3D10886152D201A80999 /* TabArchiveTests.swift */; };
 		7A34FE1717C8E4E2BF7E31F2 /* PageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4059CA9B4D1216328D4B0E5 /* PageView.swift */; };
+		7C867C85BB1466C1C15B1EAD /* DownloadsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0087887140E7290F096D009C /* DownloadsButton.swift */; };
 		7F83EC4CC63E01CA2BC76C7D /* TabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A4E68B430D945E3968A4B9 /* TabStripView.swift */; };
 		820E713F58B753C61BB2D4BF /* ProfileDataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B8B42EFAF55CE1E9F7E0A5 /* ProfileDataTests.swift */; };
 		82C222A91765DA513C4B71AE /* ExtensionPermissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5960BCEF5B03A01EB9E08611 /* ExtensionPermissions.swift */; };
@@ -203,6 +204,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0087887140E7290F096D009C /* DownloadsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsButton.swift; sourceTree = "<group>"; };
 		023F41C8187B61466D56A82B /* EaselCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EaselCanvas.swift; sourceTree = "<group>"; };
 		0266CA58A74F7DF8FAE2DF32 /* PeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeekView.swift; sourceTree = "<group>"; };
 		02A64A5B976816B178B7D381 /* WebArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebArchive.swift; sourceTree = "<group>"; };
@@ -491,6 +493,7 @@
 		734E2856A2B6F2059EDC6596 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				0087887140E7290F096D009C /* DownloadsButton.swift */,
 				EF9C0F14A8C88E21C70144AE /* ImportedBookmark.swift */,
 				6FA2453C98A923CD093B5F5C /* LibraryButton.swift */,
 				8823D7DB2E8EB97B61B06127 /* LibraryDownloads.swift */,
@@ -878,6 +881,7 @@
 				474C8D54045B639253D0D8F4 /* DocumentTabItem.swift in Sources */,
 				087031B9090DD9C995C53DF0 /* DownloadItem.swift in Sources */,
 				E15406F2815B902D35964435 /* DownloadManager.swift in Sources */,
+				7C867C85BB1466C1C15B1EAD /* DownloadsButton.swift in Sources */,
 				36AE8A2CD42774EFB17C3EE6 /* Easel.swift in Sources */,
 				CE414B74A0A54285E2222C68 /* EaselCanvas.swift in Sources */,
 				E9F40EC503F73EA3D206F3AF /* EaselClipView.swift in Sources */,
