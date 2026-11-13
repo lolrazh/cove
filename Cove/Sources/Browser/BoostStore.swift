@@ -1,8 +1,8 @@
 import Foundation
 
 /// Keeps the Boosts between launches, in a JSON file of their own: small,
-/// readable, and ready to be exported or synced as it is. One store for the
-/// app. Without a file it keeps nothing, which tests want.
+/// readable, and ready to be exported or synced as it is. One store per
+/// profile. Without a file it keeps nothing, which tests want.
 @MainActor
 final class BoostStore: ObservableObject {
     @Published private(set) var boosts: [Boost]

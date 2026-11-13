@@ -765,8 +765,8 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// A pin's tab browses with its profile's profile; one left on another
-    /// profile's data store, as after the profile changed profile, is rebuilt.
+    /// A pin uses its owning profile's browsing context. Rebuild a cached tab
+    /// if its context does not match.
     private func liveTab(for pin: Pin) -> TabSession {
         liveTab(for: pin, in: activeProfile)
     }

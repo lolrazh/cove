@@ -6,13 +6,13 @@ import WebKit
 /// Pinned and Today, with its active tab. It follows its
 /// `TabManager` and tells the profile's `ExtensionHost` about tabs opening,
 /// closing and being selected, and about the window moving to another
-/// profile's profile. Owned by the `TabManager`; the toolbar watches it for
+/// profile. Owned by the `TabManager`; the toolbar watches it for
 /// the active tab, whose actions it shows.
 @MainActor
 final class ExtensionWindow: NSObject, ObservableObject {
     private(set) weak var tabManager: TabManager?
     private(set) weak var window: NSWindow?
-    /// The host the window reports to: its profile's profile's.
+    /// The host the window reports to: its profile's host.
     private(set) weak var host: ExtensionHost?
     /// The tabs extensions know of, by tab ID.
     private var tabs: [UUID: ExtensionTab] = [:]

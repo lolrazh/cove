@@ -2,7 +2,7 @@ import Foundation
 
 /// Arc's Boosts: the user's own touches for a site. Simple ones (a color
 /// tint, a font, elements hidden) and, under them, CSS and JavaScript of
-/// their own. Boosts are global, like Arc's: every window applies them.
+/// their own. Boosts belong to a profile and apply in its windows.
 struct Boost: Codable, Identifiable, Hashable {
     /// A few of the fonts every Mac has, for pages that read better in them.
     enum Font: String, Codable, CaseIterable {

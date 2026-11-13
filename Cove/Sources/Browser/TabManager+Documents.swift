@@ -62,7 +62,7 @@ extension TabManager {
         documentStore?.rename(id, to: title.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    /// Deletes a note for good, from every window and profile.
+    /// Deletes a note from this profile and its open windows.
     func deleteDocument(_ id: UUID) {
         pinStore.change(in: activeProfileID) { $0.removeDocument(id) }
         documentStore?.delete(id)
@@ -105,8 +105,8 @@ extension TabManager {
         }
     }
 
-    /// Follows deletions made in any window: a deleted note leaves Today in
-    /// every profile, and the screen if it was there.
+    /// Follows deletions in this profile: remove the note from Today
+    /// and from the screen if it was selected.
     func reconcileDocuments(with documents: [UUID: DocumentInfo]) {
         let isGone = { (item: TodayItem<TabSession>) in item.documentID.map { documents[$0] == nil } ?? false }
         if today.contains(where: isGone) {

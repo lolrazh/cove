@@ -2,7 +2,7 @@ import AppKit
 import Combine
 
 /// Keeps the notes and easels: an index of them, and each one's file beside it in
-/// `Application Support/Cove/Documents`. One store for the app; what's open
+/// the profile directory. One store per profile; what's open
 /// is loaded once and shared by every window showing it. Without a directory
 /// it keeps nothing, which is what tests want.
 @MainActor

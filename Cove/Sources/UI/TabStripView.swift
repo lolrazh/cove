@@ -131,7 +131,7 @@ struct TabStripView: View {
 /// Keeps the window still when a drag starts on a top tab. The strip is in the
 /// titlebar, where AppKit moves the window on any drag before SwiftUI sees it,
 /// so the window is unmovable while the pointer is over a tab. The strip's
-/// empty profile still moves it.
+/// empty space still moves it.
 private struct WindowDragExclusion: NSViewRepresentable {
     func makeNSView(context: Context) -> TrackingView {
         let view = TrackingView()
