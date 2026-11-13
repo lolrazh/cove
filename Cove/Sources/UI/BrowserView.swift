@@ -55,6 +55,24 @@ struct BrowserView: View {
                              profiles: tabManager.profiles, transition: tabManager.profileTransition)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
+        .background {
+            // Extra spellings of the View menu's zoom shortcuts.
+            Group {
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("=", modifiers: .command)
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("+", modifiers: .control)
+                Button("Zoom In", action: tabManager.zoomIn)
+                    .keyboardShortcut("=", modifiers: .control)
+                Button("Zoom Out", action: tabManager.zoomOut)
+                    .keyboardShortcut("-", modifiers: .control)
+                Button("Actual Size", action: tabManager.resetZoom)
+                    .keyboardShortcut("0", modifiers: .control)
+            }
+            .disabled(tabManager.activePage == nil)
+            .hidden()
+            .accessibilityHidden(true)
+        }
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
             guard !tabManager.isPrivate else { return }

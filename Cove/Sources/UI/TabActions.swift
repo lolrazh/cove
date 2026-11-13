@@ -113,7 +113,7 @@ struct TabActions: View {
             Button("Add Split View") {
                 tabManager.addSplitView()
             }
-            .keyboardShortcut("=", modifiers: [.control, .shift])
+            .keyboardShortcut("s", modifiers: [.control, .option])
             .disabled(!tabManager.canAddSplitPane)
 
             if let split = tabManager.activeSplit {
