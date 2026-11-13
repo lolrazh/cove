@@ -29,6 +29,7 @@
 		1FFE5BCFE4302129654BCFF0 /* DocumentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA06AF252DFA9629FF085347 /* DocumentStore.swift */; };
 		215018DF2FB2C80480C034F5 /* Site.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA337274A4F23ED7FF72368 /* Site.swift */; };
 		21BA4273A0792C141A3307AF /* TabSession+SiteControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686B32A26B0260DEFB77D4F1 /* TabSession+SiteControls.swift */; };
+		21EF580E32E3F8A696786F64 /* PinColorFieldTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 725FC8777677C31907BCB0AD /* PinColorFieldTests.swift */; };
 		23B3C7090C1956EB10BA14B7 /* TabOrderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 829CC2510A17E758182AA6CE /* TabOrderTests.swift */; };
 		05A49CC8D77A43ACA4220D5D /* TabManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B16DF42D7414C8FA5A02394 /* TabManagerTests.swift */; };
 		24E5B3D1A1A79003A53DB07C /* EaselTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4202A359D38DEBD964995D4A /* EaselTests.swift */; };
@@ -141,6 +142,7 @@
 		C6604A20A5CA841030AC56A9 /* HistoryMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81018FBD0857C80DE7347A16 /* HistoryMenu.swift */; };
 		C70171EF5B56EB050B5F2BC9 /* PageDialogs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D720CDE1DB6C60ED8637664 /* PageDialogs.swift */; };
 		C991EA65A3111A72F173D27A /* TabManager+PageTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED353AE473C25822ABBD4BA /* TabManager+PageTools.swift */; };
+		C9AFA27EC6A7B05BF30EE5FA /* PinColorField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E94724CBC01D83E80CD7900A /* PinColorField.swift */; };
 		CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37D6F4076AE807F1AD51D7C /* SessionStore.swift */; };
 		CBAB1A9DC146898A6ECCE102 /* SpacePaging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 341C863F4B34CF18EDB057F6 /* SpacePaging.swift */; };
 		CBF6FD46EB056C2293A94B5C /* PrivateFaviconStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C727569DA84301B3DC2A1235 /* PrivateFaviconStoreTests.swift */; };
@@ -261,6 +263,7 @@
 		6C8758EA412D5CDAE1442B72 /* SidebarTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarTree.swift; sourceTree = "<group>"; };
 		6CEBE60867D7242B0F8B1865 /* LibraryPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPages.swift; sourceTree = "<group>"; };
 		6FA2453C98A923CD093B5F5C /* LibraryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryButton.swift; sourceTree = "<group>"; };
+		725FC8777677C31907BCB0AD /* PinColorFieldTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinColorFieldTests.swift; sourceTree = "<group>"; };
 		74DE51D644E19087E579BD8A /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
 		752524CBC59FC53BFE4BFB71 /* ChromeSymbols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeSymbols.swift; sourceTree = "<group>"; };
 		7593A82019BD18A2FB11A603 /* PageProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageProgressBar.swift; sourceTree = "<group>"; };
@@ -351,6 +354,7 @@
 		E5DAD7675F6BDA46CC4E76F5 /* Today.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Today.swift; sourceTree = "<group>"; };
 		E8689CC41CCE917E126550C0 /* TabSweepClock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSweepClock.swift; sourceTree = "<group>"; };
 		E8D63CE6895741B5EE2C0DF7 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
+		E94724CBC01D83E80CD7900A /* PinColorField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinColorField.swift; sourceTree = "<group>"; };
 		E97C600BF67A95C4A3686BC7 /* Cove.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cove.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB17FCB2E127B7B766B46676 /* TabSplit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSplit.swift; sourceTree = "<group>"; };
 		ECC512A79FA6ABC19524292D /* SplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitView.swift; sourceTree = "<group>"; };
@@ -405,6 +409,7 @@
 				7593A82019BD18A2FB11A603 /* PageProgressBar.swift */,
 				C4059CA9B4D1216328D4B0E5 /* PageView.swift */,
 				0266CA58A74F7DF8FAE2DF32 /* PeekView.swift */,
+				E94724CBC01D83E80CD7900A /* PinColorField.swift */,
 				7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */,
 				B4A8077A99B1B7F8AD4A2A2C /* SavePagePanel.swift */,
 				7E4FBAD7C2590131C0F73ECF /* SidebarPinnedGrid.swift */,
@@ -634,6 +639,7 @@
 				55F1BE1EEC7CD3C49C11312B /* NowPlayingTests.swift */,
 				9F9441DA6B0B13627F88CD19 /* PageCaptureTests.swift */,
 				B035625AA34C20AF6AE5C781 /* PageZoomTests.swift */,
+				725FC8777677C31907BCB0AD /* PinColorFieldTests.swift */,
 				89740C1128C0629831BE2A8E /* PinnedTileLayoutTests.swift */,
 				8545037732F73C17A697C420 /* PinsTests.swift */,
 				4553C173601A5AA1E8F48DB8 /* PinStoreTests.swift */,
@@ -784,6 +790,7 @@
 				AD828BAAE857C984A2935D8E /* NowPlayingTests.swift in Sources */,
 				EBCB0000D38DD297DF7CF1A0 /* PageCaptureTests.swift in Sources */,
 				E5AE51EE2CE832AA6664568B /* PageZoomTests.swift in Sources */,
+				21EF580E32E3F8A696786F64 /* PinColorFieldTests.swift in Sources */,
 				075071FC14BEC2D2E1702E6A /* PinStoreTests.swift in Sources */,
 				26FEA5A3E79318DC9EC621E2 /* PinnedTileLayoutTests.swift in Sources */,
 				922B57035DCAEB53B1DAEB44 /* PinsTests.swift in Sources */,
@@ -897,6 +904,7 @@
 				7A34FE1717C8E4E2BF7E31F2 /* PageView.swift in Sources */,
 				FCFBCAA7E43C96A81DB158C2 /* PageZoom.swift in Sources */,
 				6B5061B36A4E001DBE0BBC03 /* PeekView.swift in Sources */,
+				C9AFA27EC6A7B05BF30EE5FA /* PinColorField.swift in Sources */,
 				BBEDB684E3929F84604C7605 /* PinStore.swift in Sources */,
 				D22B71952FA8D30C8A121289 /* Pins.swift in Sources */,
 				986C5523B0EA491EF47E55A0 /* PrivateBadge.swift in Sources */,
