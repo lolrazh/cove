@@ -9,6 +9,7 @@ import WebKit
 final class BrowsingContext {
     let profileData: ProfileData?
     let dataStore: WKWebsiteDataStore
+    let downloads: DownloadManager
     /// Private browsing records nothing: no history, no saved session, no
     /// archive, and its tabs never come back.
     let isPrivate: Bool
@@ -17,12 +18,14 @@ final class BrowsingContext {
     let pageBackgrounds = PageBackgroundCache()
     let extensions: ExtensionHost
 
-    private init(dataStore: WKWebsiteDataStore, faviconStore: FaviconStore, extensions: ExtensionHost, isPrivate: Bool, profileData: ProfileData? = nil) {
+    private init(dataStore: WKWebsiteDataStore, faviconStore: FaviconStore, extensions: ExtensionHost, isPrivate: Bool, profileData: ProfileData? = nil, downloads: DownloadManager? = nil) {
         self.profileData = profileData
         self.dataStore = dataStore
         self.faviconStore = faviconStore
         self.extensions = extensions
         self.isPrivate = isPrivate
+        self.downloads = downloads ?? profileData?.downloads ?? DownloadManager(settings: BrowserSettingsStore())
+        self.downloads.dataStore = dataStore
     }
 
     /// The default profile's: WebKit's default data store.
@@ -56,7 +59,7 @@ final class BrowsingContext {
             dataStore: .nonPersistent(),
             faviconStore: FaviconStore(readingThrough: base.faviconStore),
             extensions: base.extensions,
-            isPrivate: true
+            isPrivate: true, downloads: DownloadManager(settings: base.downloads.settings)
         )
     }
 }

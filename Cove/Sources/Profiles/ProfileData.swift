@@ -21,7 +21,7 @@ final class ProfileData {
         self.directory = directory
         history = HistoryStore(settings: settings, databasePath: directory.appendingPathComponent("history.db").path)
         favicons = FaviconStore(databasePath: directory.appendingPathComponent("favicons.db").path)
-        downloads = DownloadManager(settings: settings)
+        downloads = DownloadManager(settings: settings, recordsURL: directory.appendingPathComponent("downloads.plist"))
         archive = TabArchive(directory: directory)
         documents = DocumentStore(directory: directory.appendingPathComponent("Documents"))
         zoom = SiteZoomStore(fileURL: directory.appendingPathComponent("zoom.plist"))

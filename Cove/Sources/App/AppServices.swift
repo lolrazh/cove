@@ -55,7 +55,7 @@ final class AppServices {
     func tabSessionServices(in context: BrowsingContext) -> TabSessionServices {
         let data = context.profileData ?? defaultData
         return TabSessionServices(historyStore: data.history, faviconStore: context.faviconStore,
-            downloadManager: data.downloads, webKitEnvironment: data.environment,
+            downloadManager: context.downloads, webKitEnvironment: data.environment,
             contentBlocker: data.blocker, context: context, siteZoom: data.zoom, boosts: data.boosts)
     }
 
