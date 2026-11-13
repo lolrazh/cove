@@ -26,6 +26,31 @@ struct TabManagerTests {
                           pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: nil)
     }
 
+    @Test func `zoom feedback follows its page and clears when it closes`() throws {
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let page = try #require(manager.activeTab)
+        page.isNewTabPage = false
+        manager.zoomIn()
+        #expect(page.pageZoom == 1.15)
+        #expect(page.zoomFeedback == 1.15)
+        #expect(manager.toasts.current == nil)
+        manager.zoomOut()
+        #expect(page.pageZoom == 1)
+        #expect(page.zoomFeedback == 1)
+        manager.zoomIn()
+        manager.resetZoom()
+        #expect(page.pageZoom == 1)
+        manager.addTab()
+        #expect(manager.activeTab?.zoomFeedback == nil)
+        manager.zoomIn()
+        #expect(manager.activeTab?.zoomFeedback == nil)
+        manager.closeTab(page.id)
+        #expect(page.zoomFeedback == nil)
+    }
+
     @Test func `late selection of a closed tab cannot clear the current page`() throws {
         let suite = "TabManagerTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))

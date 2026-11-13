@@ -73,6 +73,8 @@ struct NavigationBar: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                AddressZoomIndicator(zoom: session.zoomFeedback)
+                    .id(session.id)
             }
         }
         .padding(.horizontal, 4)

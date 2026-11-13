@@ -77,6 +77,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var canGoForward: Bool = false
     @Published var isLoading: Bool = false
     @Published var estimatedProgress: Double = 0
+    @Published private(set) var zoomFeedback: Double?
+    private var zoomFeedbackDismissal: Task<Void, Never>?
     @Published var favicon: NSImage?
     /// Resolved document color, cached across selections, parking, and sleep.
     @Published private(set) var pageBackgroundColor: NSColor?
@@ -411,7 +413,20 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             if !services.context.isPrivate {
                 services.siteZoom.setZoom(newValue, for: webView.url)
             }
+            zoomFeedback = newValue
+            zoomFeedbackDismissal?.cancel()
+            zoomFeedbackDismissal = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(1.5))
+                guard !Task.isCancelled else { return }
+                self?.zoomFeedback = nil
+            }
         }
+    }
+
+    private func clearZoomFeedback() {
+        zoomFeedbackDismissal?.cancel()
+        zoomFeedbackDismissal = nil
+        zoomFeedback = nil
     }
 
     /// The page came on screen, so dialogs waiting for it can show.
@@ -422,6 +437,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     /// The tab closed: dialogs waiting for it are dismissed, as if cancelled.
     func close() {
+        clearZoomFeedback()
         pageDidAppear(in: nil)
     }
 
@@ -614,6 +630,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
 extension TabSession: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        clearZoomFeedback()
         guard self.webView === webView else { return }
         extensionWait = nil
         loadFailure = nil
