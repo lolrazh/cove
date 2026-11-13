@@ -8,8 +8,8 @@ The icon picker described in section 8 was removed in the latest follow-up.
 It has no preview, intensity slider, custom color picker, profile controls,
 Done button, or footnote. Changes apply at once. The page remains clear behind it.
 
-This is a local Debug build. The work is not committed, pushed, or released.
-The full working tree also contains the earlier accepted changes below.
+This is a local Debug build. The earlier work was saved in checkpoint `671dab5`.
+Later changes use separate commits, listed below. Nothing was pushed or released.
 This log consolidates the existing dated logs; it does not claim that every
 historical measurement was repeated today.
 
@@ -288,3 +288,13 @@ files remain outside that checkpoint. Subsequent changes are separate commits.
   the sidebar was hidden. Restored Space 2 / Blue after checks. No full-suite
   rerun; physical hover, top-tab mode, and frame-by-frame timing were not checked.
 - Returned to Built-in Retina Display and left the compact panel open for review.
+
+## Pinned tiles
+
+- `e6a7337`: space pins now fill balanced rows: 1, 2, 3, 2+2, 3+2, 3+3.
+- `07d2ec2`: soft favicon color behind the selected tile and tighter grid spacing.
+- Favorites still apply to spaces within one profile. Pins stay within one space.
+  Neither is shared across profiles. No storage scope was changed.
+- Tested and recorded on Virtual 16:9. Full suite: 198 tests in 43 suites passed.
+- Detailed results, evidence limits, and the visual comparison are in
+  [Pinned tabs](2026-11-13_pinned-tabs.md).
