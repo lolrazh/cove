@@ -46,7 +46,7 @@ extension View {
         ))
     }
 
-    /// Lets a section take a tab dropped on its empty space, at its end.
+    /// Lets a section take a tab dropped on its empty profile, at its end.
     func acceptsTabDrops(toEndOf section: Pins.Section, in tabManager: TabManager, dragging draggedTabID: Binding<UUID?>) -> some View {
         onDrop(of: [.coveTab], delegate: SectionDropDelegate(section: section, tabManager: tabManager, draggedTabID: draggedTabID))
     }
@@ -121,7 +121,7 @@ private struct FolderDropDelegate: DropDelegate {
     }
 }
 
-/// A drop in a section's empty space moves the tab there, unless it's there
+/// A drop in a section's empty profile moves the tab there, unless it's there
 /// already after passing over the section's tabs, when the drop just ends.
 private struct SectionDropDelegate: DropDelegate {
     let section: Pins.Section
@@ -144,7 +144,6 @@ private struct SectionDropDelegate: DropDelegate {
 private extension TabManager.TabSection {
     init(_ section: Pins.Section) {
         self = switch section {
-        case .favorites: .favorites
         case .pinned: .pinned
         }
     }

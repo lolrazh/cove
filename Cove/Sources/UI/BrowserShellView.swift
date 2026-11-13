@@ -61,11 +61,11 @@ struct BrowserShellView<Content: View>: View {
         .overlay {
             CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
         }
-        .backgroundPreferenceValue(SpaceEditorAnchor.self) { anchor in
+        .backgroundPreferenceValue(ProfileEditorAnchor.self) { anchor in
             GeometryReader { geometry in
-                SpaceEditorPopover(
-                    store: appServices.spaceStore,
-                    spaceID: $tabManager.spaceToEdit,
+                ProfileEditorPopover(
+                    store: appServices.profileStore,
+                    profileID: $tabManager.profileToEdit,
                     anchor: anchor.map { geometry[$0] } ?? CGRect(
                         x: tabRowLeadingInset, y: 0, width: ChromeMetrics.tabHeight,
                         height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.cardInset
@@ -92,7 +92,7 @@ struct BrowserShellView<Content: View>: View {
         .onChange(of: tabManager.isShowingSiteControls) { _, isPresented in
             if !isPresented { hideIfOutside() }
         }
-        .onChange(of: tabManager.spaceToEdit) { _, id in
+        .onChange(of: tabManager.profileToEdit) { _, id in
             if id != nil && isSidebarHideable { areTabsVisible = true }
             if id == nil { hideIfOutside() }
         }
@@ -149,7 +149,7 @@ struct BrowserShellView<Content: View>: View {
             tabManager: tabManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
-            acceptsSpaceSwipes: showsDockedSidebar
+            acceptsProfileSwipes: showsDockedSidebar
         )
         .environment(\.colorScheme, .light)
         .frame(width: sidebarWidth)
@@ -191,7 +191,7 @@ struct BrowserShellView<Content: View>: View {
             tabManager: tabManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
-            acceptsSpaceSwipes: showsFloatingSidebar
+            acceptsProfileSwipes: showsFloatingSidebar
         )
         .environment(\.colorScheme, .light)
         .frame(width: sidebarWidth)
@@ -280,7 +280,7 @@ struct BrowserShellView<Content: View>: View {
     private func hideIfOutside() {
         guard tabManager.hideTabs, areTabsVisible, !isPointerOverTabs,
               !tabManager.isShowingSiteControls, !tabManager.library.isPresented,
-              tabManager.spaceToEdit == nil else { return }
+              tabManager.profileToEdit == nil else { return }
         areTabsVisible = false
     }
 

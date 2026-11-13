@@ -180,7 +180,7 @@ final class ExtensionHost: NSObject, ObservableObject {
         controller.didOpenWindow(window)
     }
 
-    /// A browser window closed, or moved to another profile's space.
+    /// A browser window closed, or moved to another profile's profile.
     func remove(_ window: ExtensionWindow) {
         guard windows.contains(window) else { return }
         windows.removeAll { $0 === window }

@@ -99,9 +99,8 @@ struct TabOrderTests {
         #expect(unknown == tabs)
     }
 
-    @Test func `the display order runs favorites, pinned, then today, as each layout shows them`() {
+    @Test func `the display order runs pinned, then today, as each layout shows them`() {
         struct Pinned: Identifiable { let id = UUID(); let name: Character }
-        let favorites = "fg".map(Pinned.init)
         let (a, b, c, d) = (Pinned(name: "a"), Pinned(name: "b"), Pinned(name: "c"), Pinned(name: "d"))
         let folded = SidebarFolder(name: "Folded", isCollapsed: true, contents: SidebarTree([.tab(c)]))
         let open = SidebarFolder(name: "Open", contents: SidebarTree([.tab(d)]))
@@ -109,16 +108,16 @@ struct TabOrderTests {
         let today = "xyz".map(Pinned.init)
 
         func names(_ tabs: [Pinned]) -> String { String(tabs.map(\.name)) }
-        let sidebar = TabLayout.sidebar.displayOrder(favorites: favorites, pinned: pinned, today: today)
-        let strip = TabLayout.horizontal.displayOrder(favorites: favorites, pinned: pinned, today: today)
+        let sidebar = TabLayout.sidebar.displayOrder(pinned: pinned, today: today)
+        let strip = TabLayout.horizontal.displayOrder(pinned: pinned, today: today)
 
         // The sidebar skips the folded folder's tab. New Today tabs go below
         // the existing tabs in both layouts, without reversing saved order.
-        #expect(names(sidebar) == "fgadbxyz")
-        #expect(names(strip) == "fgacdbxyz")
-        // ⌘1 is the first favorite, or the first pinned tab without any.
-        #expect(sidebar.element(forShortcut: 1)?.name == "f")
-        #expect(TabLayout.sidebar.displayOrder(favorites: [], pinned: pinned, today: today).element(forShortcut: 1)?.name == "a")
+        #expect(names(sidebar) == "adbxyz")
+        #expect(names(strip) == "acdbxyz")
+        // ⌘1 is the first pinned tab.
+        #expect(sidebar.element(forShortcut: 1)?.name == "a")
+        #expect(TabLayout.sidebar.displayOrder(pinned: pinned, today: today).element(forShortcut: 1)?.name == "a")
         #expect(sidebar.element(forShortcut: 9)?.name == "z")
     }
 
@@ -127,12 +126,12 @@ struct TabOrderTests {
         let a = Item(), b = Item(), c = Item()
         var today = [a, b]
         today.append(c)
-        let shown = TabLayout.sidebar.displayOrder(favorites: [], pinned: SidebarTree<Item>(), today: today)
+        let shown = TabLayout.sidebar.displayOrder(pinned: SidebarTree<Item>(), today: today)
         #expect(shown.map(\.id) == [a.id, b.id, c.id])
         #expect(shown.element(forShortcut: 1)?.id == a.id)
         #expect(shown.element(1, from: a.id)?.id == b.id)
         #expect(shown.elements(after: b.id).map(\.id) == [c.id])
         today.move(c.id, onto: a.id)
-        #expect(TabLayout.sidebar.displayOrder(favorites: [], pinned: SidebarTree<Item>(), today: today).map(\.id) == [c.id, a.id, b.id])
+        #expect(TabLayout.sidebar.displayOrder(pinned: SidebarTree<Item>(), today: today).map(\.id) == [c.id, a.id, b.id])
     }
 }

@@ -14,9 +14,9 @@ final class AppServices {
     private(set) lazy var littleCove = LittleCove(appServices: self)
     let tabArchive = TabArchive()
     /// What the default profile browses with; other profiles' contexts come
-    /// from the space store, and private windows make their own.
+    /// from the profile store, and private windows make their own.
     let browsingContext: BrowsingContext
-    let spaceStore: SpaceStore
+    let profileStore: ProfileStore
     let pinStore = PinStore()
     let documentStore = DocumentStore()
     let sessionStore = SessionStore()
@@ -25,7 +25,7 @@ final class AppServices {
     let extensionLibrary: ExtensionLibrary
 
     private var didPrepareLaunch = false
-    private var spacePruning: AnyCancellable?
+    private var profilePruning: AnyCancellable?
 
     init(defaults: UserDefaults = .standard) {
         let settingsStore = BrowserSettingsStore(defaults: defaults)
@@ -41,7 +41,7 @@ final class AppServices {
         let browsingContext = BrowsingContext.standard(faviconStore: faviconStore, extensions: extensionLibrary)
         self.browsingContext = browsingContext
         self.extensionLibrary = extensionLibrary
-        self.spaceStore = SpaceStore(
+        self.profileStore = ProfileStore(
             initialTheme: ChromeTheme(rawValue: defaults.string(forKey: BrowserSettingKeys.legacyThemeColor) ?? "")
         ) { profileID in
             profileID == Profile.defaultID
@@ -52,10 +52,10 @@ final class AppServices {
         self.contentBlockerManager = contentBlockerManager
         self.webKitEnvironment = WebKitEnvironment(contentBlockerManager: contentBlockerManager)
 
-        // Pins follow their spaces and profiles, whichever window or Settings
+        // Pins follow their profiles and profiles, whichever window or Settings
         // deleted them.
-        spacePruning = spaceStore.$spaces.sink { [pinStore] spaces in
-            pinStore.change { $0.prune(to: spaces) }
+        profilePruning = profileStore.$profiles.sink { [pinStore] profiles in
+            pinStore.change { $0.prune(to: profiles) }
         }
         extensionLibrary.openBrowserWindow = { [weak self] isPrivate in
             self?.externalURLRouter.openBrowserWindow(isPrivate: isPrivate)
@@ -78,7 +78,7 @@ final class AppServices {
     func prepareForLaunch() {
         guard !didPrepareLaunch else { return }
         didPrepareLaunch = true
-        spaceStore.removeOrphanedDataStores()
+        profileStore.removeOrphanedDataStores()
         Task { [extensionLibrary] in
             await extensionLibrary.loadInstalled()
         }

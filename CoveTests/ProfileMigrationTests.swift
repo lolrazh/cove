@@ -7,25 +7,24 @@ struct ProfileMigrationTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        var spaces = Spaces()
-        let second = spaces.addSpace()
-        let other = spaces.addProfile()
-        let third = spaces.addSpace(in: other.id)
-        var pins = PinLayout()
+        let first = UUID(uuidString: "C0FE0000-0000-4000-8000-000000000002")!
+        let second = LegacySpace(id: UUID(), name: "Reading", theme: .system, profileID: Profile.defaultID)
+        let other = LegacyProfile(id: UUID(), name: "Work")
+        let third = LegacySpace(id: UUID(), name: "Work", theme: .system, profileID: other.id)
+        let spaces = LegacySpaces(spaces: [LegacySpace(id: first, name: "Personal", theme: .system, profileID: Profile.defaultID), second, third], profiles: [LegacyProfile(id: Profile.defaultID, name: "Default"), other])
         let favorite = Pin(id: UUID(), url: "https://mail.example", title: "Mail")
         let pin = Pin(id: UUID(), url: "https://work.example", title: "Work")
-        pins[.default].add(favorite, to: .favorites)
-        pins[PinScope(space: third.id, profile: other.id)].add(pin, to: .pinned)
-        struct SavedPins: Codable { let layout: PinLayout; let tabs: [String: SavedTab] }
+        let pins = LegacyLayout(favorites: [Profile.defaultID: [favorite]], pinned: [third.id: SidebarTree([.tab(pin)])])
+        struct SavedPins: Encodable { let layout: LegacyLayout; let tabs: [String: SavedTab] }
         let tab = SavedTab(url: "https://example.com", title: "Example", customTitle: "My name",
                            interactionState: Data([1, 2, 3]), lastUsedAt: Date(timeIntervalSince1970: 123))
         let doc = UUID()
-        let window = SavedWindow(spaces: [
-            SavedSpace(spaceID: Space.defaultID, tabs: [tab], activeTabIndex: 0, activePinID: nil,
+        let window = LegacyWindow(spaces: [
+            LegacySession(spaceID: first, tabs: [tab], activeTabIndex: 0, activePinID: nil,
                        documents: [TodayDocumentPlace(id: doc, index: 1)]),
-            SavedSpace(spaceID: second.id, tabs: [tab, tab], activeTabIndex: 1, activePinID: nil,
+            LegacySession(spaceID: second.id, tabs: [tab, tab], activeTabIndex: 1, activePinID: nil,
                        splits: [TabSplit(panes: [0, 1])]),
-            SavedSpace(spaceID: third.id, tabs: [tab], activeTabIndex: nil, activePinID: pin.id)
+            LegacySession(spaceID: third.id, tabs: [tab], activeTabIndex: nil, activePinID: pin.id)
         ], activeSpaceID: second.id)
         let encoder = PropertyListEncoder()
         let originals = [
@@ -73,3 +72,17 @@ struct ProfileMigrationTests {
         #expect(try Data(contentsOf: root.appendingPathComponent("pins.plist")) == broken)
     }
 }
+
+private struct LegacyProfile: Encodable { let id: UUID; let name: String }
+private struct LegacySpace: Encodable { let id: UUID; let name: String; let theme: ChromeTheme; let profileID: UUID }
+private struct LegacySpaces: Encodable { let spaces: [LegacySpace]; let profiles: [LegacyProfile] }
+private struct LegacyLayout: Encodable { let favorites: [UUID: [Pin]]; let pinned: [UUID: SidebarTree<Pin>] }
+private struct LegacySession: Encodable {
+    let spaceID: UUID
+    let tabs: [SavedTab]
+    let activeTabIndex: Int?
+    let activePinID: UUID?
+    var splits: [TabSplit<Int>]? = nil
+    var documents: [TodayDocumentPlace]? = nil
+}
+private struct LegacyWindow: Encodable { let spaces: [LegacySession]; let activeSpaceID: UUID }

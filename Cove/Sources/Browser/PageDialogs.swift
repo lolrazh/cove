@@ -42,12 +42,12 @@ enum PageDialogs {
         to challenge: URLAuthenticationChallenge,
         in window: NSWindow
     ) async -> URLCredential? {
-        let space = challenge.protectionSpace
+        let profile = challenge.protectionSpace
         let alert = NSAlert()
-        alert.messageText = "Log in to \(space.host)"
+        alert.messageText = "Log in to \(profile.host)"
         alert.informativeText = if challenge.previousFailureCount > 0 {
             "The user name or password was incorrect."
-        } else if space.receivesCredentialSecurely {
+        } else if profile.receivesCredentialSecurely {
             "Your login information will be sent securely."
         } else {
             "Your login information will be sent unencrypted."

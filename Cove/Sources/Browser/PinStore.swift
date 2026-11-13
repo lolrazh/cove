@@ -1,8 +1,8 @@
 import AppKit
 import Combine
 
-/// Keeps the pinned tabs and favorites between launches, apart from the Today
-/// session: every space's layout, and each pin's live tab (its current page
+/// Keeps the pinned tabs between launches, apart from the Today
+/// session: every profile's layout, and each pin's live tab (its current page
 /// and back/forward list) so a pinned tab comes back where it was left. One
 /// store for the app; every window shows the same pins with live tabs of its
 /// own. Without a file it keeps nothing, which is what a private window wants.
@@ -13,19 +13,6 @@ final class PinStore: ObservableObject {
     private struct SavedPins: Codable {
         var layout: PinLayout
         var tabs: [String: SavedTab]
-    }
-
-    /// Saved before Spaces: one set of pins, now the first space's and the
-    /// default profile's.
-    private struct UnscopedPins: Decodable {
-        var pins: Pins
-        var tabs: [String: SavedTab]
-
-        var scoped: SavedPins {
-            var layout = PinLayout()
-            layout[.default] = pins
-            return SavedPins(layout: layout, tabs: tabs)
-        }
     }
 
     private let fileURL: URL?
@@ -39,7 +26,7 @@ final class PinStore: ObservableObject {
         let decoder = PropertyListDecoder()
         let saved = StoreFile.read(fileURL) { data in
             (try? decoder.decode(SavedPins.self, from: data))
-                ?? (try? decoder.decode(UnscopedPins.self, from: data))?.scoped
+
         }
         layout = saved?.layout ?? PinLayout()
         tabs = saved?.tabs ?? [:]
@@ -51,18 +38,17 @@ final class PinStore: ObservableObject {
     }
 
     static var defaultFileURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Cove/pins.plist")
+        ProfileMigration.root.appendingPathComponent("pins.plist")
     }
 
-    /// One space's pins.
-    func pins(in scope: PinScope) -> Pins {
+    /// One profile's pins.
+    func pins(in scope: UUID) -> Pins {
         layout[scope]
     }
 
-    /// Changes one space's pins: one publish and one save per change, however
+    /// Changes one profile's pins: one publish and one save per change, however
     /// much it does.
-    func change(in scope: PinScope, _ change: (inout Pins) -> Void) {
+    func change(in scope: UUID, _ change: (inout Pins) -> Void) {
         self.change { change(&$0[scope]) }
     }
 

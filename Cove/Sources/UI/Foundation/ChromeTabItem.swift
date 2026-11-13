@@ -2,7 +2,7 @@ import SwiftUI
 
 enum ChromeTabPresentation {
     case horizontal
-    /// A pinned tab or favorite in the top strip: the favicon alone.
+    /// A pinned tab in the top strip: the favicon alone.
     case compact
     case sidebar
 }
@@ -204,7 +204,7 @@ extension View {
             }
             .contentShape(Rectangle())
             // Resolve row motion once. Otherwise SwiftUI can animate the title
-            // and favicon in separate coordinate spaces during list removal.
+            // and favicon in separate coordinate profiles during list removal.
             .geometryGroup()
     }
 }

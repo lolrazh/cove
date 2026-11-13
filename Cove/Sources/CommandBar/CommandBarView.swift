@@ -164,7 +164,7 @@ private struct CommandBarPanel: View {
     }
 
     /// Rows are fixed height, so the list is sized exactly to them rather than
-    /// letting the scroll view claim space it doesn't fill.
+    /// letting the scroll view claim profile it doesn't fill.
     private var listHeight: CGFloat {
         let rows = model.results.reduce(CGFloat.zero) {
             $0 + (detail(for: $1) == nil ? CommandBarMetrics.actionRowHeight : CommandBarMetrics.pageRowHeight)
@@ -193,7 +193,7 @@ private struct CommandBarPanel: View {
         switch result.kind {
         case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
-        case .url, .suggestion, .command, .space, .extensionAction, .document: nil
+        case .url, .suggestion, .command, .profile, .extensionAction, .document: nil
         }
     }
 
@@ -274,8 +274,8 @@ private struct CommandBarRow: View {
             symbol(command.symbol)
         case .document(_, let kind):
             symbol(kind.symbol)
-        case .space:
-            SpaceIconView()
+        case .profile:
+            ProfileIconView()
                 .font(.body.weight(.medium))
                 .foregroundStyle(.secondary)
         case .extensionAction:

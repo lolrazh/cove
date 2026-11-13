@@ -16,9 +16,9 @@ struct BrowserView: View {
         self._tabManager = StateObject(wrappedValue: Self.makeTabManager(appServices: appServices, isPrivate: isPrivate))
     }
 
-    /// A normal window shows the shared spaces, each browsing with its
+    /// A normal window shows the shared profiles, each browsing with its
     /// profile's context, and is saved with the session. A private window
-    /// gets a context of its own and keeps nothing: no spaces, no session, no
+    /// gets a context of its own and keeps nothing: no profiles, no session, no
     /// pins, no notes, and an archive of its own, in memory, for its closed tabs.
     private static func makeTabManager(appServices: AppServices, isPrivate: Bool) -> TabManager {
         let context = isPrivate ? BrowsingContext.makePrivate(over: appServices.browsingContext) : appServices.browsingContext
@@ -27,7 +27,7 @@ struct BrowserView: View {
             services: appServices.tabSessionServices(in: context),
             archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
             pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
-            spaces: isPrivate ? nil : appServices.spaceStore,
+            profiles: isPrivate ? nil : appServices.profileStore,
             documents: isPrivate ? nil : appServices.documentStore,
             session: isPrivate ? nil : appServices.sessionStore
         )
@@ -51,8 +51,8 @@ struct BrowserView: View {
                 }
             }
         }
-        .animatedChromeTheme(tabManager.isPrivate ? .privateBrowsing : tabManager.activeSpace?.theme ?? .system,
-                             spaces: tabManager.spaces, transition: tabManager.spaceTransition)
+        .animatedChromeTheme(tabManager.isPrivate ? .privateBrowsing : tabManager.activeProfile?.theme ?? .system,
+                             profiles: tabManager.profiles, transition: tabManager.profileTransition)
         .frame(minWidth: 900, minHeight: 640)
         .focusedSceneObject(tabManager)
         .onAppear {
@@ -82,15 +82,15 @@ struct BrowserView: View {
             appServices.externalURLRouter.open([url], from: .otherApp)
         }
         .confirmationDialog(
-            "Delete \u{201C}\(spaceToDelete?.name ?? "")\u{201D}?",
-            isPresented: isPresent($tabManager.spaceToDelete),
-            presenting: spaceToDelete
-        ) { space in
-            Button("Delete Space", role: .destructive) {
-                tabManager.deleteSpace(space.id)
+            "Delete \u{201C}\(profileToDelete?.name ?? "")\u{201D}?",
+            isPresented: isPresent($tabManager.profileToDelete),
+            presenting: profileToDelete
+        ) { profile in
+            Button("Delete Profile", role: .destructive) {
+                tabManager.deleteProfile(profile.id)
             }
         } message: { _ in
-            Text("Its open tabs move to the archive, and its pinned tabs are removed.")
+            Text("This deletes its tabs, history, and site data. Other profiles are not changed.")
         }
         .confirmationDialog(
             "Delete \u{201C}\(documentToDelete?.displayTitle ?? "")\u{201D}?",
@@ -101,7 +101,7 @@ struct BrowserView: View {
                 tabManager.deleteDocument(document.id)
             }
         } message: { _ in
-            Text("It's removed from every space, and can't be brought back.")
+            Text("It's removed from every profile, and can't be brought back.")
         }
         .onChange(of: tabManager.hideTabs) { _, hide in
             withAnimation(reduceMotion ? nil : ChromeMotion.shell) {
@@ -119,8 +119,8 @@ struct BrowserView: View {
         tabManager.documentToDelete.flatMap { tabManager.documentStore?.documents[$0] }
     }
 
-    private var spaceToDelete: Space? {
-        tabManager.spaces.first { $0.id == tabManager.spaceToDelete }
+    private var profileToDelete: Profile? {
+        tabManager.profiles.first { $0.id == tabManager.profileToDelete }
     }
 
     private func isPresent(_ id: Binding<UUID?>) -> Binding<Bool> {

@@ -3,8 +3,8 @@ import WebKit
 
 /// The page's web view. WebKit takes ⌃ shortcuts like ⌃Tab for the page,
 /// which never gets to keep them in Safari either, so the menu bar has them
-/// first: the Tab menu can switch tabs (⌃Tab, ⌃⇧Tab) and the Spaces menu
-/// spaces (⌃1–9) while the page has focus. Other ⌃ keys still reach the page,
+/// first: the Tab menu can switch tabs (⌃Tab, ⌃⇧Tab) and the Profiles menu
+/// profiles (⌃1–9) while the page has focus. Other ⌃ keys still reach the page,
 /// after extensions' shortcuts.
 final class BrowserWebView: WKWebView {
     /// A click in the page, which focuses its pane in a split. SwiftUI's

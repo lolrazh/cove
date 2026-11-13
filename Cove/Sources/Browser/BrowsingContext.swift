@@ -3,7 +3,7 @@ import WebKit
 /// What a window's tabs browse with: where sites keep their cookies, storage,
 /// cache and favicons, what they've been allowed to use, and whether their
 /// pages leave a trace, and which extensions run. Each profile has one,
-/// shared by its spaces' tabs in every window; each private window gets its
+/// shared by its profiles' tabs in every window; each private window gets its
 /// own, which goes when the window closes.
 @MainActor
 final class BrowsingContext {

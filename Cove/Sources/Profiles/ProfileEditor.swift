@@ -2,9 +2,9 @@ import SwiftUI
 import AppKit
 
 /// A small live editor. Closing the popover keeps the name and color.
-struct SpaceEditor: View {
-    @ObservedObject var store: SpaceStore
-    let spaceID: UUID
+struct ProfileEditor: View {
+    @ObservedObject var store: ProfileStore
+    let profileID: UUID
     var onClose: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
@@ -14,7 +14,7 @@ struct SpaceEditor: View {
     private let columns = Array(repeating: GridItem(.fixed(26), spacing: 4), count: 8)
 
     var body: some View {
-        if let space = store.spaces.space(spaceID) {
+        if let profile = store.profiles.profile(profileID) {
             VStack(alignment: .leading, spacing: 10) {
                 TextField("Name", text: $name)
                     .textFieldStyle(.plain)
@@ -26,7 +26,7 @@ struct SpaceEditor: View {
                         RoundedRectangle(cornerRadius: 6)
                             .strokeBorder(isNameFocused ? Color.accentColor : .clear, lineWidth: 1)
                     }
-                    .accessibilityLabel("Space name")
+                    .accessibilityLabel("Profile name")
                     .focused($isNameFocused)
                     .onChange(of: name) { _, value in
                         update { $0.name = value }
@@ -36,7 +36,7 @@ struct SpaceEditor: View {
                 LazyVGrid(columns: columns, spacing: 4) {
                     ForEach(Array(ChromeTheme.presets.enumerated()), id: \.offset) { index, theme in
                         colorChoice(theme, name: ChromeTheme.presetNames[index],
-                                    selected: theme.rawValue == space.theme.rawValue)
+                                    selected: theme.rawValue == profile.theme.rawValue)
                     }
                 }
                 .accessibilityElement(children: .contain)
@@ -47,7 +47,7 @@ struct SpaceEditor: View {
             .background(Color(nsColor: .windowBackgroundColor))
             .onExitCommand { close() }
             .onAppear {
-                name = space.name
+                name = profile.name
                 isNameFocused = true
             }
         }
@@ -77,8 +77,8 @@ struct SpaceEditor: View {
         .help(name)
     }
 
-    private func update(_ change: (inout Space) -> Void) {
-        store.change { $0.update(spaceID, change) }
+    private func update(_ change: (inout Profile) -> Void) {
+        store.change { $0.update(profileID, change) }
     }
 
     private func close() {
@@ -86,8 +86,8 @@ struct SpaceEditor: View {
     }
 }
 
-/// Only the visible space control supplies an anchor to the window shell.
-struct SpaceEditorAnchor: PreferenceKey {
+/// Only the visible profile control supplies an anchor to the window shell.
+struct ProfileEditorAnchor: PreferenceKey {
     static var defaultValue: Anchor<CGRect>? { nil }
 
     static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
@@ -97,9 +97,9 @@ struct SpaceEditorAnchor: PreferenceKey {
 
 /// A native transient popover with immediate presentation. The positioning view
 /// stays in the shell while sidebar layouts change, so there is one presenter.
-struct SpaceEditorPopover: NSViewRepresentable {
-    let store: SpaceStore
-    @Binding var spaceID: UUID?
+struct ProfileEditorPopover: NSViewRepresentable {
+    let store: ProfileStore
+    @Binding var profileID: UUID?
     let anchor: CGRect
     let canPresent: Bool
 
@@ -116,8 +116,8 @@ struct SpaceEditorPopover: NSViewRepresentable {
     }
 
     private func updatePopover(_ view: NSView, coordinator: Coordinator) {
-        coordinator.selection = $spaceID
-        guard let spaceID else {
+        coordinator.selection = $profileID
+        guard let profileID else {
             coordinator.popover.close()
             return
         }
@@ -125,13 +125,13 @@ struct SpaceEditorPopover: NSViewRepresentable {
         // SwiftUI's anchor is measured from the top; NSView's origin is below.
         let rect = CGRect(x: anchor.minX, y: view.bounds.height - anchor.maxY,
                           width: anchor.width, height: anchor.height)
-        if coordinator.presentedID == spaceID {
+        if coordinator.presentedID == profileID {
             coordinator.popover.positioningRect = rect
             return
         }
         coordinator.popover.close()
-        coordinator.presentedID = spaceID
-        let host = NSHostingController(rootView: SpaceEditor(store: store, spaceID: spaceID) { [weak coordinator] in
+        coordinator.presentedID = profileID
+        let host = NSHostingController(rootView: ProfileEditor(store: store, profileID: profileID) { [weak coordinator] in
             coordinator?.popover.performClose(nil)
         })
         coordinator.popover.contentViewController = host
@@ -175,7 +175,7 @@ struct SpaceEditorPopover: NSViewRepresentable {
             presentedID = nil
             guard let selection else { return }
             // Closing may occur during a SwiftUI update. Clear only this
-            // presentation, not a different space opened in the same turn.
+            // presentation, not a different profile opened in the same turn.
             DispatchQueue.main.async {
                 if selection.wrappedValue == closedID { selection.wrappedValue = nil }
             }

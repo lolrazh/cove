@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A space chooses one primary color and an intensity. Its full tonal palette
+/// A profile chooses one primary color and an intensity. Its full tonal palette
 /// is derived, so custom colors get the same treatment as the built-in choices.
 struct ChromeTheme: Hashable {
     var tint: Color?
@@ -165,23 +165,23 @@ struct ChromeRaisedStyle: ShapeStyle {
 // Resolve the frame once, then interpolate its components. Changing a theme
 // environment value alone jumps custom ShapeStyles to the final color.
 extension View {
-    func animatedChromeTheme(_ theme: ChromeTheme, spaces: [Space], transition: SpaceTransition) -> some View {
-        modifier(ChromeThemeTransition(theme: theme, spaces: spaces, transition: transition))
+    func animatedChromeTheme(_ theme: ChromeTheme, profiles: [Profile], transition: ProfileTransition) -> some View {
+        modifier(ChromeThemeTransition(theme: theme, profiles: profiles, transition: transition))
     }
 }
 
 private struct ChromeThemeTransition: ViewModifier {
     let theme: ChromeTheme
-    let spaces: [Space]
-    @ObservedObject var transition: SpaceTransition
+    let profiles: [Profile]
+    @ObservedObject var transition: ProfileTransition
     @Environment(\.self) private var environment
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         let motion = transition.state
-        let source = spaces.first { $0.id == motion.source }?.theme ?? theme
+        let source = profiles.first { $0.id == motion.source }?.theme ?? theme
         let targetID = motion.position < 0 ? motion.next : motion.previous
-        let target = spaces.first { $0.id == targetID }?.theme ?? source
+        let target = profiles.first { $0.id == targetID }?.theme ?? source
         let frame = motion.isActive
             ? source.frameColor(in: environment).mix(with: target.frameColor(in: environment),
                 by: Double(min(abs(motion.position), 1)), in: .perceptual)

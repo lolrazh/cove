@@ -9,29 +9,27 @@ enum TabLayout: String {
 
 @MainActor
 final class TabManager: ObservableObject {
-    /// The space the window shows, whose tabs everything below is about. A
-    /// private window has one space, which it never names or leaves.
-    @Published private(set) var activeSpaceID: UUID
-    /// A space being named or edited, for the window's space editor.
-    @Published var spaceToEdit: UUID?
-    /// A space waiting for its deletion to be confirmed.
-    @Published var spaceToDelete: UUID?
-    /// The space's Today in display order, shared by the sidebar and top strip.
+    /// The profile the window shows, whose tabs everything below is about. A
+    /// private window has one profile, which it never names or leaves.
+    @Published private(set) var activeProfileID: UUID
+    /// A profile being named or edited, for the window's profile editor.
+    @Published var profileToEdit: UUID?
+    /// A profile waiting for its deletion to be confirmed.
+    @Published var profileToDelete: UUID?
+    /// The profile's Today in display order, shared by the sidebar and top strip.
     /// New tabs append; links open next to their opener. Notes keep their places.
     @Published var today: [TodayItem<TabSession>] = [] {
         // A tab that leaves Today leaves its split.
         didSet { pruneSplits() }
     }
-    /// The space's tabs shown side by side. A split's tabs stay in `tabs`,
+    /// The profile's tabs shown side by side. A split's tabs stay in `tabs`,
     /// kept next to each other, and show as one entry; selecting any of them
     /// shows the split with that pane focused. Changed through the Split View
     /// calls.
     @Published var splits: [TabSplit<UUID>] = []
-    /// Arc's sections above Today: a live tab for each pin the store keeps
-    /// for this space, Favorites as a row and Pinned as a tree with folders.
+    /// A live tab for each pin in this profile, with optional folders.
     /// Built from the store, so every window shows the same pins with tabs of
     /// its own.
-    @Published private(set) var favorites: [TabSession] = []
     @Published private(set) var pinned = SidebarTree<TabSession>()
     /// A folder just made, for the sidebar to offer a name for.
     @Published var folderToName: UUID?
@@ -75,7 +73,7 @@ final class TabManager: ObservableObject {
     @Published var capture: CaptureSession?
     /// Confirmations shown over this window's page.
     let toasts = ToastCenter()
-    let spaceTransition = SpaceTransition()
+    let profileTransition = ProfileTransition()
     /// The window as extensions see it.
     let extensionWindow = ExtensionWindow()
 
@@ -86,14 +84,14 @@ final class TabManager: ObservableObject {
     let archive: TabArchive
     /// The shared pins, or a private window's own empty, unsaved ones.
     let pinStore: PinStore
-    /// The shared spaces; none in a private window.
-    private let spaceStore: SpaceStore?
+    /// The shared profiles; none in a private window.
+    private let profileStore: ProfileStore?
     /// The notes; none in a private window, which keeps nothing.
     let documentStore: DocumentStore?
-    /// The spaces as last published, which edits are checked against.
-    private var knownSpaces: Spaces
-    /// The window's other spaces, as it left them.
-    private var parkedSpaces: [UUID: ParkedSpace] = [:]
+    /// The profiles as last published, which edits are checked against.
+    private var knownProfiles: Profiles
+    /// The window's other profiles, as it left them.
+    private var parkedProfiles: [UUID: ParkedProfile] = [:]
     private let sweepClock = TabSweepClock()
     private var cancellables: Set<AnyCancellable> = []
     /// The live tab behind each pin, by the pin's ID, and what keeps the
@@ -117,7 +115,7 @@ final class TabManager: ObservableObject {
         activeTabID.flatMap(tab)
     }
 
-    /// Any tab in the space: in Today, Pinned or Favorites.
+    /// Any tab in the profile: in Today, Pinned.
     func tab(_ id: UUID) -> TabSession? {
         allTabs.first { $0.id == id }
     }
@@ -133,17 +131,17 @@ final class TabManager: ObservableObject {
     }
 
     var allTabs: [TabSession] {
-        favorites + pinned.tabs + tabs
+        pinned.tabs + tabs
     }
 
-    /// The tabs as they're shown: Favorites, then Pinned, then Today, top to
+    /// The tabs as they're shown: Pinned, then Today, top to
     /// bottom in the sidebar or left to right in the strip. Switching with
     /// the keyboard, dragging, and Close Tabs Below all follow this order.
     var tabsInDisplayOrder: [TabSession] {
-        tabLayout.displayOrder(favorites: favorites, pinned: pinned, today: tabs)
+        tabLayout.displayOrder(pinned: pinned, today: tabs)
     }
 
-    /// A private window passes an in-memory archive and no session, spaces
+    /// A private window passes an in-memory archive and no session, profiles
     /// or documents, so nothing of it is written down or comes back. `services`
     /// browse with the default profile, or the private window's own context.
     init(
@@ -151,20 +149,20 @@ final class TabManager: ObservableObject {
         services: TabSessionServices,
         archive: TabArchive,
         pins: PinStore,
-        spaces: SpaceStore?,
+        profiles: ProfileStore?,
         documents: DocumentStore?,
         session: SessionStore?
     ) {
         let saved = session?.takeRestorableWindow()
-        let knownSpaces = spaces?.spaces ?? Spaces()
+        let knownProfiles = profiles?.profiles ?? Profiles()
         self.settings = settings
         self.services = services
         self.archive = archive
         self.pinStore = pins
-        self.spaceStore = spaces
+        self.profileStore = profiles
         self.documentStore = documents
-        self.knownSpaces = knownSpaces
-        self.activeSpaceID = saved.flatMap { knownSpaces.space($0.activeSpaceID)?.id } ?? knownSpaces.spaces[0].id
+        self.knownProfiles = knownProfiles
+        self.activeProfileID = saved.flatMap { knownProfiles.profile($0.activeProfileID)?.id } ?? knownProfiles.profiles[0].id
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
         self.hideTabs = settings.hideTabs
         bindSettings()
@@ -172,9 +170,9 @@ final class TabManager: ObservableObject {
         sweepClock.ticks
             .sink { [weak self] underMemoryPressure in self?.sweepIdleTabs(underMemoryPressure: underMemoryPressure) }
             .store(in: &cancellables)
-        spaces?.$spaces
+        profiles?.$profiles
             .dropFirst()
-            .sink { [weak self] spaces in self?.reconcileSpaces(with: spaces) }
+            .sink { [weak self] profiles in self?.reconcileProfiles(with: profiles) }
             .store(in: &cancellables)
         pins.$layout
             .sink { [weak self] layout in self?.reconcilePinnedTabs(with: layout) }
@@ -190,28 +188,28 @@ final class TabManager: ObservableObject {
     }
 
     /// Restored tabs start asleep; selecting the active one wakes it, so a
-    /// launch loads one page per window instead of every page. Spaces deleted
+    /// launch loads one page per window instead of every page. Profiles deleted
     /// since are left behind, and so are documents.
     private func restore(_ saved: SavedWindow?) {
-        var shown: ParkedSpace?
-        for savedSpace in saved?.spaces ?? [] {
-            guard let space = knownSpaces.space(savedSpace.spaceID) else { continue }
-            let services = services(for: space)
-            let tabs = savedSpace.tabs.map { makeTab(restoring: $0, services: services) }
-            let documents = (savedSpace.documents ?? []).filter { documentStore?.documents[$0.id] != nil }
-            let restored = ParkedSpace(
+        var shown: ParkedProfile?
+        for savedProfile in saved?.profiles ?? [] {
+            guard let profile = knownProfiles.profile(savedProfile.profileID) else { continue }
+            let services = services(for: profile)
+            let tabs = savedProfile.tabs.map { makeTab(restoring: $0, services: services) }
+            let documents = (savedProfile.documents ?? []).filter { documentStore?.documents[$0.id] != nil }
+            let restored = ParkedProfile(
                 today: TodayItem.restoring(tabs: tabs, documents: documents),
-                activeTabID: savedSpace.activePinID
-                    ?? savedSpace.activeTabIndex.flatMap { tabs.indices.contains($0) ? tabs[$0].id : nil },
-                activeDocumentID: savedSpace.activeDocumentID,
-                splits: (savedSpace.splits ?? []).compactMap { split in
+                activeTabID: savedProfile.activePinID
+                    ?? savedProfile.activeTabIndex.flatMap { tabs.indices.contains($0) ? tabs[$0].id : nil },
+                activeDocumentID: savedProfile.activeDocumentID,
+                splits: (savedProfile.splits ?? []).compactMap { split in
                     split.map { tabs.indices.contains($0) ? tabs[$0].id : nil }
                 }
             )
-            if space.id == activeSpaceID {
+            if profile.id == activeProfileID {
                 shown = restored
             } else {
-                parkedSpaces[space.id] = restored
+                parkedProfiles[profile.id] = restored
             }
         }
         unpark(shown)
@@ -222,25 +220,25 @@ final class TabManager: ObservableObject {
     }
 
     var savedWindow: SavedWindow {
-        let parked = knownSpaces.spaces.compactMap { space in
-            parkedSpaces[space.id].map { savedSpace(space.id, $0) }
+        let parked = knownProfiles.profiles.compactMap { profile in
+            parkedProfiles[profile.id].map { savedProfile(profile.id, $0) }
         }
         return SavedWindow(
-            spaces: [savedSpace(activeSpaceID, shownSpace)] + parked,
-            activeSpaceID: activeSpaceID
+            profiles: [savedProfile(activeProfileID, shownProfile)] + parked,
+            activeProfileID: activeProfileID
         )
     }
 
-    private func savedSpace(_ id: UUID, _ space: ParkedSpace) -> SavedSpace {
-        let tabs = space.today.compactMap(\.tab)
-        return SavedSpace(
-            spaceID: id,
+    private func savedProfile(_ id: UUID, _ profile: ParkedProfile) -> SavedProfile {
+        let tabs = profile.today.compactMap(\.tab)
+        return SavedProfile(
+            profileID: id,
             tabs: tabs.map(\.savedTab),
-            activeTabIndex: tabs.firstIndex { $0.id == space.activeTabID },
-            activePinID: space.activeTabID.flatMap { pinnedTabs[$0] == nil ? nil : $0 },
-            splits: space.splits.compactMap { split in split.map { id in tabs.firstIndex { $0.id == id } } },
-            documents: space.today.documentPlaces(),
-            activeDocumentID: space.activeDocumentID
+            activeTabIndex: tabs.firstIndex { $0.id == profile.activeTabID },
+            activePinID: profile.activeTabID.flatMap { pinnedTabs[$0] == nil ? nil : $0 },
+            splits: profile.splits.compactMap { split in split.map { id in tabs.firstIndex { $0.id == id } } },
+            documents: profile.today.documentPlaces(),
+            activeDocumentID: profile.activeDocumentID
         )
     }
 
@@ -307,12 +305,12 @@ final class TabManager: ObservableObject {
     }
 
     /// Takes in a live tab from a Peek or Little Cove, page and history
-    /// included: beside the tab that opened it, or at the top of the space's
+    /// included: beside the tab that opened it, or at the top of the profile's
     /// Today, in place of an untouched start page. It's selected. A page
-    /// from another profile than the space's starts again on the space's.
+    /// from another profile than the profile's starts again on the profile's.
     func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         let startPage = untouchedStartPage
-        let adopted = rehomed(tab, in: activeSpace) ?? tab
+        let adopted = rehomed(tab, in: activeProfile) ?? tab
         adopted.host = host(for: tab.id)
         open(adopted, nextTo: openerID)
         startPage.map { closeTab($0.id) }
@@ -348,9 +346,9 @@ final class TabManager: ObservableObject {
     /// selected. `@Published` announces a change before making it, so the
     /// pick waits a turn of the main queue to see it.
     private func trackMedia() {
-        let mediaChanged = Publishers.CombineLatest3($today, $favorites, $pinned)
-            .map { today, favorites, pinned in
-                Publishers.MergeMany((favorites + pinned.tabs + today.compactMap(\.tab)).map { $0.$nowPlaying.map { _ in } })
+        let mediaChanged = Publishers.CombineLatest($today, $pinned)
+            .map { today, pinned in
+                Publishers.MergeMany((pinned.tabs + today.compactMap(\.tab)).map { $0.$nowPlaying.map { _ in } })
             }
             .switchToLatest()
         Publishers.Merge(mediaChanged, $activeTabID.map { _ in })
@@ -368,7 +366,7 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// A tab in the space shown, unless the services of another are given.
+    /// A tab in the profile shown, unless the services of another are given.
     private func makeTab(
         id tabID: UUID = UUID(),
         initialURL: String? = nil,
@@ -384,7 +382,7 @@ final class TabManager: ObservableObject {
             restoring: saved,
             showsStartPage: saved.map { $0.url.isEmpty } ?? showsStartPage,
             settings: settings,
-            services: tabServices ?? services(for: activeSpace),
+            services: tabServices ?? services(for: activeProfile),
             host: host(for: tabID)
         )
     }
@@ -458,7 +456,7 @@ final class TabManager: ObservableObject {
     // MARK: - Idle tabs
 
     /// Sleeps background tabs idle past the setting and archives Today tabs
-    /// idle past theirs; pinned tabs and favorites sleep but stay. Short of
+    /// idle past theirs; pinned tabs sleep but stay. Short of
     /// memory, every background tab that can sleep does.
     func sweepIdleTabs(underMemoryPressure: Bool = false, now: Date = .now) {
         var policy = TabIdlePolicy(
@@ -476,9 +474,9 @@ final class TabManager: ObservableObject {
             case nil: break
             }
         }
-        // Other spaces' tabs aren't on screen, their selected ones included.
-        for id in parkedSpaces.keys {
-            parkedSpaces[id]?.today.removeAll { item in
+        // Other profiles' tabs aren't on screen, their selected ones included.
+        for id in parkedProfiles.keys {
+            parkedProfiles[id]?.today.removeAll { item in
                 guard let tab = item.tab else { return false }
                 let action = policy.action(for: TabIdlePolicy.Tab(tab, isActive: false), at: now)
                 if action == .sleep { tab.sleep() }
@@ -513,18 +511,18 @@ final class TabManager: ObservableObject {
         open(makeTab(restoring: saved))
     }
 
-    /// Selects a tab, first switching to its space if it's in another.
+    /// Selects a tab, first switching to its profile if it's in another.
     func selectTab(_ id: UUID) {
         guard id != activeTabID || activeDocumentID != nil else { return }
-        if tab(id) == nil, let space = parkedSpaces.first(where: { $0.value.today.contains { $0.id == id } })?.key {
-            show(space)
+        if tab(id) == nil, let profile = parkedProfiles.first(where: { $0.value.today.contains { $0.id == id } })?.key {
+            show(profile)
         }
         // A closing row can deliver its click after the tab has left Today.
         guard tab(id) != nil else { return }
         activeTabID = id
     }
 
-    /// Selects the tab if it's in the space, or else the newest Today tab, or
+    /// Selects the tab if it's in the profile, or else the newest Today tab, or
     /// else a new one.
     private func select(_ id: UUID?) {
         if let id, tab(id) != nil {
@@ -597,30 +595,28 @@ final class TabManager: ObservableObject {
         toasts.show("Copied URL", symbol: ChromeSymbols.Navigation.link)
     }
 
-    // MARK: - Pinned tabs and favorites
+    // MARK: - Pinned tabs
 
     enum TabSection {
-        case favorites
         case pinned
         case today
     }
 
     func section(of id: UUID) -> TabSection? {
-        switch pinStore.pins(in: pinScope).section(of: id) {
-        case .favorites: .favorites
+        switch pinStore.pins(in: activeProfileID).section(of: id) {
         case .pinned: .pinned
         case nil: today.contains { $0.id == id } ? .today : nil
         }
     }
 
-    /// ⌘D and Pin Tab: a Today tab moves into Pinned, or Favorites, where
+    /// ⌘D and Pin Tab: a Today tab moves into Pinned, where
     /// it's kept across launches. A start page has nothing to pin.
     func pinTab(_ id: UUID, to section: Pins.Section = .pinned, at position: SidebarPosition = .end) {
         guard let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab, !tab.currentURL.isEmpty else { return }
         today.remove(at: index)
         tab.pinnedURL = tab.currentURL
         adoptPinnedTab(tab)
-        pinStore.change(in: pinScope) { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), to: section, at: position) }
+        pinStore.change(in: activeProfileID) { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), to: section, at: position) }
     }
 
     /// Unpin Tab: the live tab goes back to Today, at the top, or in the
@@ -628,7 +624,7 @@ final class TabManager: ObservableObject {
     func unpinTab(_ id: UUID, onto target: UUID? = nil) {
         guard let tab = pinnedTabs[id] else { return }
         releasePinnedTab(tab, onto: target)
-        pinStore.change(in: pinScope) { $0.remove(id) }
+        pinStore.change(in: activeProfileID) { $0.remove(id) }
     }
 
     func togglePinned(_ id: UUID) {
@@ -636,17 +632,16 @@ final class TabManager: ObservableObject {
     }
 
     /// Drag and drop: the dragged tab takes the place of the one under it,
-    /// moving between Favorites, Pinned and Today as needed.
+    /// moving between Pinned and Today as needed.
     func moveTab(_ id: UUID, onto target: UUID) {
         guard id != target, let from = section(of: id), let to = section(of: target) else { return }
         switch (from, to) {
         case (.today, .today): today.move(splitGroup(of: id), onto: splitGroup(of: target))
-        case (.today, .favorites): pinTab(id, to: .favorites, at: .before(target))
         case (.today, .pinned) where isDocument(id): pinDocument(id, at: .before(target))
         case (.today, .pinned): pinTab(id, to: .pinned, at: .before(target))
         case (.pinned, .today) where isDocument(id): unpinDocument(id, onto: target)
-        case (.favorites, .today), (.pinned, .today): unpinTab(id, onto: target)
-        case (.favorites, _), (.pinned, _): pinStore.change(in: pinScope) { $0.move(id, onto: target) }
+        case (.pinned, .today): unpinTab(id, onto: target)
+        case (.pinned, _): pinStore.change(in: activeProfileID) { $0.move(id, onto: target) }
         }
     }
 
@@ -663,7 +658,7 @@ final class TabManager: ObservableObject {
     /// Documents go in Pinned only.
     private func moveTab(_ id: UUID, to section: Pins.Section, at position: SidebarPosition) {
         if self.section(of: id) != .today {
-            pinStore.change(in: pinScope) { $0.move(id, to: section, at: position) }
+            pinStore.change(in: activeProfileID) { $0.move(id, to: section, at: position) }
         } else if !isDocument(id) {
             pinTab(id, to: section, at: position)
         } else if section == .pinned {
@@ -690,7 +685,7 @@ final class TabManager: ObservableObject {
     /// for its name.
     func newFolder(in parentID: UUID? = nil, around tabID: UUID? = nil) {
         let folder = SidebarFolder<Pin>(name: "New Folder")
-        pinStore.change(in: pinScope) { pins in
+        pinStore.change(in: activeProfileID) { pins in
             if let tabID, pins.section(of: tabID) == .pinned {
                 pins.addFolder(folder, at: .before(tabID))
                 pins.move(tabID, to: .pinned, at: .into(folder.id))
@@ -705,24 +700,24 @@ final class TabManager: ObservableObject {
     func renameFolder(_ id: UUID, to name: String) {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-        pinStore.change(in: pinScope) { $0.updateFolder(id) { $0.name = name } }
+        pinStore.change(in: activeProfileID) { $0.updateFolder(id) { $0.name = name } }
     }
 
     func toggleFolderCollapsed(_ id: UUID) {
-        pinStore.change(in: pinScope) { $0.updateFolder(id) { $0.isCollapsed.toggle() } }
+        pinStore.change(in: activeProfileID) { $0.updateFolder(id) { $0.isCollapsed.toggle() } }
     }
 
     /// Deleting a folder unpins what it held: the tabs and notes go back to
     /// Today.
     func deleteFolder(_ id: UUID) {
-        let contents = pinStore.pins(in: pinScope).pinned.folder(id)?.contents ?? SidebarTree()
+        let contents = pinStore.pins(in: activeProfileID).pinned.folder(id)?.contents ?? SidebarTree()
         for pin in contents.tabs {
             pinnedTabs[pin.id].map { releasePinnedTab($0) }
         }
         for document in contents.documents {
             placeInToday(.document(document))
         }
-        pinStore.change(in: pinScope) { _ = $0.removeFolder(id) }
+        pinStore.change(in: activeProfileID) { _ = $0.removeFolder(id) }
     }
 
     /// File › Import Bookmarks…: another browser's bookmark file, chosen in
@@ -742,19 +737,18 @@ final class TabManager: ObservableObject {
                 name: "Imported from \(BookmarkImport.source(of: data).rawValue)",
                 contents: SidebarTree(bookmarks.map(SidebarItem.init))
             )
-            pinStore.change(in: pinScope) { $0.addFolder(folder) }
+            pinStore.change(in: activeProfileID) { $0.addFolder(folder) }
             toasts.show("Imported \(folder.contents.tabs.count) Bookmarks", symbol: ChromeSymbols.Tabs.folder)
         }
     }
 
     // MARK: Live tabs for the store's pins
 
-    /// Matches the live tabs to the space's pins: a tab for each new pin,
+    /// Matches the live tabs to the profile's pins: a tab for each new pin,
     /// built asleep where it was left, and the tabs of pins that are gone
     /// closed, unless they're back in Today, as after an unpin here.
     private func reconcilePinnedTabs(with layout: PinLayout) {
-        let pins = layout[pinScope]
-        favorites = pins.favorites.map(liveTab)
+        let pins = layout[activeProfileID]
         pinned = pins.pinned.map(liveTab)
 
         for (id, tab) in pinnedTabs where layout.pin(id) == nil {
@@ -772,14 +766,14 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// A pin's tab browses with its space's profile; one left on another
-    /// profile's data store, as after the space changed profile, is rebuilt.
+    /// A pin's tab browses with its profile's profile; one left on another
+    /// profile's data store, as after the profile changed profile, is rebuilt.
     private func liveTab(for pin: Pin) -> TabSession {
-        liveTab(for: pin, in: activeSpace)
+        liveTab(for: pin, in: activeProfile)
     }
 
-    private func liveTab(for pin: Pin, in space: Space?) -> TabSession {
-        let services = services(for: space)
+    private func liveTab(for pin: Pin, in profile: Profile?) -> TabSession {
+        let services = services(for: profile)
         let existing = pinnedTabs[pin.id]
         if let tab = existing, tab.services.context === services.context {
             if tab.pinnedURL != pin.url { tab.pinnedURL = pin.url }
@@ -826,155 +820,150 @@ final class TabManager: ObservableObject {
         }
     }
 
-    // MARK: - Spaces
+    // MARK: - Profiles
 
-    /// The window's state in a space it isn't showing.
-    private struct ParkedSpace {
+    /// The window's state in a profile it isn't showing.
+    private struct ParkedProfile {
         var today: [TodayItem<TabSession>]
         var activeTabID: UUID?
         var activeDocumentID: UUID?
         var splits: [TabSplit<UUID>]
     }
 
-    /// The space on screen, as it would be parked.
-    private var shownSpace: ParkedSpace {
-        ParkedSpace(today: today, activeTabID: activeTabID, activeDocumentID: activeDocumentID, splits: splits)
+    /// The profile on screen, as it would be parked.
+    private var shownProfile: ParkedProfile {
+        ParkedProfile(today: today, activeTabID: activeTabID, activeDocumentID: activeDocumentID, splits: splits)
     }
 
-    /// The spaces to switch between, in order; none in a private window.
-    var spaces: [Space] {
-        spaceStore == nil ? [] : knownSpaces.spaces
+    /// The profiles to switch between, in order; none in a private window.
+    var profiles: [Profile] {
+        profileStore == nil ? [] : knownProfiles.profiles
     }
 
-    var activeSpace: Space? {
-        spaceStore == nil ? nil : knownSpaces.space(activeSpaceID)
+    var activeProfile: Profile? {
+        profileStore == nil ? nil : knownProfiles.profile(activeProfileID)
     }
 
-    /// Today tabs this window has open in its other spaces, in space order.
-    var tabsInOtherSpaces: [TabSession] {
-        knownSpaces.spaces.flatMap { parkedSpaces[$0.id]?.today.compactMap(\.tab) ?? [] }
+    /// Today tabs this window has open in its other profiles, in profile order.
+    var tabsInOtherProfiles: [TabSession] {
+        knownProfiles.profiles.flatMap { parkedProfiles[$0.id]?.today.compactMap(\.tab) ?? [] }
     }
 
-    var activeSidebarPage: SpaceSidebarPage {
-        SpaceSidebarPage(id: activeSpaceID, favorites: favorites, pinned: pinned,
+    var activeSidebarPage: ProfileSidebarPage {
+        ProfileSidebarPage(id: activeProfileID, pinned: pinned,
                          today: today, splits: splits, selection: activeDocumentID ?? activeTabID)
     }
 
     /// Prepare a neighboring sidebar without selecting it or waking its pages.
     /// Called once when a gesture starts, never from a view's render pass.
-    func sidebarPage(for space: Space) -> SpaceSidebarPage {
-        if space.id == activeSpaceID { return activeSidebarPage }
-        let pins = pinStore.layout[PinScope(space: space.id, profile: space.profileID)]
-        let parked = parkedSpaces[space.id]
-        return SpaceSidebarPage(
-            id: space.id, favorites: pins.favorites.map { liveTab(for: $0, in: space) },
-            pinned: pins.pinned.map { liveTab(for: $0, in: space) },
+    func sidebarPage(for profile: Profile) -> ProfileSidebarPage {
+        if profile.id == activeProfileID { return activeSidebarPage }
+        let pins = pinStore.layout[profile.id]
+        let parked = parkedProfiles[profile.id]
+        return ProfileSidebarPage(
+            id: profile.id,
+            pinned: pins.pinned.map { liveTab(for: $0, in: profile) },
             today: parked?.today ?? [], splits: parked?.splits ?? [],
             selection: parked?.activeDocumentID ?? parked?.activeTabID
         )
     }
 
-    /// Footer icons, the Spaces menu (⌃1–9) and the Command Bar: shows another
-    /// space, with its Today and selected tab as this window left them.
-    func switchToSpace(_ id: UUID) {
-        guard spaceStore != nil, knownSpaces.space(id) != nil else { return }
+    /// Footer icons, the Profiles menu (⌃1–9) and the Command Bar: shows another
+    /// profile, with its Today and selected tab as this window left them.
+    func switchToProfile(_ id: UUID) {
+        guard profileStore != nil, knownProfiles.profile(id) != nil else { return }
         page(to: id)
     }
 
-    /// ⌘⌥← and →, and swiping the sidebar: the space beside this one.
-    func switchToAdjacentSpace(_ offset: Int) {
-        guard let space = adjacentSpace(offset) else { return }
-        page(to: space.id)
+    /// ⌘⌥← and →, and swiping the sidebar: the profile beside this one.
+    func switchToAdjacentProfile(_ offset: Int) {
+        guard let profile = adjacentProfile(offset) else { return }
+        page(to: profile.id)
     }
 
-    func adjacentSpace(_ offset: Int) -> Space? {
-        spaceStore == nil ? nil : knownSpaces.space(offset, from: activeSpaceID)
+    func adjacentProfile(_ offset: Int) -> Profile? {
+        profileStore == nil ? nil : knownProfiles.profile(offset, from: activeProfileID)
     }
 
-    /// New Space: another space in this one's profile, shown at once, with
+    /// New Profile: another profile in this one's profile, shown at once, with
     /// the editor open to name it.
-    func newSpace() {
-        guard let spaceStore else { return }
-        var space: Space?
-        spaceStore.change { space = $0.addSpace(in: pinScope.profile) }
-        guard let space else { return }
-        page(to: space.id)
-        spaceToEdit = space.id
+    func newProfile() {
+        guard let profileStore else { return }
+        var profile: Profile?
+        profileStore.change { profile = $0.addProfile() }
+        guard let profile else { return }
+        page(to: profile.id)
+        profileToEdit = profile.id
     }
 
-    func moveSpace(_ id: UUID, by offset: Int) {
-        spaceStore?.change { $0.moveSpace(id, by: offset) }
+    func moveProfile(_ id: UUID, by offset: Int) {
+        profileStore?.change { $0.moveProfile(id, by: offset) }
     }
 
-    /// Deletes a space in every window: its Today tabs go to the archive and
-    /// its Pinned with it. This window moves to the space before it.
-    func deleteSpace(_ id: UUID) {
-        guard let spaceStore, spaces.count > 1 else { return }
-        if id == activeSpaceID, let neighbor = adjacentSpace(-1) ?? adjacentSpace(1) {
+    /// Deletes a profile in every window: its Today tabs go to the archive and
+    /// its Pinned with it. This window moves to the profile before it.
+    func deleteProfile(_ id: UUID) {
+        guard let profileStore, profiles.count > 1 else { return }
+        if id == activeProfileID, let neighbor = adjacentProfile(-1) ?? adjacentProfile(1) {
             show(neighbor.id)
         }
-        spaceStore.change { $0.removeSpace(id) }
+        profileStore.deleteProfile(id)
     }
 
-    /// Pins in this space: its Pinned, and its profile's Favorites.
-    var pinScope: PinScope {
-        PinScope(space: activeSpaceID, profile: knownSpaces.space(activeSpaceID)?.profileID ?? Profile.defaultID)
-    }
-
-    /// What a space's tabs browse with: its profile's context. A private
+    /// What a profile's tabs browse with: its profile's context. A private
     /// window's tabs browse with its own.
-    private func services(for space: Space?) -> TabSessionServices {
-        guard let spaceStore, let space else { return services }
-        return services.with(spaceStore.context(for: space))
+    private func services(for profile: Profile?) -> TabSessionServices {
+        guard let profileStore, let profile else { return services }
+        return services.with(profileStore.context(for: profile))
     }
 
     /// Change selection synchronously. Each visual surface owns its motion;
     /// delayed model changes can replay an older click after a rapid reversal.
     private func page(to id: UUID) {
-        guard knownSpaces.space(id) != nil else { return }
+        guard knownProfiles.profile(id) != nil else { return }
         show(id)
     }
 
     private func show(_ id: UUID) {
-        if spaceTransition.state.isActive && !spaceTransition.isCommitting { spaceTransition.reset() }
-        guard id != activeSpaceID else { return }
+        if profileTransition.state.isActive && !profileTransition.isCommitting { profileTransition.reset() }
+        guard id != activeProfileID else { return }
         activeTab?.markUsed()
-        parkedSpaces[activeSpaceID] = shownSpace
-        let next = parkedSpaces.removeValue(forKey: id)
-        activeSpaceID = id
+        parkedProfiles[activeProfileID] = shownProfile
+        let next = parkedProfiles.removeValue(forKey: id)
+        activeProfileID = id
         reconcilePinnedTabs(with: pinStore.layout)
         unpark(next)
     }
 
-    /// Puts a space's Today on screen with what it had selected.
-    private func unpark(_ space: ParkedSpace?) {
+    /// Puts a profile's Today on screen with what it had selected.
+    private func unpark(_ profile: ParkedProfile?) {
         // The splits first: setting Today drops those whose tabs were
-        // archived while the space was parked.
-        splits = space?.splits ?? []
-        today = space?.today ?? []
-        select(space?.activeTabID)
-        if let document = space?.activeDocumentID, section(of: document) != nil {
+        // archived while the profile was parked.
+        splits = profile?.splits ?? []
+        today = profile?.today ?? []
+        select(profile?.activeTabID)
+        if let document = profile?.activeDocumentID, section(of: document) != nil {
             showDocument(document)
         }
     }
 
-    /// Follows edits made in any window: a deleted space's tabs go to the
-    /// archive, and a window showing it moves to the first space; tabs of a
-    /// space now in another profile are rebuilt on that profile's data store.
-    private func reconcileSpaces(with spaces: Spaces) {
-        knownSpaces = spaces
-        if spaces.space(activeSpaceID) == nil {
-            show(spaces.spaces[0].id)
+    /// Follows edits made in any window: a deleted profile's tabs go to the
+    /// archive, and a window showing it moves to the first profile; tabs of a
+    /// profile now in another profile are rebuilt on that profile's data store.
+    private func reconcileProfiles(with profiles: Profiles) {
+        knownProfiles = profiles
+        if profiles.profile(activeProfileID) == nil {
+            show(profiles.profiles[0].id)
         }
-        for id in parkedSpaces.keys {
-            guard let space = spaces.space(id) else {
-                parkedSpaces.removeValue(forKey: id)?.today.compactMap(\.tab).forEach { retire($0, reason: .closed) }
+        for id in parkedProfiles.keys {
+            guard let profile = profiles.profile(id) else {
+                parkedProfiles.removeValue(forKey: id)?.today.compactMap(\.tab).forEach { retire($0, reason: .closed) }
                 continue
             }
-            rehome(&parkedSpaces[id]!.today, in: space)
+            rehome(&parkedProfiles[id]!.today, in: profile)
         }
         var today = today
-        if rehome(&today, in: activeSpace) {
+        if rehome(&today, in: activeProfile) {
             self.today = today
         }
         reconcilePinnedTabs(with: pinStore.layout)
@@ -982,31 +971,31 @@ final class TabManager: ObservableObject {
         activeTabID = activeTabID
     }
 
-    /// Takes documents out of the window's other spaces' Today, as when
+    /// Takes documents out of the window's other profiles' Today, as when
     /// they're deleted.
     func removeParkedDocuments(where isGone: (TodayItem<TabSession>) -> Bool) {
-        for id in parkedSpaces.keys {
-            parkedSpaces[id]?.today.removeAll(where: isGone)
+        for id in parkedProfiles.keys {
+            parkedProfiles[id]?.today.removeAll(where: isGone)
         }
     }
 
     /// Rebuilds, asleep, the tabs browsing with another profile's data store
-    /// than the space's. Whether any were.
+    /// than the profile's. Whether any were.
     @discardableResult
-    private func rehome(_ today: inout [TodayItem<TabSession>], in space: Space?) -> Bool {
+    private func rehome(_ today: inout [TodayItem<TabSession>], in profile: Profile?) -> Bool {
         var changed = false
         for index in today.indices {
-            guard let tab = today[index].tab, let rebuilt = rehomed(tab, in: space) else { continue }
+            guard let tab = today[index].tab, let rebuilt = rehomed(tab, in: profile) else { continue }
             today[index] = .tab(rebuilt)
             changed = true
         }
         return changed
     }
 
-    /// The tab rebuilt asleep on the space's profile, if it browses with
+    /// The tab rebuilt asleep on the profile, if it browses with
     /// another's data store.
-    private func rehomed(_ tab: TabSession, in space: Space?) -> TabSession? {
-        let services = services(for: space)
+    private func rehomed(_ tab: TabSession, in profile: Profile?) -> TabSession? {
+        let services = services(for: profile)
         guard tab.services.context !== services.context else { return nil }
         return makeTab(id: tab.id, restoring: retireFromProfile(tab), services: services)
     }

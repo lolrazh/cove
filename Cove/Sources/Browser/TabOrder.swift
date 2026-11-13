@@ -1,18 +1,17 @@
 import Foundation
 
 extension TabLayout {
-    /// The tabs as they're shown in this layout: Favorites, then Pinned, then
+    /// The tabs as they're shown in this layout: Pinned, then
     /// Today. The sidebar keeps collapsed folders' tabs out of sight; the strip
     /// flattens the folders. Both keep Today in stored order, with new tabs at
     /// the end. ⌃Tab, ⌘1–9, dragging and Close Tabs Below all follow this.
     func displayOrder<Tab: Identifiable>(
-        favorites: [Tab],
         pinned: SidebarTree<Tab>,
         today: [Tab]
     ) -> [Tab] where Tab.ID == UUID {
         switch self {
-        case .sidebar: favorites + pinned.visibleTabs + today
-        case .horizontal: favorites + pinned.tabs + today
+        case .sidebar: pinned.visibleTabs + today
+        case .horizontal: pinned.tabs + today
         }
     }
 }

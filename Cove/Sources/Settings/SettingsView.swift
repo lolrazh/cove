@@ -5,7 +5,7 @@ import SwiftUI
 enum SettingsPane: String {
     case general
     case appearance
-    case spaces
+    case profiles
     case extensions
     case privacy
     case downloads
@@ -22,7 +22,7 @@ enum SettingsPane: String {
 struct SettingsView: View {
     @ObservedObject var settingsStore: BrowserSettingsStore
     let historyStore: HistoryStore
-    let spaceStore: SpaceStore
+    let profileStore: ProfileStore
     let extensionLibrary: ExtensionLibrary
 
     @AppStorage(SettingsPane.defaultsKey) private var pane = SettingsPane.general
@@ -35,8 +35,8 @@ struct SettingsView: View {
             Tab("Appearance", systemImage: ChromeSymbols.Settings.appearance, value: .appearance) {
                 AppearanceSettingsPane(settings: settingsStore)
             }
-            Tab("Spaces", systemImage: ChromeSymbols.Settings.spaces, value: .spaces) {
-                SpacesSettingsPane(store: spaceStore)
+            Tab("Profiles", systemImage: ChromeSymbols.Settings.profiles, value: .profiles) {
+                ProfilesSettingsPane(store: profileStore)
             }
             Tab("Extensions", systemImage: ChromeSymbols.Settings.extensions, value: .extensions) {
                 ExtensionsSettingsPane(library: extensionLibrary)
@@ -117,7 +117,7 @@ private struct AppearanceSettingsPane: View {
             } header: {
                 Text("Tabs")
             } footer: {
-                Text("Each space has its own frame color, set in Spaces.")
+                Text("Each profile has its own frame color, set in Profiles.")
             }
         }
     }

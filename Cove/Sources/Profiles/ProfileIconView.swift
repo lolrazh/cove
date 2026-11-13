@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A shared, quiet marker for spaces. Stored legacy symbols do not affect it.
-struct SpaceIconView: View {
+/// A shared, quiet marker for profiles. Stored legacy symbols do not affect it.
+struct ProfileIconView: View {
     var diameter: CGFloat = 7
 
     var body: some View {

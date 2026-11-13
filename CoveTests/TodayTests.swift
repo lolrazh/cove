@@ -33,15 +33,15 @@ struct TodayTests {
         let tab = SavedTab(url: "https://example.com/", title: "Example", customTitle: nil, interactionState: nil, lastUsedAt: nil)
         let note = UUID()
         let window = SavedWindow(
-            spaces: [
-                SavedSpace(spaceID: UUID(), tabs: [tab], activeTabIndex: 0, activePinID: nil, documents: [TodayDocumentPlace(id: note, index: 0)], activeDocumentID: note),
-                SavedSpace(spaceID: UUID(), tabs: [tab], activeTabIndex: 0, activePinID: nil),
+            profiles: [
+                SavedProfile(profileID: UUID(), tabs: [tab], activeTabIndex: 0, activePinID: nil, documents: [TodayDocumentPlace(id: note, index: 0)], activeDocumentID: note),
+                SavedProfile(profileID: UUID(), tabs: [tab], activeTabIndex: 0, activePinID: nil),
             ],
-            activeSpaceID: UUID()
+            activeProfileID: UUID()
         )
         let decoded = try PropertyListDecoder().decode(SavedWindow.self, from: PropertyListEncoder().encode(window))
-        #expect(decoded.spaces[0].documents == [TodayDocumentPlace(id: note, index: 0)])
-        #expect(decoded.spaces[0].activeDocumentID == note)
-        #expect(decoded.spaces[1].documents == nil)
+        #expect(decoded.profiles[0].documents == [TodayDocumentPlace(id: note, index: 0)])
+        #expect(decoded.profiles[0].activeDocumentID == note)
+        #expect(decoded.profiles[1].documents == nil)
     }
 }

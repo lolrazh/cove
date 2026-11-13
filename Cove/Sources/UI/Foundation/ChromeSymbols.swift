@@ -49,8 +49,8 @@ enum ChromeSymbols {
         static let easel = "scribble.variable"
     }
 
-    enum Spaces {
-        static let newSpace = "plus"
+    enum Profiles {
+        static let newProfile = "plus"
         static let profile = "person.crop.circle"
     }
 
@@ -74,7 +74,7 @@ enum ChromeSymbols {
         static let appearance = "paintpalette"
         static let privacy = "hand.raised"
         static let downloads = "arrow.down.circle"
-        static let spaces = "square.stack"
+        static let profiles = "square.stack"
         static let extensions = "puzzlepiece.extension"
     }
 }

@@ -89,8 +89,8 @@ final class CommandBarModel: ObservableObject {
             tabManager.selectTab(id)
         case .archived(let id):
             tabManager.reopenArchivedTab(id)
-        case .space(let id):
-            tabManager.switchToSpace(id)
+        case .profile(let id):
+            tabManager.switchToProfile(id)
         case .extensionAction(let id):
             tabManager.extensionHost.extensionContext(id: id).map(tabManager.performExtensionAction)
         case .document(let id, _):
@@ -107,7 +107,7 @@ final class CommandBarModel: ObservableObject {
         dismiss()
     }
 
-    /// A space row's icon.
+    /// A profile row's icon.
     /// Favicons for page rows: a tab's own, or the cached one for its site.
     /// An extension's row shows its button's icon.
     func icon(for result: CommandBarResult) -> NSImage? {
@@ -148,8 +148,6 @@ final class CommandBarModel: ObservableObject {
             } else if let id = tabManager.activeTabID {
                 tabManager.togglePinned(id)
             }
-        case .addToFavorites:
-            if let id = tabManager.activeTabID { tabManager.moveTab(id, toEndOf: .favorites) }
         case .newFolder:
             tabManager.newFolder()
         case .newNote:
@@ -158,10 +156,10 @@ final class CommandBarModel: ObservableObject {
             tabManager.newDocument(.easel)
         case .importBookmarks:
             tabManager.importBookmarks()
-        case .newSpace:
-            tabManager.newSpace()
-        case .editSpace:
-            tabManager.spaceToEdit = tabManager.activeSpaceID
+        case .newProfile:
+            tabManager.newProfile()
+        case .editProfile:
+            tabManager.profileToEdit = tabManager.activeProfileID
         case .duplicateTab:
             if let id = tabManager.activeTabID { tabManager.duplicateTab(id) }
         case .addSplitView:
@@ -229,9 +227,8 @@ final class CommandBarModel: ObservableObject {
             switch command {
             case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
-            case .addToFavorites: showsPage && canPin && [.today, .pinned].contains(activeSection)
-            case .unpinTab: [.pinned, .favorites].contains(activeSection)
-            case .newFolder, .importBookmarks, .newSpace, .editSpace: !tabManager.isPrivate
+            case .unpinTab: activeSection == .pinned
+            case .newFolder, .importBookmarks, .newProfile, .editProfile: !tabManager.isPrivate
             case .newNote, .newEasel: tabManager.documentStore != nil
             case .duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView where !showsPage: false
             case .duplicateTab: true
@@ -274,9 +271,9 @@ final class CommandBarModel: ObservableObject {
         guard isPresented else { return }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
-        // This space's tabs first, then those open in the window's others;
+        // This profile's tabs first, then those open in the window's others;
         // in Split View mode, only the tabs that can join the split.
-        let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherSpaces)
+        let tabs = (tabManager.tabsInDisplayOrder + tabManager.tabsInOtherProfiles)
             .filter { mode == .splitView ? tabManager.canOpenInSplitView($0.id) : $0.id != tabManager.activeTabID }
             .filter { !$0.currentURL.isEmpty }
             .map { CommandBarRanker.OpenTab(id: $0.id, title: $0.title, url: $0.currentURL) }
@@ -291,9 +288,9 @@ final class CommandBarModel: ObservableObject {
                 documents: (tabManager.documentStore?.documents.values.sorted { $0.modifiedAt > $1.modifiedAt } ?? [])
                     .filter { $0.id != tabManager.activeDocumentID }
                     .map { CommandBarRanker.Document(id: $0.id, kind: $0.kind, title: $0.displayTitle, text: $0.text) },
-                spaces: tabManager.spaces
-                    .filter { $0.id != tabManager.activeSpaceID }
-                    .map { CommandBarRanker.OtherSpace(id: $0.id, name: $0.name) },
+                profiles: tabManager.profiles
+                    .filter { $0.id != tabManager.activeProfileID }
+                    .map { CommandBarRanker.OtherProfile(id: $0.id, name: $0.name) },
                 extensionActions: tabManager.extensionContexts.map { context in
                     CommandBarRanker.ExtensionAction(id: context.uniqueIdentifier, name: context.webExtension.displayName ?? "")
                 },

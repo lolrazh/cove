@@ -23,7 +23,7 @@ struct TabManagerTests {
             boosts: BoostInjector(store: BoostStore(fileURL: nil))
         )
         return TabManager(settings: settings, services: services, archive: TabArchive(directory: nil),
-                          pins: PinStore(fileURL: nil), spaces: nil, documents: nil, session: nil)
+                          pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: nil)
     }
 
     @Test func `late selection of a closed tab cannot clear the current page`() throws {

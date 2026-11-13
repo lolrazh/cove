@@ -26,7 +26,7 @@ enum ChromeMetrics {
     /// Header height for the floating sidebar, which starts a gutter below the
     /// window's top: it keeps the header on the traffic lights' centerline.
     static let floatingSidebarHeaderHeight: CGFloat = titlebarHeight - gutter * 2
-    /// Space between the zoom button and the first tab.
+    /// Profile between the zoom button and the first tab.
     static let trafficLightTrailingGap: CGFloat = 10
 
     /// The sidebar is resized by dragging its trailing edge; the lower bound
@@ -41,7 +41,7 @@ enum ChromeMetrics {
     static let favoriteTileRange: ClosedRange<CGFloat> = 30...40
     /// How far a folder's contents sit in from the folder's row.
     static let sidebarFolderIndent: CGFloat = 14
-    /// Space between the sidebar's sections.
+    /// Profile between the sidebar's sections.
     static let sidebarSectionSpacing: CGFloat = 8
     static let sidebarFooterHeight: CGFloat = 36
     /// Width of the invisible edge that reveals hidden tabs.
@@ -57,7 +57,7 @@ enum ChromeMetrics {
     static let progressHeight: CGFloat = 1
 }
 
-/// Shared roles for system surfaces and the space's generated theme.
+/// Shared roles for system surfaces and the profile's generated theme.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for
     /// the area behind a page, tinted by the window's `ChromeTheme`. On macOS 27
@@ -91,11 +91,11 @@ enum ChromeMotion {
     static let sidebarTab = Animation.timingCurve(0.25, 0.46, 0.45, 0.94, duration: 0.12)
     /// Small page tools appearing within the content card.
     static let pageTool = Animation.smooth(duration: 0.18)
-    /// The sidebar paging from one space to the next.
+    /// The sidebar paging from one profile to the next.
     static let page = Animation.spring(duration: 0.26, bounce: 0)
-    static let spaceSettleResponse: CGFloat = 0.18
-    static let spaceSettleMaxDuration: TimeInterval = 0.28
-    static let spaceChange = Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.18)
+    static let profileSettleResponse: CGFloat = 0.18
+    static let profileSettleMaxDuration: TimeInterval = 0.28
+    static let profileChange = Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.18)
     static let themeChange = Animation.timingCurve(0.23, 1, 0.32, 1, duration: 0.22)
     /// A toast appearing over the page.
     static let appear = Animation.spring(duration: 0.3, bounce: 0.2)

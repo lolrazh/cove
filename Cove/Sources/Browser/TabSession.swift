@@ -70,7 +70,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var pageTitle: String = ""
     /// A name the user gave the tab, shown instead of the page's title.
     @Published private(set) var customTitle: String?
-    /// The address a pinned tab or favorite stands for: where closing it goes
+    /// The address a pinned tab stands for: where closing it goes
     /// back to. Nil for a Today tab.
     @Published var pinnedURL: String?
     @Published var canGoBack: Bool = false
@@ -795,7 +795,7 @@ extension TabSession: WKUIDelegate {
     }
 
     /// Arc's Peek: a link clicked with Shift, or one from a pinned tab or
-    /// favorite to another site, opens over the page instead of leaving it.
+    /// pinned tab to another site, opens over the page instead of leaving it.
     private func opensInPeek(_ action: WKNavigationAction) -> Bool {
         guard action.navigationType == .linkActivated || action.targetFrame == nil, let host = action.request.url?.host() else { return false }
         if action.modifierFlags.contains(.shift) { return true }

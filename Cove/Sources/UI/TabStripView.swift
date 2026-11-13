@@ -17,10 +17,10 @@ struct TabStripView: View {
         pinnedItems.map(\.id) + tabManager.today.map(\.id) + tabManager.splits.map(\.id)
     }
 
-    /// Favorites and pinned tabs and notes lead the strip as icon-only tabs,
+    /// Pinned tabs and notes lead the strip as icon-only tabs,
     /// like Safari's pinned tabs; the sidebar's folders are flattened.
     private var pinnedItems: [SidebarItem<TabSession>] {
-        tabManager.favorites.map(SidebarItem.tab) + tabManager.pinned.leaves
+        tabManager.pinned.leaves
     }
 
     private var tabAnimation: Animation? {
@@ -48,8 +48,8 @@ struct TabStripView: View {
         let sharedTabWidth = resolvedSharedTabWidth(for: availableWidth)
 
         return HStack(spacing: Metrics.tabSpacing) {
-            if tabManager.spaces.count > 1 {
-                SpaceMenuButton(tabManager: tabManager)
+            if tabManager.profiles.count > 1 {
+                ProfileMenuButton(tabManager: tabManager)
                     .background { WindowDragExclusion() }
             }
             ForEach(pinnedItems) { item in
@@ -115,8 +115,8 @@ struct TabStripView: View {
         let tabCount = max(tabManager.today.count, 1)
         let interTabSpacing = CGFloat(max(tabCount - 1, 0)) * Metrics.tabSpacing
         let pinnedReservation = CGFloat(pinnedItems.count) * (ChromeMetrics.compactTabWidth + Metrics.tabSpacing)
-        let spaceReservation = tabManager.spaces.count > 1 ? ChromeMetrics.tabHeight + Metrics.tabSpacing : 0
-        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation + spaceReservation
+        let profileReservation = tabManager.profiles.count > 1 ? ChromeMetrics.tabHeight + Metrics.tabSpacing : 0
+        let nonTabReservation = Metrics.tabSpacing + ChromeMetrics.tabHeight + pinnedReservation + profileReservation
         let distributableWidth = max(0, availableWidth - nonTabReservation - interTabSpacing)
         let proposedWidth = distributableWidth / CGFloat(tabCount)
 
@@ -131,7 +131,7 @@ struct TabStripView: View {
 /// Keeps the window still when a drag starts on a top tab. The strip is in the
 /// titlebar, where AppKit moves the window on any drag before SwiftUI sees it,
 /// so the window is unmovable while the pointer is over a tab. The strip's
-/// empty space still moves it.
+/// empty profile still moves it.
 private struct WindowDragExclusion: NSViewRepresentable {
     func makeNSView(context: Context) -> TrackingView {
         let view = TrackingView()

@@ -46,7 +46,7 @@ final class ExternalURLRouter {
     }
 
     /// The decision point for every page from outside a window: Little Cove
-    /// or a tab. Air Traffic Control's rules, choosing a space, slot in here.
+    /// or a tab. Air Traffic Control's rules, choosing a profile, slot in here.
     func open(_ urls: [URL], from source: Source) {
         for url in urls where Self.canOpen(url) {
             if source == .otherApp && settings.opensLinksInLittleCove {

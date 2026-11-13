@@ -1,10 +1,10 @@
 import Foundation
 import WebKit
 
-/// Extensions in a window: the ones its space's profile runs, their buttons,
+/// Extensions in a window: the ones its profile's profile runs, their buttons,
 /// and the tabs they open. `ExtensionWindow` reports the window's tabs.
 extension TabManager {
-    /// What runs the window's extensions: its space's profile's host, which
+    /// What runs the window's extensions: its profile's profile's host, which
     /// a private window shares with the profile it was opened over.
     var extensionHost: ExtensionHost {
         (activeTab?.services ?? services).context.extensions

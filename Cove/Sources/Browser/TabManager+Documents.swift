@@ -1,7 +1,7 @@
 import WebKit
 
 /// Arc's notes and easels, kept in the sidebar like tabs: made in Today, pinnable in
-/// Pinned and its folders, a space's own. One on screen takes the page
+/// Pinned and its folders, a profile's own. One on screen takes the page
 /// card's place; the active tab stays selected beneath it, so selecting any
 /// tab brings the page back. A private window has none: a note is written
 /// down, which a private window promises not to do.
@@ -11,7 +11,7 @@ extension TabManager {
         activeDocumentID.flatMap { documentStore?.documents[$0] }
     }
 
-    /// What an easel's live clippings browse with: the space's profile, so a
+    /// What an easel's live clippings browse with: the profile, so a
     /// signed-in page stays signed in.
     var clippingDataStore: WKWebsiteDataStore {
         (activeTab?.services ?? services).context.dataStore
@@ -62,7 +62,7 @@ extension TabManager {
         documentStore?.rename(id, to: title.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    /// Deletes a note for good, from every window and space.
+    /// Deletes a note for good, from every window and profile.
     func deleteDocument(_ id: UUID) {
         pinStore.change { $0.removeDocument(id) }
         documentStore?.delete(id)
@@ -74,14 +74,14 @@ extension TabManager {
     func pinDocument(_ id: UUID, at position: SidebarPosition = .end) {
         guard today.contains(where: { $0.id == id }) else { return }
         today.removeAll { $0.id == id }
-        pinStore.change(in: pinScope) { $0.addDocument(id, at: position) }
+        pinStore.change(in: activeProfileID) { $0.addDocument(id, at: position) }
     }
 
     /// Unpinning puts a note back in Today: at the top, or where it was dropped.
     func unpinDocument(_ id: UUID, onto target: UUID? = nil) {
-        guard pinStore.pins(in: pinScope).pinned.documents.contains(id) else { return }
+        guard pinStore.pins(in: activeProfileID).pinned.documents.contains(id) else { return }
         placeInToday(.document(id), onto: target)
-        pinStore.change(in: pinScope) { $0.removeDocument(id) }
+        pinStore.change(in: activeProfileID) { $0.removeDocument(id) }
     }
 
     func togglePinnedDocument(_ id: UUID) {
@@ -106,7 +106,7 @@ extension TabManager {
     }
 
     /// Follows deletions made in any window: a deleted note leaves Today in
-    /// every space, and the screen if it was there.
+    /// every profile, and the screen if it was there.
     func reconcileDocuments(with documents: [UUID: DocumentInfo]) {
         let isGone = { (item: TodayItem<TabSession>) in item.documentID.map { documents[$0] == nil } ?? false }
         if today.contains(where: isGone) {

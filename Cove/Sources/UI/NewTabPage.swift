@@ -112,7 +112,7 @@ struct NewTabPage: View {
     }
 }
 
-/// A brief wash of the space's color. The search field is ready immediately;
+/// A brief wash of the profile's color. The search field is ready immediately;
 /// this decorative layer never moves controls or receives input.
 private struct NewTabLight: View {
     @Environment(\.chromeTheme) private var theme

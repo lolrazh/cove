@@ -2,10 +2,9 @@ import SwiftUI
 import QuartzCore
 
 /// A stable list for each lane of the pager. Preparing a neighboring list does
-/// not select its space or load its web pages.
-struct SpaceSidebarPage: Identifiable {
+/// not select its profile or load its web pages.
+struct ProfileSidebarPage: Identifiable {
     let id: UUID
-    let favorites: [TabSession]
     let pinned: SidebarTree<TabSession>
     let today: [TodayItem<TabSession>]
     let splits: [TabSplit<UUID>]
@@ -13,7 +12,7 @@ struct SpaceSidebarPage: Identifiable {
 }
 
 /// Distance and release rules shared by the gesture and its tests.
-enum SpaceSwipe {
+enum ProfileSwipe {
     static func offset(_ translation: CGFloat, width: CGFloat, hasPrevious: Bool, hasNext: Bool) -> CGFloat {
         let limit: CGFloat = translation > 0 ? (hasPrevious ? width : 0) : (hasNext ? width : 0)
         let distance = abs(translation)
@@ -35,7 +34,7 @@ enum SpaceSwipe {
 
 /// One transaction describes the gesture, its settle, and its final handoff.
 /// Revisions invalidate completions from interrupted or cancelled gestures.
-struct SpaceTransitionState {
+struct ProfileTransitionState {
     enum Phase { case idle, tracking, settling }
     var phase: Phase = .idle
     var source: UUID?
@@ -68,7 +67,7 @@ struct SpaceTransitionState {
     func canComplete(_ token: UInt) -> Bool { phase == .settling && revision == token }
 
     mutating func reset() {
-        self = SpaceTransitionState(revision: revision &+ 1)
+        self = ProfileTransitionState(revision: revision &+ 1)
     }
 
     func weight(for id: UUID, selected: UUID) -> Double {
@@ -83,7 +82,7 @@ struct SpaceTransitionState {
 /// Functional dragging follows the fingers directly. Only release is animated:
 /// a critically damped spring carries the flick velocity, without overshoot,
 /// a slow start, or a minimum wait when the list is already nearly settled.
-struct SpaceMotion {
+struct ProfileMotion {
     var position: CGFloat = 0
     var velocity: CGFloat = 0
     var target: CGFloat = 0
@@ -109,7 +108,7 @@ struct SpaceMotion {
         settleTime = 0
     }
 
-    private static var frequency: CGFloat { 2 * .pi / ChromeMotion.spaceSettleResponse }
+    private static var frequency: CGFloat { 2 * .pi / ChromeMotion.profileSettleResponse }
 
     /// Exact integration gives the same path at 60 Hz and 120 Hz.
     mutating func advance(_ seconds: Double) -> Bool {
@@ -123,7 +122,7 @@ struct SpaceMotion {
         velocity = (velocity - omega * impulse * dt) * decay
         settleTime = time + Double(dt)
         let arrived = abs(position - target) < 0.0025 && abs(velocity) < 0.08
-        if arrived || time + Double(dt) >= ChromeMotion.spaceSettleMaxDuration {
+        if arrived || time + Double(dt) >= ChromeMotion.profileSettleMaxDuration {
             position = target
             velocity = 0
             settleTime = nil
@@ -134,11 +133,11 @@ struct SpaceMotion {
 }
 
 @MainActor
-final class SpaceTransition: NSObject, ObservableObject {
-    @Published private(set) var state = SpaceTransitionState()
+final class ProfileTransition: NSObject, ObservableObject {
+    @Published private(set) var state = ProfileTransitionState()
     private(set) var isCommitting = false
     private var gestureOrigin: CGFloat = 0
-    private var motion = SpaceMotion()
+    private var motion = ProfileMotion()
     private var link: CADisplayLink?
     private weak var clockView: NSView?
     private var lastTime: CFTimeInterval?
@@ -167,7 +166,7 @@ final class SpaceTransition: NSObject, ObservableObject {
         completion = nil
         var value = state
         value.begin(source: source, previous: previous, next: next, presentedPosition: motion.position)
-        if !state.isActive { motion = SpaceMotion() }
+        if !state.isActive { motion = ProfileMotion() }
         gestureOrigin = value.position
         motion.track(value.position)
         state = value
@@ -177,7 +176,7 @@ final class SpaceTransition: NSObject, ObservableObject {
 
     func follow(_ translation: CGFloat, width: CGFloat) {
         guard state.phase == .tracking, width > 0 else { return }
-        motion.track(SpaceSwipe.offset(gestureOrigin * width + translation, width: width,
+        motion.track(ProfileSwipe.offset(gestureOrigin * width + translation, width: width,
                                       hasPrevious: state.previous != nil, hasNext: state.next != nil) / width)
         state.position = motion.position
     }
@@ -185,7 +184,7 @@ final class SpaceTransition: NSObject, ObservableObject {
     func finish(_ translation: CGFloat, velocity: CGFloat, cancelled: Bool, width: CGFloat,
                 reduceMotion: Bool, commit: @escaping (UUID) -> Void) {
         guard state.phase == .tracking, let source = state.source else { return }
-        let direction = cancelled ? 0 : SpaceSwipe.destination(
+        let direction = cancelled ? 0 : ProfileSwipe.destination(
             translation: gestureOrigin * width + translation, velocity: velocity, width: width,
             hasPrevious: state.previous != nil, hasNext: state.next != nil)
         let destination = (direction < 0 ? state.previous : direction > 0 ? state.next : source) ?? source
@@ -237,7 +236,7 @@ final class SpaceTransition: NSObject, ObservableObject {
         var value = state
         value.reset()
         state = value
-        motion = SpaceMotion()
+        motion = ProfileMotion()
         gestureOrigin = 0
         lastTime = nil
     }
@@ -245,18 +244,18 @@ final class SpaceTransition: NSObject, ObservableObject {
 
 /// Sidebar, frame, heading, and footer use this same transition. Only the
 /// web page waits for the settle to finish; scrubbing never swaps websites.
-struct SpacePager<Page: View>: View {
+struct ProfilePager<Page: View>: View {
     @ObservedObject var tabManager: TabManager
-    @ObservedObject private var transition: SpaceTransition
+    @ObservedObject private var transition: ProfileTransition
     let isEnabled: Bool
-    @ViewBuilder let page: (SpaceSidebarPage) -> Page
+    @ViewBuilder let page: (ProfileSidebarPage) -> Page
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var lanes: [SpaceSidebarPage] = []
+    @State private var lanes: [ProfileSidebarPage] = []
     @State private var swipeSelection: UUID?
 
-    init(tabManager: TabManager, isEnabled: Bool, @ViewBuilder page: @escaping (SpaceSidebarPage) -> Page) {
+    init(tabManager: TabManager, isEnabled: Bool, @ViewBuilder page: @escaping (ProfileSidebarPage) -> Page) {
         self.tabManager = tabManager
-        self.transition = tabManager.spaceTransition
+        self.transition = tabManager.profileTransition
         self.isEnabled = isEnabled
         self.page = page
     }
@@ -271,15 +270,15 @@ struct SpacePager<Page: View>: View {
                     page(item)
                         .frame(width: width, height: geometry.size.height)
                         .offset(x: reduceMotion ? 0 : laneOffset(item.id, width: width))
-                        .opacity(reduceMotion && item.id != tabManager.activeSpaceID ? 0 : 1)
+                        .opacity(reduceMotion && item.id != tabManager.activeProfileID ? 0 : 1)
                         .allowsHitTesting(!transition.state.isActive || lanes.isEmpty)
-                        .accessibilityHidden(item.id != tabManager.activeSpaceID)
-                        .transition(lanes.isEmpty && swipeSelection != tabManager.activeSpaceID ? .opacity : .identity)
+                        .accessibilityHidden(item.id != tabManager.activeProfileID)
+                        .transition(lanes.isEmpty && swipeSelection != tabManager.activeProfileID ? .opacity : .identity)
                 }
             }
             .clipped()
             .background {
-                if isEnabled && tabManager.spaces.count > 1 {
+                if isEnabled && tabManager.profiles.count > 1 {
                     HorizontalSwipeReader(
                         transition: transition,
                         onBegan: begin,
@@ -288,14 +287,14 @@ struct SpacePager<Page: View>: View {
                             transition.finish(translation, velocity: velocity, cancelled: cancelled,
                                               width: width, reduceMotion: reduceMotion) { destination in
                                 swipeSelection = destination
-                                tabManager.switchToSpace(destination)
+                                tabManager.switchToProfile(destination)
                             }
                         }
                     )
                 }
             }
-            .animation(lanes.isEmpty && swipeSelection != tabManager.activeSpaceID ? ChromeMotion.spaceChange : nil,
-                       value: tabManager.activeSpaceID)
+            .animation(lanes.isEmpty && swipeSelection != tabManager.activeProfileID ? ChromeMotion.profileChange : nil,
+                       value: tabManager.activeProfileID)
         }
         .onChange(of: transition.state.isActive) { _, active in
             if !active { lanes = [] }
@@ -315,20 +314,20 @@ struct SpacePager<Page: View>: View {
 
     private func begin() {
         if lanes.isEmpty {
-            lanes = [tabManager.adjacentSpace(-1).map(tabManager.sidebarPage),
+            lanes = [tabManager.adjacentProfile(-1).map(tabManager.sidebarPage),
                      tabManager.activeSidebarPage,
-                     tabManager.adjacentSpace(1).map(tabManager.sidebarPage)].compactMap { $0 }
+                     tabManager.adjacentProfile(1).map(tabManager.sidebarPage)].compactMap { $0 }
         }
-        transition.begin(source: tabManager.activeSpaceID,
-                         previous: tabManager.adjacentSpace(-1)?.id,
-                         next: tabManager.adjacentSpace(1)?.id)
+        transition.begin(source: tabManager.activeProfileID,
+                         previous: tabManager.adjacentProfile(-1)?.id,
+                         next: tabManager.adjacentProfile(1)?.id)
     }
 }
 
 /// Locks an intentional horizontal gesture, leaving vertical scrolling alone.
-/// Momentum after release belongs to the settle, not another space change.
+/// Momentum after release belongs to the settle, not another profile change.
 private struct HorizontalSwipeReader: NSViewRepresentable {
-    let transition: SpaceTransition
+    let transition: ProfileTransition
     let onBegan: () -> Void
     let onChanged: (CGFloat) -> Void
     let onEnded: (CGFloat, CGFloat, Bool) -> Void
@@ -349,7 +348,7 @@ private struct HorizontalSwipeReader: NSViewRepresentable {
     }
 
     final class SwipeView: NSView {
-        weak var transition: SpaceTransition?
+        weak var transition: ProfileTransition?
         var onBegan: () -> Void = {}
         var onChanged: (CGFloat) -> Void = { _ in }
         var onEnded: (CGFloat, CGFloat, Bool) -> Void = { _, _, _ in }

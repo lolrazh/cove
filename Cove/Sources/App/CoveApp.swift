@@ -7,6 +7,15 @@ struct CoveApp: App {
     private let appServices: AppServices
 
     init() {
+        do {
+            try ProfileMigration.run(initialTheme: ChromeTheme(rawValue: UserDefaults.standard.string(forKey: BrowserSettingKeys.legacyThemeColor) ?? ""))
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Cove could not migrate your profiles"
+            alert.informativeText = "Your original files are unchanged. Cove will close to protect your data. \(error.localizedDescription)"
+            alert.runModal()
+            exit(EXIT_FAILURE)
+        }
         let appServices = AppServices()
         self.appServices = appServices
         appServices.prepareForLaunch()
@@ -21,7 +30,7 @@ struct CoveApp: App {
         .commands {
             BrowserViewCommands(appServices: appServices)
             TabCommands()
-            SpaceCommands()
+            ProfileCommands()
             PageToolsCommands()
         }
 
@@ -49,7 +58,7 @@ struct CoveApp: App {
             SettingsView(
                 settingsStore: appServices.settingsStore,
                 historyStore: appServices.historyStore,
-                spaceStore: appServices.spaceStore,
+                profileStore: appServices.profileStore,
                 extensionLibrary: appServices.extensionLibrary
             )
         }

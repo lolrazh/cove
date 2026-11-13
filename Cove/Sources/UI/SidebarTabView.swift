@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The sidebar: a header with the window controls and space name, then
-/// Favorites, Pinned, and Today, with the media
+/// The sidebar: a header with the window controls and profile name, then
+/// Pinned, and Today, with the media
 /// player and a footer. The Library takes the place of all above the media
 /// player while it's open.
 struct SidebarTabView: View {
@@ -11,7 +11,7 @@ struct SidebarTabView: View {
     let headerHeight: CGFloat
     /// Where the header's controls start: just past the traffic lights.
     let headerLeadingInset: CGFloat
-    let acceptsSpaceSwipes: Bool
+    let acceptsProfileSwipes: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,7 +30,7 @@ struct SidebarTabView: View {
     /// row above it. macOS extends a scroll view up under the titlebar, and a row
     /// above it would sit behind that extension and never get clicks.
     private var sections: some View {
-        SpacePager(tabManager: tabManager, isEnabled: acceptsSpaceSwipes) { page in
+        ProfilePager(tabManager: tabManager, isEnabled: acceptsProfileSwipes) { page in
             SidebarSections(tabManager: tabManager, page: page)
                 .contentMargins(.top, headerHeight, for: .scrollContent)
                 .scrollEdgeEffectHidden(true, for: .top)
@@ -46,16 +46,16 @@ struct SidebarTabView: View {
         .overlay(alignment: .top) { navigationRow }
     }
 
-    /// The space name shares the header with the native window controls.
+    /// The profile name shares the header with the native window controls.
     /// Navigation and extension actions live above the page.
     private var navigationRow: some View {
         HStack(spacing: 4) {
             if tabManager.isPrivate {
                 PrivateBadge()
-            } else if let space = tabManager.activeSpace {
-                SidebarSpaceTitle(space: space, tabManager: tabManager)
-                    .anchorPreference(key: SpaceEditorAnchor.self, value: .bounds) {
-                        acceptsSpaceSwipes ? $0 : nil
+            } else if let profile = tabManager.activeProfile {
+                SidebarProfileTitle(profile: profile, tabManager: tabManager)
+                    .anchorPreference(key: ProfileEditorAnchor.self, value: .bounds) {
+                        acceptsProfileSwipes ? $0 : nil
                     }
             }
             Spacer(minLength: 0)
@@ -67,23 +67,23 @@ struct SidebarTabView: View {
 
     // MARK: - Footer
 
-    /// The Library leading, the spaces centered, New Space trailing. A
-    /// private window has no spaces.
+    /// The Library leading, the profiles centered, New Profile trailing. A
+    /// private window has no profiles.
     private var footer: some View {
         HStack {
             LibraryButton(library: tabManager.library)
             Spacer()
             if !tabManager.isPrivate {
-                Button(action: tabManager.newSpace) {
-                    Image(systemName: ChromeSymbols.Spaces.newSpace)
+                Button(action: tabManager.newProfile) {
+                    Image(systemName: ChromeSymbols.Profiles.newProfile)
                 }
                 .buttonStyle(ChromeButtonStyle(restingOpacity: 0.6))
-                .accessibilityLabel("New Space")
-                .help("New Space")
+                .accessibilityLabel("New Profile")
+                .help("New Profile")
             }
         }
         .overlay {
-            SidebarSpaceIcons(tabManager: tabManager)
+            SidebarProfileIcons(tabManager: tabManager)
                 .padding(.horizontal, ChromeMetrics.iconButtonSize + 4)
         }
         .padding(.horizontal, ChromeMetrics.sidebarInset)
@@ -93,14 +93,14 @@ struct SidebarTabView: View {
 
 private struct SidebarSections: View {
     @ObservedObject var tabManager: TabManager
-    let page: SpaceSidebarPage
+    let page: ProfileSidebarPage
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Everything shown, in order, so moves between and within sections
     /// animate alike; folding a folder moves its tabs out of the order.
     private var sidebarOrder: [UUID] {
-        (page.favorites + page.pinned.visibleTabs).map(\.id)
+        page.pinned.visibleTabs.map(\.id)
             + page.today.map(\.id)
             + page.pinned.documents
             + page.pinned.folders.map(\.id)
@@ -117,7 +117,6 @@ private struct SidebarSections: View {
         ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: ChromeMetrics.sidebarSectionSpacing) {
-                    favorites
                     pinned
 
                     today
@@ -142,17 +141,6 @@ private struct SidebarSections: View {
 
     /// An empty section shows only while a tab is being dragged, as somewhere
     /// to drop it; never in a private window, which keeps no pins.
-    @ViewBuilder
-    private var favorites: some View {
-        if !page.favorites.isEmpty {
-            SidebarFavoritesGrid(tabs: page.favorites, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
-                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $tabManager.draggedTabID)
-        } else if showsDropZones {
-            SidebarDropZone(title: "Favorites")
-                .acceptsTabDrops(toEndOf: .favorites, in: tabManager, dragging: $tabManager.draggedTabID)
-        }
-    }
-
     @ViewBuilder
     private var pinned: some View {
         if !page.pinned.isEmpty {
@@ -271,61 +259,6 @@ private struct SidebarSplitRow: View {
         }
         .background(ChromePalette.resting, in: .chrome(minimum: ChromeRadius.tab))
         .transition(.tabSlot(.vertical))
-    }
-}
-
-// MARK: - Favorites
-
-/// Arc's Favorites: a grid of tiles showing only the favicon, as many to a
-/// row as the sidebar's width allows.
-private struct SidebarFavoritesGrid: View {
-    @Environment(\.sidebarSelection) private var selection
-    let tabs: [TabSession]
-    @ObservedObject var tabManager: TabManager
-    @Binding var draggedTabID: UUID?
-
-    private let columns = [GridItem(
-        .adaptive(minimum: ChromeMetrics.favoriteTileRange.lowerBound, maximum: ChromeMetrics.favoriteTileRange.upperBound),
-        spacing: 6
-    )]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 6) {
-            ForEach(tabs) { tab in
-                SidebarFavoriteTile(tab: tab, isActive: selection == tab.id) {
-                    tabManager.selectTab(tab.id)
-                }
-                .contextMenu {
-                    TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: {}))
-                }
-                .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
-                .transition(.scale(scale: 0.8).combined(with: .opacity))
-            }
-        }
-    }
-}
-
-private struct SidebarFavoriteTile: View {
-    @ObservedObject var tab: TabSession
-    let isActive: Bool
-    let action: () -> Void
-
-    var body: some View {
-        FaviconView(image: tab.favicon, size: 16)
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .background {
-                if isActive {
-                    ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
-                        .fill(ChromePalette.raised)
-                        .chromeShadow(.raised)
-                }
-            }
-            .chromeHoverSurface(restingFill: !isActive, minimumRadius: ChromeRadius.tab)
-            .opacity(tab.isAsleep ? 0.7 : 1)
-            .animation(ChromeMotion.fade, value: tab.isAsleep)
-            .help(tab.title)
-            .onTapGesture(perform: action)
     }
 }
 

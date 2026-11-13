@@ -20,261 +20,146 @@ struct PageChromeContrastTests {
     }
 }
 
-struct SpacesTests {
-    @Test func `a first launch has one space in the default profile, in the old frame color`() {
-        let theme = ChromeTheme(rawValue: "#5EA4E8")
-        let spaces = Spaces(theme: theme)
-        #expect(spaces.spaces.map(\.id) == [Space.defaultID])
-        #expect(spaces.spaces[0].theme == theme)
-        #expect(spaces.spaces[0].profileID == Profile.defaultID)
-        #expect(spaces.profiles.map(\.id) == [Profile.defaultID])
+struct ProfilesTests {
+    @Test func creationRenameAndDeletionKeepProfilesIndependent() {
+        var profiles = Profiles(theme: ChromeTheme.presets[1])
+        let second = profiles.addProfile()
+        #expect(second.name == "Profile 2")
+        #expect(second.id != Profile.defaultID)
+        #expect(second.theme != profiles.profiles[0].theme)
+        profiles.update(second.id) { $0.name = " Work " }
+        profiles.update(second.id) { $0.name = " " }
+        #expect(profiles.profile(second.id)?.name == "Work")
+        profiles.removeProfile(Profile.defaultID)
+        #expect(profiles.profiles.count == 2)
+        profiles.removeProfile(second.id)
+        #expect(profiles.profiles.map(\.id) == [Profile.defaultID])
     }
-
-    @Test func `new spaces are numbered and wear a color no other space does`() {
-        var spaces = Spaces(theme: ChromeTheme.presets[1])
-        let second = spaces.addSpace()
-        let third = spaces.addSpace()
-        #expect(second.name == "Space 2")
-        #expect(third.name == "Space 3")
-        #expect(Set(spaces.spaces.map(\.theme)).count == 3)
-        #expect(!spaces.spaces.contains { $0.theme == .system })
-    }
-
-    @Test func `a new space goes into the given profile, or the default for an unknown one`() {
-        var spaces = Spaces()
-        let work = spaces.addProfile()
-        #expect(spaces.addSpace(in: work.id).profileID == work.id)
-        #expect(spaces.addSpace(in: UUID()).profileID == Profile.defaultID)
-    }
-
-    @Test func `edits keep a name and a known profile`() {
-        var spaces = Spaces()
-        spaces.update(Space.defaultID) {
-            $0.name = "  Work "
-            $0.icon = .emoji("💼")
-        }
-        #expect(spaces.space(Space.defaultID)?.name == "Work")
-        #expect(spaces.space(Space.defaultID)?.icon == .emoji("💼"))
-
-        spaces.update(Space.defaultID) {
-            $0.name = " "
-            $0.profileID = UUID()
-        }
-        #expect(spaces.space(Space.defaultID)?.name == "Work")
-        #expect(spaces.space(Space.defaultID)?.profileID == Profile.defaultID)
-    }
-
-    @Test func `the last space can't be removed`() {
-        var spaces = Spaces()
-        spaces.removeSpace(Space.defaultID)
-        #expect(spaces.spaces.count == 1)
-
-        let second = spaces.addSpace()
-        spaces.removeSpace(Space.defaultID)
-        #expect(spaces.spaces.map(\.id) == [second.id])
-    }
-
-    @Test func `spaces move within the list, and neighbors don't wrap`() {
-        var spaces = Spaces()
-        let second = spaces.addSpace()
-        let third = spaces.addSpace()
-
-        spaces.moveSpace(third.id, by: -5)
-        #expect(spaces.spaces.map(\.id) == [third.id, Space.defaultID, second.id])
-
-        #expect(spaces.space(1, from: third.id)?.id == Space.defaultID)
-        #expect(spaces.space(-1, from: third.id) == nil)
-        #expect(spaces.space(1, from: second.id) == nil)
-    }
-
-    @Test func `a removed profile's spaces move to the default profile, which stays`() {
-        var spaces = Spaces()
-        let work = spaces.addProfile()
-        let space = spaces.addSpace(in: work.id)
-
-        spaces.removeProfile(Profile.defaultID)
-        #expect(spaces.profiles.count == 2)
-
-        spaces.removeProfile(work.id)
-        #expect(spaces.profiles.map(\.id) == [Profile.defaultID])
-        #expect(spaces.space(space.id)?.profileID == Profile.defaultID)
-    }
-
-    @Test func `profiles rename, but never to nothing`() {
-        var spaces = Spaces()
-        spaces.renameProfile(Profile.defaultID, to: "Personal")
-        spaces.renameProfile(Profile.defaultID, to: "")
-        #expect(spaces.profile(Profile.defaultID)?.name == "Personal")
+    @Test func profileOrderDoesNotChangeIdentityOrWrap() {
+        var profiles = Profiles()
+        let second = profiles.addProfile()
+        profiles.moveProfile(second.id, by: -1)
+        #expect(profiles.profiles.map(\.id) == [second.id, Profile.defaultID])
+        #expect(profiles.profile(-1, from: second.id) == nil)
+        #expect(profiles.profile(1, from: second.id)?.id == Profile.defaultID)
     }
 }
 
 struct PinLayoutTests {
-    private let pin = Pin(id: UUID(), url: "https://example.com/", title: "Example")
-
-    @Test func `pinned tabs are per space, favorites per profile`() {
-        var layout = PinLayout()
-        let work = UUID()
-        let personal = PinScope.default
-        let workSpace = PinScope(space: work, profile: Profile.defaultID)
-        let otherProfile = PinScope(space: work, profile: UUID())
-
-        layout[personal].add(pin, to: .favorites)
-        let pinned = Pin(id: UUID(), url: "https://apple.com/", title: "Apple")
-        layout[personal].add(pinned, to: .pinned)
-
-        #expect(layout[workSpace].favorites == [pin])
-        #expect(layout[workSpace].pinned.isEmpty)
-        #expect(layout[otherProfile].favorites.isEmpty)
-        #expect(layout.pin(pinned.id) == pinned)
-    }
-
-    @Test func `emptied sections leave nothing behind`() {
-        var layout = PinLayout()
-        layout[.default].add(pin, to: .pinned)
-        layout[.default].remove(pin.id)
-        #expect(layout == PinLayout())
-    }
-
-    @Test func `a pin's title changes wherever it is`() {
-        var layout = PinLayout()
-        let scope = PinScope(space: UUID(), profile: UUID())
-        layout[scope].add(pin, to: .pinned)
-        layout.update(pin.id) { $0.title = "Renamed" }
-        #expect(layout[scope].pinned.tabs.first?.title == "Renamed")
-    }
-
-    @Test func `pins follow deleted spaces and profiles`() {
-        var spaces = Spaces()
-        let work = spaces.addProfile()
-        let space = spaces.addSpace(in: work.id)
-        let scope = PinScope(space: space.id, profile: work.id)
-        var layout = PinLayout()
-        layout[scope].add(pin, to: .favorites)
-        layout[scope].add(Pin(id: UUID(), url: "https://apple.com/", title: "Apple"), to: .pinned)
-        layout[.default].add(Pin(id: UUID(), url: "https://swift.org/", title: "Swift"), to: .favorites)
-
-        spaces.removeSpace(space.id)
-        spaces.removeProfile(work.id)
-        layout.prune(to: spaces)
-
-        #expect(layout[scope].pinned.isEmpty)
-        #expect(layout[.default].favorites.map(\.title) == ["Swift", "Example"])
+    @Test func pinsNeverAppearInAnotherProfileIncludingOnDeletion() {
+        var profiles = Profiles()
+        let work = profiles.addProfile()
+        var pins = PinLayout()
+        let pin = Pin(id: UUID(), url: "https://example.test", title: "Work")
+        pins[work.id].add(pin)
+        #expect(pins[Profile.defaultID].all.isEmpty)
+        profiles.removeProfile(work.id)
+        pins.prune(to: profiles)
+        #expect(pins.all.isEmpty)
     }
 }
 
 struct SavedWindowTests {
     private let tab = SavedTab(url: "https://example.com/", title: "Example", customTitle: nil, interactionState: nil, lastUsedAt: nil)
 
-    @Test func `a window keeps every space's Today and the space shown`() throws {
+    @Test func `a window keeps every profile's Today and the profile shown`() throws {
         let other = UUID()
         let pin = UUID()
-        var window = SavedWindow(spaces: [
-            SavedSpace(spaceID: Space.defaultID, tabs: [tab, tab], activeTabIndex: 1, activePinID: nil),
-            SavedSpace(spaceID: other, tabs: [], activeTabIndex: nil, activePinID: pin),
-        ], activeSpaceID: other)
+        var window = SavedWindow(profiles: [
+            SavedProfile(profileID: Profile.defaultID, tabs: [tab, tab], activeTabIndex: 1, activePinID: nil),
+            SavedProfile(profileID: other, tabs: [], activeTabIndex: nil, activePinID: pin),
+        ], activeProfileID: other)
         window.placement = WindowPlacement(frame: CGRect(x: 1, y: 2, width: 900, height: 700), isFullScreen: false)
 
         let decoded = try PropertyListDecoder().decode(SavedWindow.self, from: PropertyListEncoder().encode(window))
-        #expect(decoded.activeSpaceID == other)
-        #expect(decoded.spaces.map(\.spaceID) == [Space.defaultID, other])
-        #expect(decoded.spaces[0].activeTabIndex == 1)
-        #expect(decoded.spaces[1].activePinID == pin)
+        #expect(decoded.activeProfileID == other)
+        #expect(decoded.profiles.map(\.profileID) == [Profile.defaultID, other])
+        #expect(decoded.profiles[0].activeTabIndex == 1)
+        #expect(decoded.profiles[1].activePinID == pin)
         #expect(decoded.placement?.frame.width == 900)
     }
 
-    @Test func `a window saved before Spaces is the first space's`() throws {
-        struct UnscopedWindow: Encodable {
-            let tabs: [SavedTab]
-            let activeTabIndex: Int
-        }
-        let data = try PropertyListEncoder().encode(UnscopedWindow(tabs: [tab], activeTabIndex: 0))
-        let decoded = try PropertyListDecoder().decode(SavedWindow.self, from: data)
-        #expect(decoded.activeSpaceID == Space.defaultID)
-        #expect(decoded.spaces.map(\.spaceID) == [Space.defaultID])
-        #expect(decoded.spaces[0].tabs.map(\.url) == [tab.url])
-        #expect(decoded.spaces[0].activeTabIndex == 0)
-    }
+
 }
 
 @MainActor
-struct SpaceStoreTests {
+struct ProfileStoreTests {
     private let fileURL = FileManager.default.temporaryDirectory
-        .appendingPathComponent("CoveTests-\(UUID().uuidString)/spaces.plist")
+        .appendingPathComponent("CoveTests-\(UUID().uuidString)/profiles.plist")
 
-    private func makeStore() -> SpaceStore {
-        SpaceStore(fileURL: fileURL) { _ in
+    private func makeStore() -> ProfileStore {
+        ProfileStore(fileURL: fileURL) { _ in
             Issue.record("No context is needed")
             return .standard(faviconStore: FaviconStore(readingThrough: FaviconStore()), extensions: ExtensionLibrary(directory: nil))
         }
     }
 
-    @Test func `spaces and profiles come back from the file`() {
+    @Test func `profiles and profiles come back from the file`() {
         let before = makeStore()
-        var added: Space?
+        var added: Profile?
         before.change {
-            let profile = $0.addProfile()
-            added = $0.addSpace(in: profile.id)
+            added = $0.addProfile()
         }
 
         let after = makeStore()
-        #expect(after.spaces == before.spaces)
-        #expect(after.spaces.space(added!.id)?.name == "Space 2")
+        #expect(after.profiles == before.profiles)
+        #expect(after.profiles.profile(added!.id)?.name == "Profile 2")
     }
 
     @Test func `an unchanged edit isn't published`() {
         let store = makeStore()
         var publishes = 0
-        let subscription = store.$spaces.dropFirst().sink { _ in publishes += 1 }
-        store.change { $0.removeSpace(Space.defaultID) }
+        let subscription = store.$profiles.dropFirst().sink { _ in publishes += 1 }
+        store.change { $0.removeProfile(Profile.defaultID) }
         #expect(publishes == 0)
         subscription.cancel()
     }
 }
 
 @MainActor
-struct SpaceSwipeTests {
+struct ProfileSwipeTests {
     @Test func `drag follows fingers one to one while a neighbor is available`() {
         for distance in stride(from: CGFloat(-220), through: 220, by: 20) {
-            #expect(SpaceSwipe.offset(distance, width: 240, hasPrevious: true, hasNext: true) == distance)
+            #expect(ProfileSwipe.offset(distance, width: 240, hasPrevious: true, hasNext: true) == distance)
         }
     }
 
-    @Test func `a short drag returns but a deliberate drag or flick changes space`() {
-        #expect(SpaceSwipe.destination(translation: -40, velocity: 0, width: 240, hasPrevious: true, hasNext: true) == 0)
-        #expect(SpaceSwipe.destination(translation: -90, velocity: 0, width: 240, hasPrevious: true, hasNext: true) == 1)
-        #expect(SpaceSwipe.destination(translation: -40, velocity: -600, width: 240, hasPrevious: true, hasNext: true) == 1)
-        #expect(SpaceSwipe.destination(translation: 40, velocity: 600, width: 240, hasPrevious: true, hasNext: true) == -1)
+    @Test func `a short drag returns but a deliberate drag or flick changes profile`() {
+        #expect(ProfileSwipe.destination(translation: -40, velocity: 0, width: 240, hasPrevious: true, hasNext: true) == 0)
+        #expect(ProfileSwipe.destination(translation: -90, velocity: 0, width: 240, hasPrevious: true, hasNext: true) == 1)
+        #expect(ProfileSwipe.destination(translation: -40, velocity: -600, width: 240, hasPrevious: true, hasNext: true) == 1)
+        #expect(ProfileSwipe.destination(translation: 40, velocity: 600, width: 240, hasPrevious: true, hasNext: true) == -1)
     }
 
     @Test func `reversing before release can cancel the move`() {
-        #expect(SpaceSwipe.destination(translation: -100, velocity: 500, width: 240, hasPrevious: true, hasNext: true) == 0)
-        #expect(SpaceSwipe.destination(translation: -8, velocity: -2000, width: 240, hasPrevious: true, hasNext: true) == 0)
+        #expect(ProfileSwipe.destination(translation: -100, velocity: 500, width: 240, hasPrevious: true, hasNext: true) == 0)
+        #expect(ProfileSwipe.destination(translation: -8, velocity: -2000, width: 240, hasPrevious: true, hasNext: true) == 0)
     }
 
-    @Test func `the first and last spaces resist without wrapping`() {
-        #expect(SpaceSwipe.destination(translation: 200, velocity: 1000, width: 240, hasPrevious: false, hasNext: true) == 0)
-        #expect(SpaceSwipe.destination(translation: -200, velocity: -1000, width: 240, hasPrevious: true, hasNext: false) == 0)
-        let small = SpaceSwipe.offset(60, width: 240, hasPrevious: false, hasNext: true)
-        let large = SpaceSwipe.offset(600, width: 240, hasPrevious: false, hasNext: true)
+    @Test func `the first and last profiles resist without wrapping`() {
+        #expect(ProfileSwipe.destination(translation: 200, velocity: 1000, width: 240, hasPrevious: false, hasNext: true) == 0)
+        #expect(ProfileSwipe.destination(translation: -200, velocity: -1000, width: 240, hasPrevious: true, hasNext: false) == 0)
+        let small = ProfileSwipe.offset(60, width: 240, hasPrevious: false, hasNext: true)
+        let large = ProfileSwipe.offset(600, width: 240, hasPrevious: false, hasNext: true)
         #expect(small > 0 && small < 60)
         #expect(large > small && large < 48)
-        #expect(SpaceSwipe.offset(-600, width: 240, hasPrevious: true, hasNext: false) == -large)
+        #expect(ProfileSwipe.offset(-600, width: 240, hasPrevious: true, hasNext: false) == -large)
     }
 
     @Test func `the release distance scales with the sidebar width`() {
-        #expect(SpaceSwipe.destination(translation: -90, velocity: 0, width: 200, hasPrevious: true, hasNext: true) == 1)
-        #expect(SpaceSwipe.destination(translation: -90, velocity: 0, width: 400, hasPrevious: true, hasNext: true) == 0)
+        #expect(ProfileSwipe.destination(translation: -90, velocity: 0, width: 200, hasPrevious: true, hasNext: true) == 1)
+        #expect(ProfileSwipe.destination(translation: -90, velocity: 0, width: 400, hasPrevious: true, hasNext: true) == 0)
     }
 }
 
 @MainActor
-struct SpaceTransitionStateTests {
+struct ProfileTransitionStateTests {
     private let first = UUID()
     private let middle = UUID()
     private let last = UUID()
 
     @Test func `all visual selections share continuous weights in both directions`() {
-        var state = SpaceTransitionState()
+        var state = ProfileTransitionState()
         state.begin(source: middle, previous: first, next: last, presentedPosition: 0)
         state.position = -0.4
         #expect(abs(state.weight(for: middle, selected: middle) - 0.6) < 0.0001)
@@ -288,7 +173,7 @@ struct SpaceTransitionStateTests {
     }
 
     @Test func `interrupting a settle resumes at the visible position and invalidates its completion`() {
-        var state = SpaceTransitionState()
+        var state = ProfileTransitionState()
         state.begin(source: middle, previous: first, next: last, presentedPosition: 0)
         let stale = state.settle(to: 1)
         #expect(state.canComplete(stale))
@@ -303,7 +188,7 @@ struct SpaceTransitionStateTests {
     }
 
     @Test func `resetting after a click cancels every pending handoff`() {
-        var state = SpaceTransitionState()
+        var state = ProfileTransitionState()
         state.begin(source: middle, previous: first, next: last, presentedPosition: 0)
         let stale = state.settle(to: 1)
         state.reset()
@@ -314,7 +199,7 @@ struct SpaceTransitionStateTests {
     }
 
     @Test func `settle and commit keep the same final visual selection`() {
-        var state = SpaceTransitionState()
+        var state = ProfileTransitionState()
         state.begin(source: middle, previous: first, next: last, presentedPosition: 0)
         _ = state.settle(to: 1)
         state.position = -1 // The display clock reaches the destination before commit.
@@ -325,7 +210,7 @@ struct SpaceTransitionStateTests {
     }
 
     @Test func `edge resistance cannot tint toward a missing neighbor`() {
-        var state = SpaceTransitionState()
+        var state = ProfileTransitionState()
         state.begin(source: first, previous: nil, next: middle, presentedPosition: 0)
         state.position = 0.15
         #expect(state.weight(for: first, selected: first) == 1)
@@ -379,9 +264,9 @@ struct WebPageContainerTests {
 }
 
 @MainActor
-struct SpaceMotionTests {
+struct ProfileMotionTests {
     @Test func `dragging follows the fingers without waiting for the motion clock`() {
-        var motion = SpaceMotion()
+        var motion = ProfileMotion()
         for position: CGFloat in [-0.1, -0.4, -0.2, 0.1] {
             motion.track(position)
             #expect(motion.position == position)
@@ -392,7 +277,7 @@ struct SpaceMotionTests {
     }
 
     @Test func `release continues immediately from the visible position and measured velocity`() {
-        var motion = SpaceMotion(position: -0.3)
+        var motion = ProfileMotion(position: -0.3)
         motion.settle(to: -1, initialVelocity: -3)
         #expect(motion.position == -0.3)
         #expect(motion.velocity == -3)
@@ -402,7 +287,7 @@ struct SpaceMotionTests {
     }
 
     @Test func `a fast flick cannot overshoot and pull back`() {
-        var motion = SpaceMotion(position: -0.8)
+        var motion = ProfileMotion(position: -0.8)
         motion.settle(to: -1, initialVelocity: -100)
         var last = motion.position
         var complete = false
@@ -417,7 +302,7 @@ struct SpaceMotionTests {
     }
 
     @Test func `release is stable across refresh rates`() {
-        var sixty = SpaceMotion(position: -0.2), oneTwenty = SpaceMotion(position: -0.2)
+        var sixty = ProfileMotion(position: -0.2), oneTwenty = ProfileMotion(position: -0.2)
         sixty.settle(to: -1, initialVelocity: -2)
         oneTwenty.settle(to: -1, initialVelocity: -2)
         for _ in 0..<6 { _ = sixty.advance(1.0 / 60) }
@@ -426,7 +311,7 @@ struct SpaceMotionTests {
     }
 
     @Test func `interrupting a settle gives direct control back without a jump`() {
-        var motion = SpaceMotion(position: -0.3)
+        var motion = ProfileMotion(position: -0.3)
         motion.settle(to: -1, initialVelocity: -2)
         _ = motion.advance(0.08)
         let visible = motion.position
@@ -439,7 +324,7 @@ struct SpaceMotionTests {
 
     @Test func `a nearly complete swipe does not wait for a full length animation`() {
         func duration(from position: CGFloat) -> Double {
-            var motion = SpaceMotion(position: position)
+            var motion = ProfileMotion(position: position)
             motion.settle(to: -1)
             var elapsed = 0.0
             while elapsed < 0.4 {
@@ -649,11 +534,11 @@ struct ChromeThemePersistenceTests {
         #expect(theme.glow == 1)
     }
 
-    @Test func `gradient and glow settings survive a saved space round trip`() throws {
-        var spaces = Spaces(theme: ChromeTheme.presets[5])
-        spaces.update(Space.defaultID) { $0.theme.glow = 0.35 }
-        let decoded = try JSONDecoder().decode(Spaces.self, from: JSONEncoder().encode(spaces))
-        #expect(decoded == spaces)
+    @Test func `gradient and glow settings survive a saved profile round trip`() throws {
+        var profiles = Profiles(theme: ChromeTheme.presets[5])
+        profiles.update(Profile.defaultID) { $0.theme.glow = 0.35 }
+        let decoded = try JSONDecoder().decode(Profiles.self, from: JSONEncoder().encode(profiles))
+        #expect(decoded == profiles)
     }
 
     @Test func `stored glow values stay within the supported range`() throws {
