@@ -14,6 +14,7 @@ final class DownloadManager: NSObject, ObservableObject {
     private var downloadToItem: [WKDownload: DownloadItem] = [:]
     private var retryViews: [UUID: WKWebView] = [:]
     private var reservations: Set<URL> = []
+    private var partialFiles: [UUID: URL] = [:]
 
     var hasActiveDownloads: Bool { items.contains { $0.state == .downloading } }
     var completedCount: Int { items.count { $0.state == .completed } }
@@ -44,9 +45,11 @@ final class DownloadManager: NSObject, ObservableObject {
         if let entry = downloadToItem.first(where: { $0.value.id == item.id }) {
             downloadToItem.removeValue(forKey: entry.key)
             let destination = item.fileURL
+            let partial = partialFiles.removeValue(forKey: item.id)
             entry.key.cancel { [weak self] _ in
                 Task { @MainActor in
                     if let destination { self?.reservations.remove(destination) }
+                    if let partial { try? FileManager.default.removeItem(at: partial.deletingLastPathComponent()) }
                 }
             }
         }
@@ -176,13 +179,29 @@ extension DownloadManager: WKDownloadDelegate {
         let item = existing ?? DownloadItem(filename: destination.lastPathComponent,
             sourceURL: download.originalRequest?.url, destinationURL: destination,
             canRestart: (download.originalRequest?.httpMethod ?? "GET") == "GET")
+        let partial = FileManager.default.temporaryDirectory
+            .appendingPathComponent("CoveDownloads", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            .appendingPathComponent(destination.lastPathComponent)
+        do {
+            try FileManager.default.createDirectory(at: partial.deletingLastPathComponent(), withIntermediateDirectories: true)
+        } catch {
+            reservations.remove(destination)
+            item.markFailed(error.localizedDescription)
+            if existing == nil { items.insert(item, at: 0); observe(item) }
+            downloadToItem.removeValue(forKey: download)
+            retryViews.removeValue(forKey: item.id)
+            save()
+            return nil
+        }
+        partialFiles[item.id] = partial
         item.setDestination(destination)
         if existing == nil { items.insert(item, at: 0); observe(item) }
         downloadToItem[download] = item
         item.observeProgress(of: download)
         save()
         presentationRequest += 1
-        return destination
+        return partial
     }
 
     nonisolated func downloadDidFinish(_ download: WKDownload) {
@@ -190,8 +209,21 @@ extension DownloadManager: WKDownloadDelegate {
             guard let item = self.downloadToItem.removeValue(forKey: download) else { return }
             if let url = item.fileURL { self.reservations.remove(url) }
             self.retryViews.removeValue(forKey: item.id)
-            item.markCompleted()
-            self.hasUnseenDownloads = true
+            guard let partial = self.partialFiles.removeValue(forKey: item.id), let destination = item.fileURL else {
+                item.markFailed("The downloaded file is unavailable")
+                self.save()
+                return
+            }
+            defer { try? FileManager.default.removeItem(at: partial.deletingLastPathComponent()) }
+            do {
+                // Recheck in case another app created this name during the download.
+                let final = Self.uniqueDestination(for: destination.lastPathComponent,
+                    in: destination.deletingLastPathComponent(), reserved: self.reservations)
+                try FileManager.default.moveItem(at: partial, to: final)
+                item.setDestination(final)
+                item.markCompleted()
+                self.hasUnseenDownloads = true
+            } catch { item.markFailed(error.localizedDescription) }
             self.save()
         }
     }
@@ -202,6 +234,9 @@ extension DownloadManager: WKDownloadDelegate {
             guard let item = self.downloadToItem.removeValue(forKey: download) else { return }
             if let url = item.fileURL { self.reservations.remove(url) }
             self.retryViews.removeValue(forKey: item.id)
+            if let partial = self.partialFiles.removeValue(forKey: item.id) {
+                try? FileManager.default.removeItem(at: partial.deletingLastPathComponent())
+            }
             item.markFailed(message)
             self.save()
         }
