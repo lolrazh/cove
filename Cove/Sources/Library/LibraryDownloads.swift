@@ -91,26 +91,31 @@ private struct DownloadRow: View {
     }
 
     private var fileLabel: some View {
-                HStack(spacing: 8) {
-                    Image(nsImage: item.fileIcon)
-                        .resizable().interpolation(.high)
-                        .frame(width: 22, height: 22)
-                        .opacity(item.state == .cancelled ? 0.5 : 1)
-                        .frame(width: 24, height: 28)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.filename)
-                            .font(.callout.weight(.medium))
-                            .lineLimit(1).truncationMode(.middle)
-                        Text(status)
-                            .font(.caption).monospacedDigit()
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        progressTrack.frame(height: 2)
+        HStack(spacing: 8) {
+            Image(nsImage: item.fileIcon)
+                .resizable().interpolation(.high)
+                .frame(width: 22, height: 22)
+                .opacity(item.state == .cancelled ? 0.5 : 1)
+                .frame(width: 24, height: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.filename)
+                    .font(.callout.weight(.medium))
+                    .lineLimit(1).truncationMode(.middle)
+                Group {
+                    if item.state == .downloading {
+                        DownloadProgressText(completed: item.bytesDownloaded, total: item.totalBytes)
+                    } else {
+                        Text(status).monospacedDigit().lineLimit(1)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                progressTrack.frame(height: 2)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxHeight: .infinity)
+        .contentShape(Rectangle())
     }
 
     private var progressTrack: some View {

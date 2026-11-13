@@ -10,6 +10,19 @@ struct DownloadTests {
                      destinationURL: directory.appendingPathComponent(name))
     }
 
+    @Test func progressKeepsItsUnitAndColumnAcrossDigitBoundaries() {
+        let size = DownloadProgressSize(total: 1_000_000)
+        #expect(size.unit == "MB")
+        #expect(size.number(99_000) == "0.10")
+        #expect(size.number(100_000) == "0.10")
+        #expect(size.columnTemplate == "0.00")
+        #expect(size.suffix == "of 1.00 MB")
+        let unknown = DownloadProgressSize(total: -1)
+        #expect(unknown.number(999_000) == "999.00")
+        #expect(unknown.number(1_000_000) == "1000.00")
+        #expect(unknown.unit == "kB")
+    }
+
     @Test func namesAvoidFilesAndPendingDownloads() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
