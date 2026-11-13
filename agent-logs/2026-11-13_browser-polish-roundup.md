@@ -306,3 +306,21 @@ turn each former space into a separate profile, keeping its theme and tabs.
 See [the migration log](2026-11-13_profile-simplification.md) for the backup,
 commits, record isolation, tests, virtual-screen check, and the future request
 for an optional shared sign-in setting.
+
+## Trackpad pinch zoom
+
+- Report: pinching did not zoom a web page in or out.
+- Cause: the shared `WebKitEnvironment` setup did not enable
+  `WKWebView.allowsMagnification`. WebKit leaves this off by default.
+- Fix: enable native magnification when each browser web view is created.
+  WebKit handles gesture focus and motion. This applies to tabs created through
+  the shared factory, including restored tabs, private tabs, and split panes.
+  Existing per-site keyboard/menu zoom behavior is unchanged.
+- Code commit: `cfd5aff` — enable native trackpad pinch zoom.
+- Validation: Debug build succeeded; all four `PageZoomTests` passed.
+  Restarted the updated app on Virtual 16:9 and observed its restored page.
+  Computer use cannot send pinch events, so physical trackpad validation is
+  still pending. The existing tests cover zoom steps and saved site zoom;
+  they do not prove the physical pinch gesture.
+- API reference: [Apple: allowsMagnification](https://developer.apple.com/documentation/webkit/wkwebview/allowsmagnification).
+  The requested Mintlify context tool was unavailable; used Apple documentation.
