@@ -324,3 +324,12 @@ for an optional shared sign-in setting.
   they do not prove the physical pinch gesture.
 - API reference: [Apple: allowsMagnification](https://developer.apple.com/documentation/webkit/wkwebview/allowsmagnification).
   The requested Mintlify context tool was unavailable; used Apple documentation.
+
+## Zoom shortcuts and address feedback
+
+Added Control zoom shortcuts, retained Command zoom, and replaced the generic
+zoom toast with an address-field percentage whose digits roll vertically.
+Moved the conflicting Add Split View shortcut to Control–Option–S.
+Recorded Dia and Cove on Virtual 16:9, reviewed digit frames, and passed eight
+focused tests. See [the zoom work log](2026-11-13_zoom-shortcuts-and-feedback.md)
+for the evidence, implementation choices, and verification limits.
