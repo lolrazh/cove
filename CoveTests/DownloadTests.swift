@@ -11,16 +11,25 @@ struct DownloadTests {
     }
 
     @Test func progressKeepsItsUnitAndColumnAcrossDigitBoundaries() {
-        let size = DownloadProgressSize(total: 1_000_000)
+        let size = DownloadProgressSize(total: 1_000_000, locale: Locale(identifier: "en_US"))
         #expect(size.unit == "MB")
-        #expect(size.number(99_000) == "0.10")
-        #expect(size.number(100_000) == "0.10")
-        #expect(size.columnTemplate == "0.00")
-        #expect(size.suffix == "of 1.00 MB")
-        let unknown = DownloadProgressSize(total: -1)
-        #expect(unknown.number(999_000) == "999.00")
-        #expect(unknown.number(1_000_000) == "1000.00")
+        #expect(size.number(99_000) == "0.1")
+        #expect(size.number(100_000) == "0.1")
+        #expect(size.columnTemplate == "0.0")
+        #expect(size.suffix == "of 1 MB")
+        let unknown = DownloadProgressSize(total: -1, locale: Locale(identifier: "en_US"))
+        #expect(unknown.number(999_000) == "999")
+        #expect(unknown.number(1_000_000) == "1000")
         #expect(unknown.unit == "kB")
+    }
+
+    @Test func gigabyteProgressUsesOneSharedUnitWithoutPaddedDecimals() {
+        let size = DownloadProgressSize(total: 2_100_000_000, locale: Locale(identifier: "en_US"))
+        #expect(size.description(completed: 100_000_000) == "0.1 of 2.1 GB")
+        #expect(size.description(completed: 1_000_000_000) == "1 of 2.1 GB")
+        #expect(size.columnTemplate == "0.0")
+        let german = DownloadProgressSize(total: 2_100_000_000, locale: Locale(identifier: "de_DE"))
+        #expect(german.description(completed: 100_000_000) == "0,1 of 2,1 GB")
     }
 
     @Test func namesAvoidFilesAndPendingDownloads() throws {

@@ -134,12 +134,11 @@ private struct DownloadRow: View {
     private var status: String {
         switch item.state {
         case .downloading:
-            if item.totalBytes > 0 { return "\(bytes(item.bytesDownloaded)) of \(bytes(item.totalBytes))" }
-            return item.bytesDownloaded > 0 ? "\(bytes(item.bytesDownloaded)) downloaded" : "Starting…"
+            return DownloadProgressSize(total: item.totalBytes).description(completed: item.bytesDownloaded)
         case .completed:
             if !item.fileExists { return "File moved or deleted" }
             if let detail = item.detail { return detail }
-            return bytes(max(0, item.totalBytes))
+            return DownloadProgressSize(total: max(0, item.totalBytes)).formattedTotal
         case .failed:
             if !canRetry { return "Download failed" }
             return item.detail == "Interrupted" ? "Interrupted — try again" : "Download failed — try again"
@@ -165,5 +164,4 @@ private struct DownloadRow: View {
             .accessibilityLabel(label).help(label)
     }
 
-    private func bytes(_ count: Int64) -> String { count.formatted(.byteCount(style: .file)) }
 }
