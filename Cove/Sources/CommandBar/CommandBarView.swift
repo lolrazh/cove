@@ -50,7 +50,7 @@ struct CommandBarOverlay: View {
         case .command(.newWindow): openWindow(id: BrowserView.windowID)
         case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
         case .command(.newLittleCove): onOpenLittleCove()
-        case .command(.showHistory): openWindow(id: HistoryWindow.windowID)
+        case .command(.showHistory): openWindow(id: HistoryWindow.windowID, value: model.profileID)
         case .command(.extensions): SettingsPane.show(.extensions, with: openSettings)
         case .command(.settings): openSettings()
         default: break

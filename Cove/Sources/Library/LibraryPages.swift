@@ -56,7 +56,7 @@ struct LibraryHistory: View {
             LibrarySearchField(text: $query, prompt: "Search History")
 
             Button {
-                openWindow(id: HistoryWindow.windowID)
+                openWindow(id: HistoryWindow.windowID, value: model.profileID)
             } label: {
                 Image(systemName: ChromeSymbols.Navigation.history)
             }

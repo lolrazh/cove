@@ -57,6 +57,8 @@ final class LibraryModel: ObservableObject {
         isPresented && tabManager.tabLayout == .horizontal
     }
 
+    var profileID: UUID { tabManager.activeProfileID }
+
     // MARK: - Presenting
 
     /// ⌘⇧L and the Library button. Opens on Downloads while something is

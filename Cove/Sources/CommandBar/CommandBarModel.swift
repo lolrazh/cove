@@ -45,6 +45,8 @@ final class CommandBarModel: ObservableObject {
 
     var results: [CommandBarResult] { sections.flatMap(\.results) }
 
+    var profileID: UUID { tabManager.activeProfileID }
+
     // MARK: - Presenting
 
     func present(_ mode: Mode) {

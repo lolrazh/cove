@@ -92,7 +92,11 @@ struct ProfileDataTests {
         #expect(manager.services.historyStore === data.history)
         manager.switchToProfile(second.id)
         #expect(manager.activeTabID == secondTab)
-        store.change { $0.removeProfile(second.id) }
+        let removedData = try #require(secondContext.profileData)
+        removedData.history.recordVisit(url: "https://only-work.example", title: "Only Work")
+        store.deleteProfile(second.id)
+        #expect(removedData.history.recentlyVisited.isEmpty)
+        #expect(!data.history.recentlyVisited.isEmpty)
         #expect(manager.activeProfileID == first.id)
         #expect(!manager.allTabs.contains { $0.id == secondTab })
         #expect(!data.archive.entries.contains { $0.url.contains("child") })
