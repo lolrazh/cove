@@ -119,3 +119,41 @@ next native change: Color edge, Soft color + edge, and Darker glass + edge.
 - This is a CSS visual study, not the native material implementation. No app
   source changed in this follow-up, and the full native suite was not rerun.
   The next native change will use the user's chosen finish.
+
+## Selected finish: stronger soft color and a continuous edge
+
+The user chose Soft color + edge. Requested a stronger fill, a slightly thicker
+rim, and smooth color through the transparent grooves in logos such as Gmail.
+
+- `5251ff6`: added `PinColorField`. It samples a favicon into a 16×16 sRGB image,
+  blends premultiplied colors in linear light with a separable Gaussian, then
+  normalizes by alpha. Every output pixel is opaque if any source pixel has
+  color. Transparent parts therefore create neither holes nor black seams.
+- Missing, fully transparent, or template icons use the neutral selected edge.
+  Colors are not invented for monochrome template glyphs.
+- `44a8076`: applied the field to the native fill and rim. Fill opacity is 40%;
+  the selected preview used 26% and the earlier native fill used 24%. Rim width
+  is 2 pt, up from the 1.5 px preview. The same field keeps both layers aligned.
+- Each mounted tile retains the field until its favicon changes. Selection and
+  hover reuse it. No persistent cache, background task, page sampling, or new
+  preference was added. The sharp favicon remains separate.
+- Local optimized processing of the three study icons averaged about 0.019 ms
+  per field over 100 iterations each. This is a small helper measurement, not an
+  end-to-end UI frame-time claim.
+- Full Debug suite passed: 201 tests in 44 suites. New checks cover transparent
+  grooves, smooth adjacent colors, no dark center seam, sparse semitransparent
+  marks, fully opaque edges, and empty/template fallbacks.
+  Result: `build/dia-polish/Logs/Test/Test-Cove-2026.11.13_15-14-37-+0530.xcresult`.
+- Native checks ran on Virtual 16:9. A temporary local page supplied the study's
+  Gmail-shaped favicon. Recorded the continuous top/bottom rim, then checked
+  selection with Wikipedia and Swift. Removed the temporary pin and page,
+  stopped the local fixture server, restored the previous selected page, and
+  returned the window to the main display. Existing user pins were preserved.
+- [Native selected tile capture](artifacts/pinned-continuous-edge.png).
+  The HTML study now uses color fields produced by the same native helper;
+  its CSS rendering remains a preview. Native code and captured output are the
+  source of truth. The final HTML asset update was syntax-checked, not replayed.
+- Used the Write Swift skill. Mintlify was unavailable; checked Apple's AppKit
+  and Core Graphics documentation and validated with the installed SDK. The
+  implementation uses explicit sRGB Core Graphics data, avoiding the installed
+  OS's `NSBitmapImageRep.setColor` failure found during the first test run.
