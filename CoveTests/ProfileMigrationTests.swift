@@ -22,25 +22,33 @@ struct ProfileMigrationTests {
         let window = LegacyWindow(spaces: [
             LegacySession(spaceID: first, tabs: [tab], activeTabIndex: 0, activePinID: nil,
                        documents: [TodayDocumentPlace(id: doc, index: 1)]),
-            LegacySession(spaceID: second.id, tabs: [tab, tab], activeTabIndex: 1, activePinID: nil,
-                       splits: [TabSplit(panes: [0, 1])]),
+            LegacySession(spaceID: second.id, tabs: [tab, tab], activeTabIndex: nil, activePinID: favorite.id,
+                       splits: [TabSplit(panes: [0, 1])], documents: [TodayDocumentPlace(id: doc, index: 0)]),
             LegacySession(spaceID: third.id, tabs: [tab], activeTabIndex: nil, activePinID: pin.id)
         ], activeSpaceID: second.id)
         let encoder = PropertyListEncoder()
         let originals = [
             "spaces.plist": try encoder.encode(spaces),
             "pins.plist": try encoder.encode(SavedPins(layout: pins, tabs: [favorite.id.uuidString: tab])),
-            "session.plist": try encoder.encode([window])
+            "session.plist": try encoder.encode([window, window])
         ]
         for (name, data) in originals { try data.write(to: root.appendingPathComponent(name)) }
+        let documents = root.appendingPathComponent("Documents")
+        try FileManager.default.createDirectory(at: documents, withIntermediateDirectories: true)
+        let info = DocumentInfo(id: doc, kind: .note, title: "Preserved note")
+        try encoder.encode([info]).write(to: documents.appendingPathComponent("index.plist"))
+        let noteBytes = Data("preserve document bytes".utf8)
+        let noteName = "\(doc.uuidString).rtfd"
+        try noteBytes.write(to: documents.appendingPathComponent(noteName))
         let output = try ProfileMigration.run(at: root)
         let decoder = PropertyListDecoder()
         let result = try decoder.decode([ProfileMigration.Window].self, from: Data(contentsOf: output.appendingPathComponent("session.plist")))
+        #expect(result.count == 2)
         let personal = try #require(result.first?.profiles.first { $0.profileID == Profile.defaultID })
         #expect(personal.tabs.count == 1)
         #expect(personal.activeTabIndex == 0)
         let secondProfile = try #require(result.first?.profiles.first { $0.profileID == second.id })
-        #expect(secondProfile.activeTabIndex == 1)
+        #expect(secondProfile.activeTabIndex == nil)
         #expect(result.first?.activeProfileID == second.id)
         #expect(secondProfile.splits.first?.panes == [0, 1])
         #expect(personal.documents == [TodayDocumentPlace(id: doc, index: 1)])
@@ -51,6 +59,13 @@ struct ProfileMigrationTests {
         let copied = try #require(savedPins.layout.pinned[second.id]?.tabs.first)
         #expect(copied.id != favorite.id)
         #expect(copied.url == favorite.url)
+        #expect(secondProfile.activePinID == copied.id)
+        let copiedDocument = output.appendingPathComponent(second.id.uuidString).appendingPathComponent("Documents").appendingPathComponent(noteName)
+        #expect(try Data(contentsOf: copiedDocument) == noteBytes)
+        try Data("edited copy".utf8).write(to: copiedDocument)
+        #expect(try Data(contentsOf: documents.appendingPathComponent(noteName)) == noteBytes)
+        let personalDocument = output.appendingPathComponent(Profile.defaultID.uuidString).appendingPathComponent("Documents").appendingPathComponent(noteName)
+        #expect(try Data(contentsOf: personalDocument) == noteBytes)
         #expect(savedPins.tabs[copied.id.uuidString]?.interactionState == tab.interactionState)
         #expect(savedPins.tabs[favorite.id.uuidString]?.interactionState == tab.interactionState)
         for (name, data) in originals { #expect(try Data(contentsOf: root.appendingPathComponent(name)) == data) }
