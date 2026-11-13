@@ -333,3 +333,13 @@ Moved the conflicting Add Split View shortcut to Control–Option–S.
 Recorded Dia and Cove on Virtual 16:9, reviewed digit frames, and passed eight
 focused tests. See [the zoom work log](2026-11-13_zoom-shortcuts-and-feedback.md)
 for the evidence, implementation choices, and verification limits.
+
+
+## Download flow
+
+Added a compact download popover, stable progress rows, safe retry, per-profile
+history, private-window separation, and temporary storage for incomplete files.
+Compared with Dia on Virtual 16:9 and tested download → open → Finder, failure,
+retry, cancel, duplicate names, custom save names, profile separation, and restart.
+The final suite passed 197 tests in 47 suites. See [the download work log](2026-11-13_download-flow.md)
+for the small commits, recordings, and limits.
