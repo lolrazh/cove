@@ -96,3 +96,26 @@ Its captures precede the final spacing-only correction below the grid.
 Used Better Layout and Better UI for the focused layout and surface pass.
 Mintlify was not available. Checked the custom layout contract in
 [Apple's Layout documentation](https://developer.apple.com/documentation/swiftui/layout).
+
+## Follow-up: color edge and glass options
+
+The user preferred Color edge and asked to compare three finishes before the
+next native change: Color edge, Soft color + edge, and Darker glass + edge.
+
+- Added a [separate interactive study](artifacts/pinned-tab-active-states.html)
+  and linked it from the original comparison. It uses the same 220 pt sidebar,
+  40 pt tiles, 16 pt icons, and three sample favicons for every option.
+- The edge uses a blurred image inside a 1.5 px border mask. It takes the sample
+  favicon's colors rather than a fixed rainbow. Selection stays in sync across
+  the three options. Five background themes are available.
+- Soft color adds a 26% favicon wash. Darker glass uses a 33% dark base, a 30%
+  wash with reduced brightness, an 8 px backdrop blur, and a light inner sheen.
+  Reduced the first dark base after the visual check: it was too heavy.
+- Tested in a separate private Cove window on Virtual 16:9. Checked all theme
+  controls and all three icon selections. Checked narrow stacked layout and
+  wide side-by-side layout. Captured the final purple comparison after the
+  lighter glass adjustment. Closed the private window afterward; the user's
+  current tabs and pins were preserved.
+- This is a CSS visual study, not the native material implementation. No app
+  source changed in this follow-up, and the full native suite was not rerun.
+  The next native change will use the user's chosen finish.
