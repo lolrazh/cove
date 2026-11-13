@@ -343,3 +343,12 @@ Compared with Dia on Virtual 16:9 and tested download → open → Finder, failu
 retry, cancel, duplicate names, custom save names, profile separation, and restart.
 The final suite passed 197 tests in 47 suites. See [the download work log](2026-11-13_download-flow.md)
 for the small commits, recordings, and limits.
+
+## Download motion and session indicator — November 14
+
+Moved Downloads into the sidebar header and limited its visibility to the current
+profile session. Added fixed number columns and units, a curved file flight,
+landing feedback, and a short hidden-sidebar reveal. Studied Dia's installed
+binary and virtual-display recordings. The final suite passed 198 tests in 47
+suites. See [the motion log](2026-11-14_download-motion-and-session-indicator.md)
+for the measured evidence, chosen timings, fixes, commits, and limits.
