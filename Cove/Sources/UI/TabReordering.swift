@@ -139,4 +139,3 @@ private struct PinnedDropDelegate: DropDelegate {
         return true
     }
 }
-
