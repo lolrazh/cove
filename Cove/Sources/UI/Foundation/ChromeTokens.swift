@@ -37,8 +37,6 @@ enum ChromeMetrics {
     static let sidebarInset: CGFloat = 8
     static let sidebarRowHeight: CGFloat = 34
     static let sidebarRowSpacing: CGFloat = 3
-    /// A favorite's tile; as many fit a row as the sidebar's width allows.
-    static let favoriteTileRange: ClosedRange<CGFloat> = 30...40
     /// How far a folder's contents sit in from the folder's row.
     static let sidebarFolderIndent: CGFloat = 14
     /// Profile between the sidebar's sections.

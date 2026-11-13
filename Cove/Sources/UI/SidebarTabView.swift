@@ -154,10 +154,10 @@ private struct SidebarSections: View {
                     SidebarPinnedList(items: otherItems, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
                 }
             }
-            .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $tabManager.draggedTabID)
+            .acceptsPinnedTabDrops(in: tabManager, dragging: $tabManager.draggedTabID)
         } else if showsDropZones {
             SidebarDropZone(title: "Pinned")
-                .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $tabManager.draggedTabID)
+                .acceptsPinnedTabDrops(in: tabManager, dragging: $tabManager.draggedTabID)
         }
     }
 

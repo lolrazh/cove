@@ -608,20 +608,18 @@ final class TabManager: ObservableObject {
     }
 
     func section(of id: UUID) -> TabSection? {
-        switch pinStore.pins(in: activeProfileID).section(of: id) {
-        case .pinned: .pinned
-        case nil: today.contains { $0.id == id } ? .today : nil
-        }
+        if pinStore.pins(in: activeProfileID).contains(id) { return .pinned }
+        return today.contains { $0.id == id } ? .today : nil
     }
 
     /// ⌘D and Pin Tab: a Today tab moves into Pinned, where
     /// it's kept across launches. A start page has nothing to pin.
-    func pinTab(_ id: UUID, to section: Pins.Section = .pinned, at position: SidebarPosition = .end) {
+    func pinTab(_ id: UUID, at position: SidebarPosition = .end) {
         guard let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab, !tab.currentURL.isEmpty else { return }
         today.remove(at: index)
         tab.pinnedURL = tab.currentURL
         adoptPinnedTab(tab)
-        pinStore.change(in: activeProfileID) { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), to: section, at: position) }
+        pinStore.change(in: activeProfileID) { $0.add(Pin(id: id, url: tab.currentURL, title: tab.pageTitle), at: position) }
     }
 
     /// Unpin Tab: the live tab goes back to Today, at the top, or in the
@@ -643,7 +641,7 @@ final class TabManager: ObservableObject {
         switch (from, to) {
         case (.today, .today): today.move(splitGroup(of: id), onto: splitGroup(of: target))
         case (.today, .pinned) where isDocument(id): pinDocument(id, at: .before(target))
-        case (.today, .pinned): pinTab(id, to: .pinned, at: .before(target))
+        case (.today, .pinned): pinTab(id, at: .before(target))
         case (.pinned, .today) where isDocument(id): unpinDocument(id, onto: target)
         case (.pinned, .today): unpinTab(id, onto: target)
         case (.pinned, _): pinStore.change(in: activeProfileID) { $0.move(id, onto: target) }
@@ -652,22 +650,18 @@ final class TabManager: ObservableObject {
 
     /// A tab dropped on a folder goes in at the end of it.
     func moveTab(_ id: UUID, into folderID: UUID) {
-        moveTab(id, to: .pinned, at: .into(folderID))
+        moveTabToPins(id, at: .into(folderID))
     }
 
-    /// A tab dropped on a section's empty space goes to the end of it.
-    func moveTab(_ id: UUID, toEndOf section: Pins.Section) {
-        moveTab(id, to: section, at: .end)
-    }
-
-    /// Documents go in Pinned only.
-    private func moveTab(_ id: UUID, to section: Pins.Section, at position: SidebarPosition) {
-        if self.section(of: id) != .today {
-            pinStore.change(in: activeProfileID) { $0.move(id, to: section, at: position) }
-        } else if !isDocument(id) {
-            pinTab(id, to: section, at: position)
-        } else if section == .pinned {
+    /// A dropped tab or document joins the pinned section or one of its folders.
+    func moveTabToPins(_ id: UUID, at position: SidebarPosition = .end) {
+        guard let section = section(of: id) else { return }
+        if section == .pinned {
+            pinStore.change(in: activeProfileID) { $0.move(id, at: position) }
+        } else if isDocument(id) {
             pinDocument(id, at: position)
+        } else {
+            pinTab(id, at: position)
         }
     }
 
@@ -691,9 +685,9 @@ final class TabManager: ObservableObject {
     func newFolder(in parentID: UUID? = nil, around tabID: UUID? = nil) {
         let folder = SidebarFolder<Pin>(name: "New Folder")
         pinStore.change(in: activeProfileID) { pins in
-            if let tabID, pins.section(of: tabID) == .pinned {
+            if let tabID, pins.contains(tabID) {
                 pins.addFolder(folder, at: .before(tabID))
-                pins.move(tabID, to: .pinned, at: .into(folder.id))
+                pins.move(tabID, at: .into(folder.id))
             } else {
                 pins.addFolder(folder, at: parentID.map(SidebarPosition.into) ?? .end)
             }

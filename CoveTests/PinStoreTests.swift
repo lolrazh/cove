@@ -11,7 +11,7 @@ struct PinStoreTests {
 
     @Test func `pins and their tabs come back from the file`() {
         let before = PinStore(fileURL: fileURL)
-        before.change(in: Profile.defaultID) { $0.add(pin, to: .pinned) }
+        before.change(in: Profile.defaultID) { $0.add(pin) }
         let tab = SavedTab(url: "https://example.com/docs", title: "Docs", customTitle: "Reading", interactionState: Data([1]), lastUsedAt: nil)
         before.record(tab, for: pin.id)
         before.record(tab, for: UUID())
@@ -27,7 +27,7 @@ struct PinStoreTests {
 
     @Test func `a removed pin's tab is forgotten and an unchanged layout is not republished`() {
         let store = PinStore(fileURL: fileURL)
-        store.change(in: Profile.defaultID) { $0.add(pin, to: .pinned) }
+        store.change(in: Profile.defaultID) { $0.add(pin) }
         store.record(SavedTab(url: pin.url, title: "", customTitle: nil, interactionState: nil, lastUsedAt: nil), for: pin.id)
 
         var publishes = 0
@@ -43,7 +43,7 @@ struct PinStoreTests {
 
     @Test func `without a file, nothing is kept`() {
         let store = PinStore(fileURL: nil)
-        store.change(in: Profile.defaultID) { $0.add(pin, to: .pinned) }
+        store.change(in: Profile.defaultID) { $0.add(pin) }
         store.save()
         #expect(PinStore(fileURL: nil).layout == PinLayout())
     }

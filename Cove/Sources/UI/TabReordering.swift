@@ -46,9 +46,9 @@ extension View {
         ))
     }
 
-    /// Lets a section take a tab dropped on its empty profile, at its end.
-    func acceptsTabDrops(toEndOf section: Pins.Section, in tabManager: TabManager, dragging draggedTabID: Binding<UUID?>) -> some View {
-        onDrop(of: [.coveTab], delegate: SectionDropDelegate(section: section, tabManager: tabManager, draggedTabID: draggedTabID))
+    /// Lets a pinned section take a tab dropped at its end.
+    func acceptsPinnedTabDrops(in tabManager: TabManager, dragging draggedTabID: Binding<UUID?>) -> some View {
+        onDrop(of: [.coveTab], delegate: PinnedDropDelegate(tabManager: tabManager, draggedTabID: draggedTabID))
     }
 
     /// Takes a dragged tab dropped between tabs, so it settles where it is
@@ -121,10 +121,9 @@ private struct FolderDropDelegate: DropDelegate {
     }
 }
 
-/// A drop in a section's empty profile moves the tab there, unless it's there
+/// A drop in the pinned section's empty space moves the tab there, unless it's there
 /// already after passing over the section's tabs, when the drop just ends.
-private struct SectionDropDelegate: DropDelegate {
-    let section: Pins.Section
+private struct PinnedDropDelegate: DropDelegate {
     let tabManager: TabManager
     @Binding var draggedTabID: UUID?
 
@@ -133,18 +132,11 @@ private struct SectionDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        if let draggedTabID, tabManager.section(of: draggedTabID) != TabManager.TabSection(section) {
-            tabManager.moveTab(draggedTabID, toEndOf: section)
+        if let draggedTabID, tabManager.section(of: draggedTabID) != .pinned {
+            tabManager.moveTabToPins(draggedTabID)
         }
         draggedTabID = nil
         return true
     }
 }
 
-private extension TabManager.TabSection {
-    init(_ section: Pins.Section) {
-        self = switch section {
-        case .pinned: .pinned
-        }
-    }
-}

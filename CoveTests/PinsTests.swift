@@ -11,12 +11,12 @@ struct PinsTests {
         pins.add(a)
         pins.add(b)
         pins.addFolder(folder)
-        pins.move(a.id, to: .pinned, at: .into(folder.id))
+        pins.move(a.id, at: .into(folder.id))
         #expect(pins.pinned.folder(folder.id)?.contents.tabs == [a])
-        pins.move(a.id, to: .pinned, at: .before(b.id))
+        pins.move(a.id, at: .before(b.id))
         #expect(pins.all == [a, b])
         let before = pins
-        pins.move(a.id, to: .pinned, at: .into(UUID()))
+        pins.move(a.id, at: .into(UUID()))
         #expect(pins == before)
         #expect(pins.remove(a.id) == a)
         #expect(pins.all == [b])
@@ -31,10 +31,10 @@ struct PinnedDocumentTests {
         pins.addFolder(folder)
         pins.addDocument(note, at: .into(folder.id))
         #expect(pins.pinned.documents == [note])
-        #expect(pins.section(of: note) == .pinned)
+        #expect(pins.contains(note))
         #expect(pins.pinned.tabs.isEmpty)
 
-        pins.move(note, to: .pinned, at: .end)
+        pins.move(note, at: .end)
         #expect(pins.pinned.documents == [note])
 
         pins.removeDocument(note)
@@ -42,17 +42,17 @@ struct PinnedDocumentTests {
         #expect(pins.pinned.folder(folder.id) != nil)
     }
 
-    @Test func `a deleted note is unpinned in every profile, and empty profiles are dropped`() {
+    @Test func `a deleted note leaves only its own profile`() {
         let note = UUID()
         let other = UUID()
         var layout = PinLayout()
         layout[Profile.defaultID].addDocument(note)
         layout[other].addDocument(note)
-        layout[other].add(Pin(id: UUID(), url: "https://example.com/", title: "Example"), to: .pinned)
+        layout[other].add(Pin(id: UUID(), url: "https://example.com/", title: "Example"))
 
-        layout.removeDocument(note)
+        layout[Profile.defaultID].removeDocument(note)
         #expect(layout[Profile.defaultID].pinned.isEmpty)
-        #expect(layout[other].pinned.documents.isEmpty)
+        #expect(layout[other].pinned.documents == [note])
         #expect(layout[other].pinned.tabs.count == 1)
         #expect(layout == {
             var expected = PinLayout()

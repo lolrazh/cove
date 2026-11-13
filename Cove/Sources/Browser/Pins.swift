@@ -24,13 +24,12 @@ extension SidebarItem where Tab == Pin {
 
 /// Pinned tabs and optional folders in one profile.
 struct Pins: Codable, Equatable {
-    enum Section { case pinned }
     var pinned = SidebarTree<Pin>()
     var all: [Pin] { pinned.tabs }
     func pin(_ id: UUID) -> Pin? { pinned.tab(id) }
-    func section(of id: UUID) -> Section? { pinned.contains(id) ? .pinned : nil }
+    func contains(_ id: UUID) -> Bool { pinned.contains(id) }
 
-    mutating func add(_ pin: Pin, to section: Section = .pinned, at position: SidebarPosition = .end) {
+    mutating func add(_ pin: Pin, at position: SidebarPosition = .end) {
         pinned.insert(.tab(pin), at: position)
     }
     @discardableResult mutating func remove(_ id: UUID) -> Pin? {
@@ -38,7 +37,7 @@ struct Pins: Codable, Equatable {
         return pin
     }
     mutating func update(_ id: UUID, _ change: (inout Pin) -> Void) { pinned.update(tab: id, change) }
-    mutating func move(_ id: UUID, to section: Section, at position: SidebarPosition) {
+    mutating func move(_ id: UUID, at position: SidebarPosition) {
         let before = pinned
         guard let item = pinned.remove(id), pinned.insert(item, at: position) else { pinned = before; return }
     }
@@ -64,12 +63,6 @@ struct PinLayout: Codable, Equatable {
     func pin(_ id: UUID) -> Pin? { all.first { $0.id == id } }
     mutating func update(_ id: UUID, _ change: (inout Pin) -> Void) {
         for profile in pinned.keys { pinned[profile]?.update(tab: id, change) }
-    }
-    mutating func removeDocument(_ id: UUID) {
-        for profile in pinned.keys {
-            pinned[profile]?.remove(id)
-            if pinned[profile]?.isEmpty == true { pinned[profile] = nil }
-        }
     }
     mutating func prune(to profiles: Profiles) { pinned = pinned.filter { profiles.profile($0.key) != nil } }
 }

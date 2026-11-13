@@ -24,7 +24,6 @@ enum ChromeSymbols {
         static let muted = "speaker.slash.fill"
         static let pin = "pin"
         static let unpin = "pin.slash"
-        static let favorite = "star"
         static let folder = "folder"
         static let backToPin = "arrow.uturn.backward"
         static let collapsed = "chevron.right"
