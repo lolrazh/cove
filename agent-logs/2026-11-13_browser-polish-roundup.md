@@ -298,3 +298,11 @@ files remain outside that checkpoint. Subsequent changes are separate commits.
 - Tested and recorded on Virtual 16:9. Full suite: 198 tests in 43 suites passed.
 - Detailed results, evidence limits, and the visual comparison are in
   [Pinned tabs](2026-11-13_pinned-tabs.md).
+
+## Profile simplification follow-up
+
+Spaces and Favorites are now removed as product concepts. The user chose to
+turn each former space into a separate profile, keeping its theme and tabs.
+See [the migration log](2026-11-13_profile-simplification.md) for the backup,
+commits, record isolation, tests, virtual-screen check, and the future request
+for an optional shared sign-in setting.

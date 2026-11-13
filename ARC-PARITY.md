@@ -1,6 +1,6 @@
 # Arc Parity
 
-## Current review — 2026-11-12
+## Current review — 2026-11-13
 
 This is the original feature plan. Checked boxes below mean implemented, not
 fully tested in daily use. The later Dia review replaces the old layout and
@@ -26,9 +26,16 @@ Current order:
    default intensity, static grain, and soft glass with an 8 pt softening pass.
    New-tab light rises from the bottom and stays clear of the toolbar.
    The editor is now a compact live popover: name and 16 color choices.
-   Spaces use dots; the frame colors have less white dilution. The sunrise has a wider falloff. Consolidated history:
+   Profiles use dots; the frame colors have less white dilution. The sunrise has a wider falloff. Consolidated history:
    `agent-logs/2026-11-13_browser-polish-roundup.md`.
-3. Next: test download → Finder, close → restore, and History search as complete
+3. Product simplification is implemented: **profiles, pinned tabs, regular tabs**.
+   Spaces and Favorites are removed. Each former space becomes a profile with
+   its name, theme, and tabs. Shared Favorites become independent pins.
+   History, archives, downloads, documents, site settings, and login stores
+   are separate per profile. See `agent-logs/2026-11-13_profile-simplification.md`.
+   Future, not implemented: an explicit profile-creation option to share
+   sign-ins with another profile. Tabs and themes must stay separate.
+4. Next: test download → Finder, close → restore, and History search as complete
    tasks. Then review profile creation and theme editing across light/dark
    appearance and accessibility settings.
 
@@ -221,6 +228,9 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       also holds tabs closed by hand.)*
 
 ### 5d. Pinned tabs and Favorites ⭑
+
+Historical design. Favorites were removed on November 13; see the current review above.
+
 - [x] Pin a tab (⌘D): moves to Pinned, persists across launches. *(Also
       the context menu and the Command Bar. Pins live in `pins.plist`,
       apart from the Today session; each keeps its live tab's page and
@@ -239,6 +249,9 @@ Grouped by agent. ⭑ marks the more complex groups, which need the stronger mod
       is remembered. Private windows have no pins at all.)*
 
 ### 5e. Spaces and profiles ⭑
+
+Historical design. The two layers were replaced by profiles on November 13.
+
 - [x] Spaces: each has a name, icon, theme color, its own Pinned and Today.
       *(Icon is an SF Symbol or an emoji. Each window keeps every space's
       Today and selected tab, saved with the session. Favorites belong to the
