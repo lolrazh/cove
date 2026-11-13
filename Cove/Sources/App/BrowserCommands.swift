@@ -101,7 +101,7 @@ struct BrowserViewCommands: Commands {
             .disabled(tabManager == nil)
 
             Button("Downloads") {
-                tabManager?.library.downloadsPresented.toggle()
+                tabManager?.library.toggleDownloads()
             }
             .keyboardShortcut("j", modifiers: [.command, .shift])
             .disabled(tabManager == nil)

@@ -12,6 +12,7 @@ struct SidebarTabView: View {
     /// Where the header's controls start: just past the traffic lights.
     let headerLeadingInset: CGFloat
     let acceptsProfileSwipes: Bool
+    let popoverColorScheme: ColorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -21,6 +22,13 @@ struct SidebarTabView: View {
             MediaPlayer(tabManager: tabManager, style: .card)
                 .padding(.horizontal, ChromeMetrics.sidebarInset)
             footer
+        }
+        .overlay(alignment: .topTrailing) {
+            DownloadsButton(library: tabManager.library, manager: tabManager.services.downloadManager,
+                            colorScheme: popoverColorScheme, isVisible: acceptsProfileSwipes)
+                .id(tabManager.activeProfileID)
+                .frame(height: headerHeight)
+                .padding(.trailing, ChromeMetrics.sidebarInset)
         }
     }
 
@@ -59,6 +67,7 @@ struct SidebarTabView: View {
                     }
             }
             Spacer(minLength: 0)
+            Color.clear.frame(width: ChromeMetrics.iconButtonSize)
         }
         .padding(.leading, headerLeadingInset)
         .padding(.trailing, ChromeMetrics.sidebarInset)

@@ -36,8 +36,6 @@ struct NavigationBar: View {
             if tabManager.isPrivate {
                 PrivateBadge()
             }
-            DownloadsButton(library: tabManager.library, manager: tabManager.services.downloadManager, colorScheme: systemColorScheme)
-                .id(tabManager.activeProfileID)
             ExtensionToolbar(tabManager: tabManager)
             if tabManager.tabLayout == .horizontal {
                 MediaPlayer(tabManager: tabManager, style: .compact)

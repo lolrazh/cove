@@ -85,6 +85,7 @@ struct DownloadTests {
         try PropertyListEncoder().encode([download.record]).write(to: records)
         let manager = DownloadManager(settings: BrowserSettingsStore(), recordsURL: records)
         #expect(manager.items.count == 1)
+        #expect(!manager.hasSessionDownloads)
         #expect(manager.items[0].totalBytes == 3)
         manager.clearCompleted()
         #expect(DownloadManager(settings: manager.settings, recordsURL: records).items.isEmpty)

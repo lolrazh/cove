@@ -6,7 +6,7 @@ import WebKit
 final class DownloadManager: NSObject, ObservableObject {
     @Published private(set) var items: [DownloadItem] = []
     @Published private(set) var hasUnseenDownloads = false
-    @Published private(set) var presentationRequest = 0
+    @Published private(set) var hasSessionDownloads = false
     let settings: BrowserSettingsStore
     var dataStore: WKWebsiteDataStore = .nonPersistent()
     private let recordsURL: URL?
@@ -199,7 +199,7 @@ extension DownloadManager: WKDownloadDelegate {
         downloadToItem[download] = item
         item.observeProgress(of: download)
         save()
-        presentationRequest += 1
+        hasSessionDownloads = true
         return partial
     }
 

@@ -64,6 +64,14 @@ final class LibraryModel: ObservableObject {
 
     /// ⌘⇧L and the Library button. Opens on Downloads while something is
     /// downloading or has just finished, since that's what the button shows.
+    func toggleDownloads() {
+        if downloads.hasSessionDownloads {
+            downloadsPresented.toggle()
+        } else {
+            present(.downloads)
+        }
+    }
+
     func toggle() {
         isPresented ? dismiss() : present(downloads.hasActiveDownloads || downloads.hasUnseenDownloads ? .downloads : nil)
     }

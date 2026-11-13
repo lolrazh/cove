@@ -19,6 +19,7 @@ struct BrowserShellView<Content: View>: View {
     @Binding var areTabsVisible: Bool
     let content: Content
 
+    @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.trafficLightInset) private var trafficLightInset
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isPointerOverTabs = false
@@ -89,6 +90,10 @@ struct BrowserShellView<Content: View>: View {
             guard isSidebarHideable else { return }
             areTabsVisible = isPresented || isPointerOverTabs
         }
+        .onReceive(tabManager.library.$downloadsPresented) { isPresented in
+            if isPresented && tabManager.hideTabs { areTabsVisible = true }
+            if !isPresented { hideIfOutside() }
+        }
         .onChange(of: tabManager.isShowingSiteControls) { _, isPresented in
             if !isPresented { hideIfOutside() }
         }
@@ -101,8 +106,13 @@ struct BrowserShellView<Content: View>: View {
     // MARK: - Tabs
 
     /// The titlebar band: top tabs beside the traffic lights.
-    private var tabStrip: some View {
-        TabStripView(tabManager: tabManager)
+    private func tabStrip(isVisible: Bool) -> some View {
+        HStack(spacing: 4) {
+            TabStripView(tabManager: tabManager)
+            DownloadsButton(library: tabManager.library, manager: tabManager.services.downloadManager,
+                            colorScheme: systemColorScheme, isVisible: isVisible)
+                .id(tabManager.activeProfileID)
+        }
             .environment(\.colorScheme, .light)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
@@ -113,7 +123,7 @@ struct BrowserShellView<Content: View>: View {
     /// The band in its docked position, above the card. Collapses to the card
     /// inset in sidebar mode and when top tabs are hidden.
     private var tabRow: some View {
-        tabStrip
+        tabStrip(isVisible: showsTopRow)
             .frame(height: showsTopRow ? ChromeMetrics.titlebarHeight : ChromeMetrics.cardInset, alignment: .bottom)
             .opacity(showsTopRow ? 1 : 0)
             .clipped()
@@ -124,7 +134,7 @@ struct BrowserShellView<Content: View>: View {
     /// The band floating over the page while hidden top tabs are revealed. It
     /// is flush with the window's top, so only its bottom corners show.
     private var floatingTabRow: some View {
-        tabStrip
+        tabStrip(isVisible: showsFloatingTopRow)
             .chromeFloatingSurface(minimumRadius: ChromeRadius.tab)
             .chromeSlide(
                 isShown: showsFloatingTopRow,
@@ -149,7 +159,8 @@ struct BrowserShellView<Content: View>: View {
             tabManager: tabManager,
             headerHeight: ChromeMetrics.titlebarHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: 0),
-            acceptsProfileSwipes: showsDockedSidebar
+            acceptsProfileSwipes: showsDockedSidebar,
+            popoverColorScheme: systemColorScheme
         )
         .environment(\.colorScheme, .light)
         .frame(width: sidebarWidth)
@@ -191,7 +202,8 @@ struct BrowserShellView<Content: View>: View {
             tabManager: tabManager,
             headerHeight: ChromeMetrics.floatingSidebarHeaderHeight,
             headerLeadingInset: headerLeadingInset(sidebarOrigin: ChromeMetrics.gutter),
-            acceptsProfileSwipes: showsFloatingSidebar
+            acceptsProfileSwipes: showsFloatingSidebar,
+            popoverColorScheme: systemColorScheme
         )
         .environment(\.colorScheme, .light)
         .frame(width: sidebarWidth)
@@ -280,6 +292,7 @@ struct BrowserShellView<Content: View>: View {
     private func hideIfOutside() {
         guard tabManager.hideTabs, areTabsVisible, !isPointerOverTabs,
               !tabManager.isShowingSiteControls, !tabManager.library.isPresented,
+              !tabManager.library.downloadsPresented,
               tabManager.profileToEdit == nil else { return }
         areTabsVisible = false
     }

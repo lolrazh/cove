@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Downloads stay beside the page. Opening the list never replaces the tabs.
+/// One stable header slot. Restored history does not reveal the session indicator.
 struct DownloadsButton: View {
     @ObservedObject var library: LibraryModel
     @ObservedObject var manager: DownloadManager
     let colorScheme: ColorScheme
+    var isVisible = true
     @Environment(\.controlActiveState) private var controlState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -33,7 +34,13 @@ struct DownloadsButton: View {
         .accessibilityLabel("Downloads")
         .accessibilityValue(manager.hasActiveDownloads ? "Downloading" : manager.hasUnseenDownloads ? "New downloads" : "")
         .help("Downloads (⇧⌘J)")
-        .popover(isPresented: $library.downloadsPresented, arrowEdge: .bottom) {
+        .opacity(manager.hasSessionDownloads ? 1 : 0)
+        .allowsHitTesting(manager.hasSessionDownloads)
+        .accessibilityHidden(!manager.hasSessionDownloads)
+        .popover(isPresented: Binding(
+            get: { isVisible && library.downloadsPresented },
+            set: { if isVisible { library.downloadsPresented = $0 } }
+        ), arrowEdge: .bottom) {
             VStack(spacing: 6) {
                 HStack {
                     Text("Downloads").font(.callout.weight(.semibold))
@@ -52,9 +59,6 @@ struct DownloadsButton: View {
             .frame(width: 320)
             .environment(\.colorScheme, colorScheme)
         }
-        .onChange(of: manager.presentationRequest) {
-            // A background window or profile must not take focus.
-            if controlState == .key { library.downloadsPresented = true }
-        }
+
     }
 }
