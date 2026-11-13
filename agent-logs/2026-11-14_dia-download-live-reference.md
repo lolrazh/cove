@@ -49,3 +49,46 @@ Analysis files in the same local evidence directory: `dia-flight-frames.png`,
 `dia-frame-times.txt`, `dia-measurements.json`, `measure.py`, and
 `click-dia-virtual.swift`. These are ordinary capture/measurement evidence, not
 REA tool output. Prior static findings remain in `card-addendum.md` one level up.
+
+## Cove implementation and verification
+
+Commit `b2ed187` fits the motion to the measured reference:
+
+- One 350 ms Core Animation group controls position, scale, tilt, opacity, and
+  shadow radius. The path briefly dips, tilts about 6°, then sweeps to Downloads.
+- Card scale peaks near 1.06, stays near full size through the dip, then fades
+  while shrinking. It no longer ends as an opaque dot.
+- Source positions are inset near window edges to leave room for the full card.
+- The in-flight icon is the SF Symbols download-arrow ring. The title uses white
+  in dark appearance and black in light appearance. No passive fake buttons.
+- Existing Reduced Motion, bounded queues, source-window routing, and sidebar
+  reveal/close logic remain in place. No new dependency or frame-loop timer.
+
+Recorded final Cove on Virtual 16:9 with the approved window-only recorder.
+A display-crop attempt was obscured by Dia; it was not used to assess Cove.
+Frame review of `cove-window-match.mov` shows a maximum sampled dip of about
+43 pt and tilt of 5.6°, compared with about 41 pt and 6.0° for Dia. The fitted
+timeline follows the near-full-size dip and the late upward sweep/fade.
+This is visual matching within capture precision, not identical native code.
+
+`dia-cove-comparison.mp4` shows Dia on the left and Cove on the right at one-quarter
+speed. Starts are aligned to the estimated onset, not to network request time.
+`cove-match-frames.png` contains sampled frames; `cove-measurements.json` contains
+dark-card component measurements. Faded frames are excluded from that mask.
+
+Two successive small-file starts completed as separate 76-byte records. A third
+download with the sidebar hidden revealed the header, played the flight, and
+returned to the hidden state. The slow files completed as 1 MB records. There
+was no stuck overlay. Recorded in `cove-burst-hidden.mov`.
+
+Build and **199 tests in 47 suites passed**. Test log:
+`/tmp/cove-download-live-match-tests.log`. The macOS Reduced Motion setting and
+full-screen/multiple Cove windows were not changed or visually retested.
+
+Final Cove build remains on Virtual 16:9, with its test tab closed and the prior
+Spoke page restored. Dia's virtual reference tab remains. Test files and records
+remain. All recorders and the local fixture server from this task were stopped.
+
+Small commits: `e1a8131` saves reference measurements; `b2ed187` changes the
+motion; this verification log update is a separate commit. Work continues on
+`main` as requested.
