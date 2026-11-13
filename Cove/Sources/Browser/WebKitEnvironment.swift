@@ -48,6 +48,7 @@ final class WebKitEnvironment {
     private func configure(_ webView: WKWebView) {
         applyBrowserUserAgent(to: webView)
         webView.allowsBackForwardNavigationGestures = true
+        webView.allowsMagnification = true
         webView.isInspectable = true
     }
 
