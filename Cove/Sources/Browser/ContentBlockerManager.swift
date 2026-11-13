@@ -17,6 +17,7 @@ final class ContentBlockerManager {
 
     private let settings: BrowserSettingsStore
     private let defaults: UserDefaults
+    private let exceptionsURL: URL?
     private var ruleList: WKContentRuleList?
     private var isLoading = false
     private var trackedControllers = NSHashTable<WKUserContentController>.weakObjects()
@@ -29,10 +30,15 @@ final class ContentBlockerManager {
     /// Whether blocking is on in Settings, for every site.
     var isEnabled: Bool { settings.contentBlockingEnabled }
 
-    init(settings: BrowserSettingsStore, defaults: UserDefaults = .standard) {
+    init(settings: BrowserSettingsStore, defaults: UserDefaults = .standard, exceptionsURL: URL? = nil) {
         self.settings = settings
         self.defaults = defaults
-        self.exceptions = Set(defaults.stringArray(forKey: Self.exceptionsKey) ?? [])
+        self.exceptionsURL = exceptionsURL
+        if let exceptionsURL {
+            self.exceptions = Set(StoreFile.read(exceptionsURL) { try? PropertyListDecoder().decode([String].self, from: $0) } ?? [])
+        } else {
+            self.exceptions = Set(defaults.stringArray(forKey: Self.exceptionsKey) ?? [])
+        }
         settings.$contentBlockingEnabled
             .removeDuplicates()
             .sink { [weak self] isEnabled in
@@ -97,7 +103,12 @@ final class ContentBlockerManager {
         } else {
             exceptions.insert(site.domain)
         }
-        defaults.set(exceptions.sorted(), forKey: Self.exceptionsKey)
+        if let exceptionsURL {
+            try? FileManager.default.createDirectory(at: exceptionsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if let data = try? PropertyListEncoder().encode(exceptions.sorted()) { try? data.write(to: exceptionsURL, options: .atomic) }
+        } else {
+            defaults.set(exceptions.sorted(), forKey: Self.exceptionsKey)
+        }
     }
 
     /// Gives the controller's web view the list or takes it away, for the site

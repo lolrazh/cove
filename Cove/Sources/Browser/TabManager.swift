@@ -78,16 +78,20 @@ final class TabManager: ObservableObject {
     let extensionWindow = ExtensionWindow()
 
     let settings: BrowserSettingsStore
-    let services: TabSessionServices
+    private let baseServices: TabSessionServices
+    var services: TabSessionServices { services(for: activeProfile) }
     /// Where this window's closed and idle tabs go: the shared archive, or a
     /// private window's own, kept in memory and gone with the window.
-    let archive: TabArchive
+    private let baseArchive: TabArchive
+    var archive: TabArchive { services.context.profileData?.archive ?? baseArchive }
     /// The shared pins, or a private window's own empty, unsaved ones.
     let pinStore: PinStore
     /// The shared profiles; none in a private window.
     private let profileStore: ProfileStore?
     /// The notes; none in a private window, which keeps nothing.
-    let documentStore: DocumentStore?
+    private let baseDocuments: DocumentStore?
+    var documentStore: DocumentStore? { isPrivate ? nil : services.context.profileData?.documents ?? baseDocuments }
+    private var documentChanges: AnyCancellable?
     /// The profiles as last published, which edits are checked against.
     private var knownProfiles: Profiles
     /// The window's other profiles, as it left them.
@@ -100,16 +104,8 @@ final class TabManager: ObservableObject {
     private var pinnedTabRecorders: [UUID: AnyCancellable] = [:]
 
     /// This window's Command Bar. Lazy only because it needs `self`.
-    private(set) lazy var commandBar = CommandBarModel(
-        tabManager: self,
-        settings: settings,
-        historyStore: services.historyStore,
-        faviconStore: services.faviconStore,
-        archive: archive
-    )
-
-    /// This window's Library. Lazy for the same reason.
-    private(set) lazy var library = LibraryModel(tabManager: self, services: services, archive: archive)
+    private(set) lazy var commandBar = CommandBarModel(tabManager: self, settings: settings)
+    private(set) lazy var library = LibraryModel(tabManager: self)
 
     var activeTab: TabSession? {
         activeTabID.flatMap(tab)
@@ -156,11 +152,11 @@ final class TabManager: ObservableObject {
         let saved = session?.takeRestorableWindow()
         let knownProfiles = profiles?.profiles ?? Profiles()
         self.settings = settings
-        self.services = services
-        self.archive = archive
+        self.baseServices = services
+        self.baseArchive = archive
         self.pinStore = pins
         self.profileStore = profiles
-        self.documentStore = documents
+        self.baseDocuments = documents
         self.knownProfiles = knownProfiles
         self.activeProfileID = saved.flatMap { knownProfiles.profile($0.activeProfileID)?.id } ?? knownProfiles.profiles[0].id
         self.tabLayout = settings.showsTabsInSidebar ? .sidebar : .horizontal
@@ -177,10 +173,7 @@ final class TabManager: ObservableObject {
         pins.$layout
             .sink { [weak self] layout in self?.reconcilePinnedTabs(with: layout) }
             .store(in: &cancellables)
-        documents?.$documents
-            .dropFirst()
-            .sink { [weak self] documents in self?.reconcileDocuments(with: documents) }
-            .store(in: &cancellables)
+        trackDocuments()
 
         restore(saved)
         session?.track(self, placement: saved?.placement)
@@ -196,7 +189,7 @@ final class TabManager: ObservableObject {
             guard let profile = knownProfiles.profile(savedProfile.profileID) else { continue }
             let services = services(for: profile)
             let tabs = savedProfile.tabs.map { makeTab(restoring: $0, services: services) }
-            let documents = (savedProfile.documents ?? []).filter { documentStore?.documents[$0.id] != nil }
+            let documents = (savedProfile.documents ?? []).filter { services.context.profileData?.documents.documents[$0.id] != nil || baseDocuments?.documents[$0.id] != nil }
             let restored = ParkedProfile(
                 today: TodayItem.restoring(tabs: tabs, documents: documents),
                 activeTabID: savedProfile.activePinID
@@ -216,7 +209,7 @@ final class TabManager: ObservableObject {
     }
 
     var isPrivate: Bool {
-        services.context.isPrivate
+        baseServices.context.isPrivate
     }
 
     var savedWindow: SavedWindow {
@@ -502,7 +495,7 @@ final class TabManager: ObservableObject {
     /// A tab leaving the window goes into the archive.
     private func retire(_ tab: TabSession, reason: ArchivedTab.Reason) {
         tab.close()
-        archive.add(tab.savedTab, reason: reason)
+        (tab.services.context.profileData?.archive ?? baseArchive).add(tab.savedTab, reason: reason)
     }
 
     /// Brings an archived tab back into Today, selected.
@@ -913,8 +906,8 @@ final class TabManager: ObservableObject {
     /// What a profile's tabs browse with: its profile's context. A private
     /// window's tabs browse with its own.
     private func services(for profile: Profile?) -> TabSessionServices {
-        guard let profileStore, let profile else { return services }
-        return services.with(profileStore.context(for: profile))
+        guard let profileStore, let profile else { return baseServices }
+        return baseServices.with(profileStore.context(for: profile))
     }
 
     /// Change selection synchronously. Each visual surface owns its motion;
@@ -930,9 +923,13 @@ final class TabManager: ObservableObject {
         activeTab?.markUsed()
         parkedProfiles[activeProfileID] = shownProfile
         let next = parkedProfiles.removeValue(forKey: id)
+        commandBar.dismiss()
+        library.dismiss()
         activeProfileID = id
+        trackDocuments()
         reconcilePinnedTabs(with: pinStore.layout)
         unpark(next)
+        if let documents = documentStore?.documents { reconcileDocuments(with: documents) }
     }
 
     /// Puts a profile's Today on screen with what it had selected.
@@ -947,57 +944,26 @@ final class TabManager: ObservableObject {
         }
     }
 
-    /// Follows edits made in any window: a deleted profile's tabs go to the
-    /// archive, and a window showing it moves to the first profile; tabs of a
-    /// profile now in another profile are rebuilt on that profile's data store.
+    /// Deleted profiles close their pages without moving their data elsewhere.
     private func reconcileProfiles(with profiles: Profiles) {
         knownProfiles = profiles
-        if profiles.profile(activeProfileID) == nil {
-            show(profiles.profiles[0].id)
-        }
-        for id in parkedProfiles.keys {
-            guard let profile = profiles.profile(id) else {
-                parkedProfiles.removeValue(forKey: id)?.today.compactMap(\.tab).forEach { retire($0, reason: .closed) }
-                continue
-            }
-            rehome(&parkedProfiles[id]!.today, in: profile)
-        }
-        var today = today
-        if rehome(&today, in: activeProfile) {
-            self.today = today
+        if profiles.profile(activeProfileID) == nil { show(profiles.profiles[0].id) }
+        for id in parkedProfiles.keys where profiles.profile(id) == nil {
+            parkedProfiles.removeValue(forKey: id)?.today.compactMap(\.tab).forEach { $0.close() }
         }
         reconcilePinnedTabs(with: pinStore.layout)
-        // A rebuilt tab starts asleep; the selected one wakes.
-        activeTabID = activeTabID
     }
 
-    /// Takes documents out of the window's other profiles' Today, as when
-    /// they're deleted.
-    func removeParkedDocuments(where isGone: (TodayItem<TabSession>) -> Bool) {
-        for id in parkedProfiles.keys {
-            parkedProfiles[id]?.today.removeAll(where: isGone)
+    private func trackDocuments() {
+        documentChanges = documentStore?.$documents.dropFirst().sink { [weak self] documents in
+            self?.reconcileDocuments(with: documents)
         }
     }
 
-    /// Rebuilds, asleep, the tabs browsing with another profile's data store
-    /// than the profile's. Whether any were.
-    @discardableResult
-    private func rehome(_ today: inout [TodayItem<TabSession>], in profile: Profile?) -> Bool {
-        var changed = false
-        for index in today.indices {
-            guard let tab = today[index].tab, let rebuilt = rehomed(tab, in: profile) else { continue }
-            today[index] = .tab(rebuilt)
-            changed = true
-        }
-        return changed
-    }
-
-    /// The tab rebuilt asleep on the profile, if it browses with
-    /// another's data store.
     private func rehomed(_ tab: TabSession, in profile: Profile?) -> TabSession? {
-        let services = services(for: profile)
-        guard tab.services.context !== services.context else { return nil }
-        return makeTab(id: tab.id, restoring: retireFromProfile(tab), services: services)
+        let target = services(for: profile)
+        guard tab.services.context !== target.context else { return nil }
+        return makeTab(id: tab.id, restoring: retireFromProfile(tab), services: target)
     }
 
     /// Lets go of a tab's page on its old profile's data store, and returns

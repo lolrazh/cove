@@ -74,10 +74,10 @@ struct BrowserViewCommands: Commands {
         CommandMenu("History") {
             HistoryMenu(
                 tabManager: tabManager,
-                historyStore: appServices.historyStore,
-                archive: tabManager?.archive ?? appServices.tabArchive,
-                faviconStore: appServices.faviconStore,
-                onShowAllHistory: { openWindow(id: HistoryWindow.windowID) }
+                historyStore: tabManager?.services.historyStore ?? appServices.defaultData.history,
+                archive: tabManager?.archive ?? appServices.defaultData.archive,
+                faviconStore: tabManager?.services.faviconStore ?? appServices.defaultData.favicons,
+                onShowAllHistory: { openWindow(id: HistoryWindow.windowID, value: tabManager?.activeProfileID ?? Profile.defaultID) }
             )
         }
 

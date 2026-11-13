@@ -26,9 +26,6 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Cove/Resources/Cove.entitlements
-    scheme:
-      testTargets:
-        - CoveTests
 
   CoveTests:
     type: bundle.unit-test
@@ -47,3 +44,14 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.cove.browser.tests
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: true
+
+schemes:
+  Cove:
+    build:
+      targets:
+        Cove: all
+    test:
+      targets:
+        - CoveTests
+      environmentVariables:
+        COVE_TESTING: "1"

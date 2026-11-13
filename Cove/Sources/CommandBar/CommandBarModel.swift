@@ -26,9 +26,9 @@ final class CommandBarModel: ObservableObject {
 
     private unowned let tabManager: TabManager
     private let settings: BrowserSettingsStore
-    private let historyStore: HistoryStore
-    private let faviconStore: FaviconStore
-    private let archive: TabArchive
+    private var historyStore: HistoryStore { tabManager.services.historyStore }
+    private var faviconStore: FaviconStore { tabManager.services.faviconStore }
+    private var archive: TabArchive { tabManager.archive }
     private let ranker = CommandBarRanker()
     private let suggestions = SearchSuggestions()
     private var suggestionTask: Task<Void, Never>?
@@ -36,18 +36,9 @@ final class CommandBarModel: ObservableObject {
     /// query it answered so rows don't vanish between keystrokes.
     private var fetchedSuggestions: (query: String, items: [String])?
 
-    init(
-        tabManager: TabManager,
-        settings: BrowserSettingsStore,
-        historyStore: HistoryStore,
-        faviconStore: FaviconStore,
-        archive: TabArchive
-    ) {
+    init(tabManager: TabManager, settings: BrowserSettingsStore) {
         self.tabManager = tabManager
         self.settings = settings
-        self.historyStore = historyStore
-        self.faviconStore = faviconStore
-        self.archive = archive
     }
 
     var searchEngine: SearchEngine { settings.searchEngine }

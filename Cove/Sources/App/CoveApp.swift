@@ -43,12 +43,15 @@ struct CoveApp: App {
         .browserWindowStyle()
         .handlesExternalEvents(matching: [])
 
-        Window("History", id: HistoryWindow.windowID) {
-            HistoryWindow(
-                historyStore: appServices.historyStore,
-                faviconStore: appServices.faviconStore,
-                onOpen: openInBrowser
-            )
+        WindowGroup("History", id: HistoryWindow.windowID, for: UUID.self) { $profileID in
+            let id = profileID ?? Profile.defaultID
+            let context = appServices.context(for: id)
+            if let data = context.profileData {
+                HistoryWindow(historyStore: data.history, faviconStore: data.favicons) { urlString in
+                    guard let url = URL(string: urlString) else { return }
+                    appServices.externalURLRouter.open([url], in: id)
+                }
+            }
         }
         .defaultSize(width: 760, height: 560)
         .handlesExternalEvents(matching: [])
@@ -57,19 +60,14 @@ struct CoveApp: App {
         Settings {
             SettingsView(
                 settingsStore: appServices.settingsStore,
-                historyStore: appServices.historyStore,
+
                 profileStore: appServices.profileStore,
                 extensionLibrary: appServices.extensionLibrary
             )
         }
     }
 
-    /// Loads a page from another window (like History) in the browser window
-    /// that was active last.
-    private func openInBrowser(_ urlString: String) {
-        guard let url = URL(string: urlString) else { return }
-        appServices.externalURLRouter.open([url], from: .cove)
-    }
+
 }
 
 private extension Scene {

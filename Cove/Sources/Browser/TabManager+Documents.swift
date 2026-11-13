@@ -64,7 +64,7 @@ extension TabManager {
 
     /// Deletes a note for good, from every window and profile.
     func deleteDocument(_ id: UUID) {
-        pinStore.change { $0.removeDocument(id) }
+        pinStore.change(in: activeProfileID) { $0.removeDocument(id) }
         documentStore?.delete(id)
     }
 
@@ -112,7 +112,6 @@ extension TabManager {
         if today.contains(where: isGone) {
             today.removeAll(where: isGone)
         }
-        removeParkedDocuments(where: isGone)
         if let activeDocumentID, documents[activeDocumentID] == nil {
             self.activeDocumentID = nil
         }

@@ -35,6 +35,15 @@ final class ExternalURLRouter {
         self.littleCove = littleCove
     }
 
+    var activeTabManager: TabManager? { browserWindows.last(where: { $0.tabManager != nil })?.tabManager }
+
+    func open(_ urls: [URL], in profileID: UUID) {
+        inBrowserWindow { manager in
+            manager.switchToProfile(profileID)
+            for url in urls where Self.canOpen(url) { manager.openExternalURL(url) }
+        }
+    }
+
     /// Called whenever a browser window becomes active.
     func activate(_ tabManager: TabManager, in window: NSWindow, openWindow: OpenWindowAction) {
         browserWindows.removeAll { $0.tabManager == nil || $0.tabManager === tabManager }

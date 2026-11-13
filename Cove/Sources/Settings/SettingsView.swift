@@ -21,7 +21,6 @@ enum SettingsPane: String {
 
 struct SettingsView: View {
     @ObservedObject var settingsStore: BrowserSettingsStore
-    let historyStore: HistoryStore
     let profileStore: ProfileStore
     let extensionLibrary: ExtensionLibrary
 
@@ -42,7 +41,7 @@ struct SettingsView: View {
                 ExtensionsSettingsPane(library: extensionLibrary)
             }
             Tab("Privacy", systemImage: ChromeSymbols.Settings.privacy, value: .privacy) {
-                PrivacySettingsPane(settings: settingsStore, historyStore: historyStore)
+                ProfilePrivacySettings(settings: settingsStore, store: profileStore)
             }
             Tab("Downloads", systemImage: ChromeSymbols.Settings.downloads, value: .downloads) {
                 DownloadsSettingsPane(settings: settingsStore)
@@ -118,6 +117,24 @@ private struct AppearanceSettingsPane: View {
                 Text("Tabs")
             } footer: {
                 Text("Each profile has its own frame color, set in Profiles.")
+            }
+        }
+    }
+}
+
+private struct ProfilePrivacySettings: View {
+    @ObservedObject var settings: BrowserSettingsStore
+    @ObservedObject var store: ProfileStore
+    @State private var profileID = Profile.defaultID
+
+    var body: some View {
+        VStack {
+            Picker("Profile", selection: $profileID) {
+                ForEach(store.profiles.profiles) { Text($0.name).tag($0.id) }
+            }
+            .padding(.horizontal, 20)
+            if let profile = store.profiles.profile(profileID), let data = store.context(for: profile).profileData {
+                PrivacySettingsPane(settings: settings, historyStore: data.history)
             }
         }
     }

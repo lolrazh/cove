@@ -25,10 +25,10 @@ struct BrowserView: View {
         return TabManager(
             settings: appServices.settingsStore,
             services: appServices.tabSessionServices(in: context),
-            archive: isPrivate ? TabArchive(directory: nil) : appServices.tabArchive,
+            archive: isPrivate ? TabArchive(directory: nil) : appServices.defaultData.archive,
             pins: isPrivate ? PinStore(fileURL: nil) : appServices.pinStore,
             profiles: isPrivate ? nil : appServices.profileStore,
-            documents: isPrivate ? nil : appServices.documentStore,
+            documents: isPrivate ? nil : appServices.defaultData.documents,
             session: isPrivate ? nil : appServices.sessionStore
         )
     }

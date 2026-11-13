@@ -4,8 +4,12 @@ import Foundation
 /// Only a complete staged directory becomes live. A failed migration never
 /// opens an empty store or changes the original files.
 enum ProfileMigration {
+    static let isTesting = ProcessInfo.processInfo.environment["COVE_TESTING"] == "1"
+    private static let testRoot = FileManager.default.temporaryDirectory.appendingPathComponent("Cove-TestHost-\(UUID().uuidString)")
+
     static var legacyRoot: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        if isTesting { return testRoot }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             .appendingPathComponent("Cove")
     }
 
@@ -116,6 +120,7 @@ enum ProfileMigration {
         let favorites = oldPins?.layout?.favorites ?? oldPins?.pins.map { [defaultID: $0.favorites] } ?? [:]
         var savedTabs = oldPins?.tabs ?? [:]
         var copiedFavorites = Set<UUID>()
+        var favoriteIDs: [UUID: [UUID: UUID]] = [:]
         for profile in profiles {
             let legacyID = oldSpaces.first { owners[$0.id] == profile.id }?.profileID ?? profile.id
             let copy = !copiedFavorites.insert(legacyID).inserted
@@ -123,6 +128,7 @@ enum ProfileMigration {
                 guard copy else { return .tab(pin) }
                 let id = UUID()
                 savedTabs[id.uuidString] = savedTabs[pin.id.uuidString]
+                favoriteIDs[profile.id, default: [:]][pin.id] = id
                 return .tab(Pin(id: id, url: pin.url, title: pin.title))
             }
             pins.pinned[profile.id] = SidebarTree(items)
@@ -142,33 +148,22 @@ enum ProfileMigration {
             let sessions = window.spaces ?? [LegacySession(spaceID: firstSpaceID, tabs: window.tabs ?? [],
                 activeTabIndex: window.activeTabIndex, activePinID: nil, splits: nil, documents: nil, activeDocumentID: nil)]
             let activeSpace = window.activeSpaceID ?? firstSpaceID
-            var merged: [UUID: ProfileSession] = [:]
-            // Space order is stable; selection is taken from the shown space.
-            let order = Dictionary(uniqueKeysWithValues: oldSpaces.enumerated().map { ($0.element.id, $0.offset) })
-            for session in sessions.sorted(by: { order[$0.spaceID, default: .max] < order[$1.spaceID, default: .max] }) {
+            let migrated = try sessions.map { session in
                 let id = try owner(session.spaceID)
-                var result = merged[id] ?? ProfileSession(profileID: id)
-                let tabOffset = result.tabs.count
-                let itemOffset = result.tabs.count + result.documents.count
-                if merged[id] == nil || session.spaceID == activeSpace {
-                    result.activeTabIndex = session.activeTabIndex.map { $0 + tabOffset }
-                    result.activePinID = session.activePinID
-                    result.activeDocumentID = session.activeDocumentID
-                }
-                result.tabs += session.tabs
-                result.splits += (session.splits ?? []).compactMap { $0.map { $0 + tabOffset } }
-                result.documents += (session.documents ?? []).map { TodayDocumentPlace(id: $0.id, index: $0.index + itemOffset) }
-                merged[id] = result
+                return ProfileSession(profileID: id, tabs: session.tabs,
+                    activeTabIndex: session.activeTabIndex,
+                    activePinID: session.activePinID.map { favoriteIDs[id]?[$0] ?? $0 },
+                    splits: session.splits ?? [], documents: session.documents ?? [],
+                    activeDocumentID: session.activeDocumentID)
             }
-            return Window(profiles: profiles.compactMap { merged[$0.id] },
-                          activeProfileID: try owner(activeSpace), placement: window.placement)
+            return Window(profiles: migrated, activeProfileID: try owner(activeSpace), placement: window.placement)
         }
 
         // Previously shared history, archive and unfiled documents stay in
         // Personal. They have no reliable old profile ownership to infer.
         let personal = stage.appendingPathComponent(defaultID.uuidString)
         try fm.createDirectory(at: personal, withIntermediateDirectories: true)
-        let sharedNames = ["history.db", "archive.db", "favicons.db", "boosts.plist", "Documents"]
+        let sharedNames = ["history.db", "archive.db", "favicons.db", "boosts.json", "Documents"]
         for name in sharedNames {
             for suffix in name.hasSuffix(".db") ? ["", "-wal", "-shm"] : [""] {
                 let file = source.appendingPathComponent(name + suffix)
@@ -176,6 +171,12 @@ enum ProfileMigration {
                     try fm.copyItem(at: file, to: personal.appendingPathComponent(name + suffix))
                 }
             }
+        }
+        if let zoom = UserDefaults.standard.dictionary(forKey: "browser.siteZoom") as? [String: Double], source == legacyRoot, !isTesting {
+            try write(zoom, "zoom.plist", at: personal)
+        }
+        if let exceptions = UserDefaults.standard.stringArray(forKey: "browser.contentBlockingExceptions"), source == legacyRoot, !isTesting {
+            try write(exceptions, "content-blocking.plist", at: personal)
         }
         // A document formerly used in another profile gets an independent
         // copy there. Its ID and contents remain intact.

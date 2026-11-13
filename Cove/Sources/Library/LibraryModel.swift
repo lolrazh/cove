@@ -33,19 +33,15 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var isPresented = false
     @Published var section: Section = .downloads
 
-    let downloads: DownloadManager
-    let archive: TabArchive
-    let historyStore: HistoryStore
-    let faviconStore: FaviconStore
+    var downloads: DownloadManager { tabManager.services.downloadManager }
+    var archive: TabArchive { tabManager.archive }
+    var historyStore: HistoryStore { tabManager.services.historyStore }
+    var faviconStore: FaviconStore { tabManager.services.faviconStore }
     private unowned let tabManager: TabManager
     private var cancellables: Set<AnyCancellable> = []
 
-    init(tabManager: TabManager, services: TabSessionServices, archive: TabArchive) {
+    init(tabManager: TabManager) {
         self.tabManager = tabManager
-        self.downloads = services.downloadManager
-        self.archive = archive
-        self.historyStore = services.historyStore
-        self.faviconStore = services.faviconStore
 
         // The Library lives somewhere else in the other layout; switching
         // closes it rather than carrying it across.

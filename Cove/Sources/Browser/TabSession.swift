@@ -20,16 +20,16 @@ struct TabSessionServices {
     let boosts: BoostInjector
 
     /// The same services, browsing with another context.
-    func with(_ context: BrowsingContext) -> TabSessionServices {
+    @MainActor func with(_ context: BrowsingContext) -> TabSessionServices {
         TabSessionServices(
-            historyStore: historyStore,
+            historyStore: context.profileData?.history ?? historyStore,
             faviconStore: context.faviconStore,
-            downloadManager: downloadManager,
-            webKitEnvironment: webKitEnvironment,
-            contentBlocker: contentBlocker,
+            downloadManager: context.profileData?.downloads ?? downloadManager,
+            webKitEnvironment: context.profileData?.environment ?? webKitEnvironment,
+            contentBlocker: context.profileData?.blocker ?? contentBlocker,
             context: context,
-            siteZoom: siteZoom,
-            boosts: boosts
+            siteZoom: context.profileData?.zoom ?? siteZoom,
+            boosts: context.profileData?.boosts ?? boosts
         )
     }
 }

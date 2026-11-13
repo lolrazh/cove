@@ -25,11 +25,18 @@ final class SiteZoomStore {
     private static let key = "browser.siteZoom"
 
     private let defaults: UserDefaults
+    private var fileURL: URL?
     private var zooms: [String: Double]
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.zooms = defaults.dictionary(forKey: Self.key) as? [String: Double] ?? [:]
+    }
+
+    init(fileURL: URL) {
+        self.defaults = .standard
+        self.fileURL = fileURL
+        self.zooms = StoreFile.read(fileURL) { try? PropertyListDecoder().decode([String: Double].self, from: $0) } ?? [:]
     }
 
     func zoom(for url: URL?) -> Double {
@@ -41,6 +48,11 @@ final class SiteZoomStore {
     func setZoom(_ zoom: Double, for url: URL?) {
         guard let host = url?.host() else { return }
         zooms[host] = zoom == 1 ? nil : zoom
-        defaults.set(zooms, forKey: Self.key)
+        if let fileURL {
+            try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if let data = try? PropertyListEncoder().encode(zooms) { try? data.write(to: fileURL, options: .atomic) }
+        } else {
+            defaults.set(zooms, forKey: Self.key)
+        }
     }
 }

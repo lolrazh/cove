@@ -190,7 +190,7 @@ final class SessionStore {
         }
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
-        guard let data = try? encoder.encode(windows) else { return }
+        guard let data = try? encoder.encode(windows + restorableWindows) else { return }
         try? FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: fileURL, options: .atomic)
     }

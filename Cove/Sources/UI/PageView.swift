@@ -31,8 +31,8 @@ struct PageView: View {
         if tab.isNewTabPage {
             NewTabPage(
                 settingsStore: appServices.settingsStore,
-                historyStore: appServices.historyStore,
-                faviconStore: appServices.faviconStore
+                historyStore: tab.services.historyStore,
+                faviconStore: tab.services.faviconStore
             ) { input in
                 tab.navigate(input)
             }
