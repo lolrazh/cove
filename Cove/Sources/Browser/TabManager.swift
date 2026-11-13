@@ -899,8 +899,7 @@ final class TabManager: ObservableObject {
         profileStore?.change { $0.moveProfile(id, by: offset) }
     }
 
-    /// Deletes a profile in every window: its Today tabs go to the archive and
-    /// its Pinned with it. This window moves to the profile before it.
+    /// Deletes a profile in every window. This window first selects a neighbor.
     func deleteProfile(_ id: UUID) {
         guard let profileStore, profiles.count > 1 else { return }
         if id == activeProfileID, let neighbor = adjacentProfile(-1) ?? adjacentProfile(1) {
@@ -931,6 +930,9 @@ final class TabManager: ObservableObject {
         let next = parkedProfiles.removeValue(forKey: id)
         commandBar.dismiss()
         library.dismiss()
+        boostEditor = nil
+        isShowingSiteControls = false
+        draggedTabID = nil
         activeProfileID = id
         trackDocuments()
         reconcilePinnedTabs(with: pinStore.layout)

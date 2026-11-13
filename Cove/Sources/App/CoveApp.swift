@@ -44,14 +44,8 @@ struct CoveApp: App {
         .handlesExternalEvents(matching: [])
 
         WindowGroup("History", id: HistoryWindow.windowID, for: UUID.self) { $profileID in
-            let id = profileID ?? Profile.defaultID
-            let context = appServices.context(for: id)
-            if let data = context.profileData {
-                HistoryWindow(historyStore: data.history, faviconStore: data.favicons) { urlString in
-                    guard let url = URL(string: urlString) else { return }
-                    appServices.externalURLRouter.open([url], in: id)
-                }
-            }
+            ProfileHistoryView(appServices: appServices, store: appServices.profileStore,
+                               profileID: profileID ?? Profile.defaultID)
         }
         .defaultSize(width: 760, height: 560)
         .handlesExternalEvents(matching: [])
@@ -68,6 +62,24 @@ struct CoveApp: App {
     }
 
 
+}
+
+private struct ProfileHistoryView: View {
+    let appServices: AppServices
+    @ObservedObject var store: ProfileStore
+    let profileID: UUID
+
+    var body: some View {
+        if let profile = store.profiles.profile(profileID), let data = store.context(for: profile).profileData {
+            HistoryWindow(historyStore: data.history, faviconStore: data.favicons) { urlString in
+                guard let url = URL(string: urlString) else { return }
+                appServices.externalURLRouter.open([url], in: profileID)
+            }
+            .navigationTitle("\(profile.name) History")
+        } else {
+            Text("This profile was deleted.").foregroundStyle(.secondary)
+        }
+    }
 }
 
 private extension Scene {

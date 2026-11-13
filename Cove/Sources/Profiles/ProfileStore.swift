@@ -37,8 +37,7 @@ final class ProfileStore: ObservableObject {
         save()
     }
 
-    /// What a profile's tabs browse with: its profile's context, made the first
-    /// time it's needed.
+    /// One context per profile, shared by its windows.
     func context(for profile: Profile) -> BrowsingContext {
         if let context = contexts[profile.id] { return context }
         let context = makeContext(profile.id)
@@ -46,17 +45,16 @@ final class ProfileStore: ObservableObject {
         return context
     }
 
-    /// Deletes a profile and everything sites stored in it. Its profiles move
-    /// to the default profile, whose windows rebuild their tabs on the
-    /// default store before the data goes.
+    /// Removes this profile's data after windows switch away. No records
+    /// are transferred to the remaining profiles.
     func deleteProfile(_ id: UUID) {
-        guard id != Profile.defaultID else { return }
+        guard id != Profile.defaultID, let profile = profiles.profile(id) else { return }
+        let context = context(for: profile)
         change { $0.removeProfile(id) }
-        let context = contexts.removeValue(forKey: id)
+        contexts[id] = nil
+        context.profileData?.deleteRecords()
         Task {
-            if let store = context?.dataStore {
-                await store.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
-            }
+            await context.dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
             // Fails while WebKit still holds the store; the data is gone
             // either way, and the next launch removes what's left.
             try? await WKWebsiteDataStore.remove(forIdentifier: id)
@@ -67,6 +65,15 @@ final class ProfileStore: ObservableObject {
     /// at launch, before any web view can open one.
     func removeOrphanedDataStores() {
         let kept = Set(profiles.profiles.map(\.id))
+        // Remove any files recreated by a late callback during deletion.
+        if let root = fileURL?.deletingLastPathComponent(),
+           let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) {
+            for folder in folders {
+                if let id = UUID(uuidString: folder.lastPathComponent), !kept.contains(id) {
+                    try? FileManager.default.removeItem(at: folder)
+                }
+            }
+        }
         Task {
             for id in await WKWebsiteDataStore.allDataStoreIdentifiers where !kept.contains(id) {
                 try? await WKWebsiteDataStore.remove(forIdentifier: id)
