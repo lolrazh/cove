@@ -213,7 +213,7 @@ extension DownloadManager: WKDownloadDelegate {
         save()
         hasSessionDownloads = true
         if let origin {
-            started.send(DownloadStarted(windowNumber: origin.window, sourceInWindow: origin.point, pageInWindow: origin.page, icon: item.fileIcon, filename: item.filename))
+            started.send(DownloadStarted(windowNumber: origin.window, sourceInWindow: origin.point, pageInWindow: origin.page, filename: item.filename))
         }
         return partial
     }

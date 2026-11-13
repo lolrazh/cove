@@ -7,7 +7,6 @@ struct DownloadStarted {
     let windowNumber: Int
     let sourceInWindow: CGPoint
     let pageInWindow: CGRect
-    let icon: NSImage
     let filename: String
 }
 
@@ -115,7 +114,7 @@ final class DownloadFlightView: NSView {
         // A burst must not create an unbounded queue or delay later transfers.
         if pending.count < 4 {
             pending.append(DownloadStarted(windowNumber: event.windowNumber, sourceInWindow: source,
-                                           pageInWindow: event.pageInWindow, icon: event.icon, filename: event.filename))
+                                           pageInWindow: event.pageInWindow, filename: event.filename))
         }
         launchPending()
     }
@@ -135,38 +134,58 @@ final class DownloadFlightView: NSView {
 
     private func fly(_ event: DownloadStarted, to end: CGPoint) {
         guard let layer else { return }
-        let start = convert(event.sourceInWindow, from: nil)
+        let source = convert(event.sourceInWindow, from: nil)
+        // Leave room for the card's brief dip, including links near a page edge.
+        let start = CGPoint(x: min(max(118, source.x), bounds.width - 118),
+                            y: min(max(20, source.y), bounds.height - 64))
         let distance = hypot(end.x - start.x, end.y - start.y)
-        // Lift first, then accelerate into the header. The last segment has no pause.
-        let lift = min(76, max(28, distance * 0.16))
-        let path = CGMutablePath()
-        path.move(to: start)
-        path.addCurve(to: end,
-                      control1: CGPoint(x: start.x + (end.x - start.x) * 0.08, y: start.y - lift),
-                      control2: CGPoint(x: end.x, y: end.y + min(60, distance * 0.12)))
+        let dip = min(42, distance * 0.15)
+        let dx = end.x - start.x, dy = end.y - start.y
+        // Fitted to the live Dia capture: dip and tilt, then a fast upward sweep.
+        // Keep position, scale, tilt, and fade on the same timeline.
+        let times: [NSNumber] = [0, 0.10, 0.24, 0.38, 0.62, 0.81, 0.95, 1]
+        let points = [
+            CGPoint(x: start.x, y: start.y + dip * 0.5),
+            CGPoint(x: start.x + dx * 0.007, y: start.y + dip * 0.58),
+            CGPoint(x: start.x + dx * 0.036, y: start.y + dip * 0.92),
+            CGPoint(x: start.x + dx * 0.065, y: start.y + dip),
+            CGPoint(x: start.x + dx * 0.25, y: start.y + dip * 0.29),
+            CGPoint(x: start.x + dx * 0.63, y: start.y + dy * 0.46),
+            CGPoint(x: start.x + dx * 0.96, y: start.y + dy * 0.93), end
+        ]
         let file = makeCard(for: event)
         file.position = end
         file.shadowColor = NSColor.black.cgColor
-        file.shadowOpacity = 0.22
-        file.shadowRadius = 10
-        file.shadowOffset = CGSize(width: 0, height: 3)
+        file.shadowOpacity = 0.28
+        file.shadowRadius = 20
+        file.shadowOffset = CGSize(width: 0, height: 12)
+        file.shadowPath = CGPath(roundedRect: file.bounds, cornerWidth: 16, cornerHeight: 16, transform: nil)
         file.opacity = 0
         layer.addSublayer(file)
         let id = UUID()
         flights[id] = file
         let position = CAKeyframeAnimation(keyPath: "position")
-        position.path = path
-        position.calculationMode = .paced
-        position.timingFunction = CAMediaTimingFunction(controlPoints: 0.77, 0, 0.175, 1)
+        position.values = points.map { NSValue(point: $0) }
+        position.keyTimes = times
+        position.calculationMode = .cubic
         let scale = CAKeyframeAnimation(keyPath: "transform.scale")
-        scale.values = [0.97, 1, 1, 0.08]
-        scale.keyTimes = [0, 0.12, 0.58, 1]
+        scale.values = [0.97, 1.04, 1.06, 1.02, 0.99, 0.88, 0.45, 0.36]
+        scale.keyTimes = times
+        scale.calculationMode = .cubic
+        let tilt = CAKeyframeAnimation(keyPath: "transform.rotation.z")
+        let direction = dx <= 0 ? 1.0 : -1.0
+        tilt.values = [0, -0.013, -0.057, -0.105, -0.065, -0.009, 0, 0].map { $0 * direction }
+        tilt.keyTimes = times
+        tilt.calculationMode = .cubic
         let opacity = CAKeyframeAnimation(keyPath: "opacity")
-        opacity.values = [1, 1, 0]
-        opacity.keyTimes = [0, 0.88, 1]
+        opacity.values = [0, 1, 1, 0.96, 0.12, 0]
+        opacity.keyTimes = [0, 0.08, 0.62, 0.81, 0.95, 1]
+        let shadow = CAKeyframeAnimation(keyPath: "shadowRadius")
+        shadow.values = [0, 20, 20, 0]
+        shadow.keyTimes = [0, 0.10, 0.62, 1]
         let group = CAAnimationGroup()
-        group.animations = [position, scale, opacity]
-        group.duration = 0.30
+        group.animations = [position, scale, tilt, opacity, shadow]
+        group.duration = 0.35
         CATransaction.begin()
         CATransaction.setCompletionBlock { [weak self] in
             Task { @MainActor in
@@ -193,15 +212,18 @@ final class DownloadFlightView: NSView {
         appearance.performAsCurrentDrawingAppearance {
             card.backgroundColor = NSColor.windowBackgroundColor.cgColor
             card.borderColor = NSColor.secondarySystemFill.cgColor
+            let titleColor: NSColor = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white : .black
             let icon = CALayer()
             icon.frame = CGRect(x: 8, y: 8, width: 20, height: 20)
-            icon.contents = event.icon.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            let image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)?
+                .withSymbolConfiguration(.init(paletteColors: [NSColor.secondaryLabelColor]))
+            icon.contents = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
             icon.contentsGravity = .resizeAspect
             icon.contentsScale = scale
             card.addSublayer(icon)
             for (text, size, y, color, truncation) in [
-                (event.filename, 12.0, 3.0, NSColor.labelColor, CATextLayerTruncationMode.middle),
-                ("Downloading…", 10.0, 18.0, NSColor.secondaryLabelColor, CATextLayerTruncationMode.end)
+                (event.filename, 12.0, 3.0, titleColor, CATextLayerTruncationMode.middle),
+                ("Downloading…", 10.0, 18.0, titleColor.withAlphaComponent(0.7), CATextLayerTruncationMode.end)
             ] {
                 let label = CATextLayer()
                 label.frame = CGRect(x: 36, y: y, width: 176, height: size + 3)
