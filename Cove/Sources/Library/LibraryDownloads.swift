@@ -50,14 +50,16 @@ private struct DownloadRow: View {
                 if canOpen {
                     Button { manager.open(item) } label: { fileLabel }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(item.filename)
+                        .accessibilityValue(status)
                 } else {
                     fileLabel
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(item.filename)
+                        .accessibilityValue(status)
                 }
             }
             .help(item.detail ?? item.filename)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(item.filename)
-            .accessibilityValue(status)
             actionButton.frame(width: 24)
         }
         .padding(.horizontal, 6)
@@ -133,7 +135,9 @@ private struct DownloadRow: View {
             if !item.fileExists { return "File moved or deleted" }
             if let detail = item.detail { return detail }
             return bytes(max(0, item.totalBytes))
-        case .failed: return item.detail == "Interrupted" ? "Interrupted — try again" : "Download failed — try again"
+        case .failed:
+            if !canRetry { return "Download failed" }
+            return item.detail == "Interrupted" ? "Interrupted — try again" : "Download failed — try again"
         case .cancelled: return "Cancelled"
         }
     }

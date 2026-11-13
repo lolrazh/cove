@@ -18,7 +18,6 @@ final class DownloadManager: NSObject, ObservableObject {
 
     var hasActiveDownloads: Bool { items.contains { $0.state == .downloading } }
     var completedCount: Int { items.count { $0.state == .completed } }
-    var hasUnknownProgress: Bool { items.contains { $0.state == .downloading && $0.totalBytes <= 0 } }
     var overallProgress: Double {
         let active = items.filter { $0.state == .downloading }
         let total = active.reduce(0.0) { $0 + Double(max($1.totalBytes, 0)) }
@@ -238,6 +237,7 @@ extension DownloadManager: WKDownloadDelegate {
                 try? FileManager.default.removeItem(at: partial.deletingLastPathComponent())
             }
             item.markFailed(message)
+            self.hasUnseenDownloads = true
             self.save()
         }
     }
