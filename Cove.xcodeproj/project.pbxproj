@@ -34,6 +34,7 @@
 		24E5B3D1A1A79003A53DB07C /* EaselTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4202A359D38DEBD964995D4A /* EaselTests.swift */; };
 		25D5A87F08AB34D1E31F7917 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74DE51D644E19087E579BD8A /* AppServices.swift */; };
 		2650DF001201AE15A92D540E /* ChromeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5329BD6F7EB6F938B6CFD2D /* ChromeTokens.swift */; };
+		26FEA5A3E79318DC9EC621E2 /* PinnedTileLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89740C1128C0629831BE2A8E /* PinnedTileLayoutTests.swift */; };
 		27BC728C71562CAFC69D3553 /* TabSweepClock.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8689CC41CCE917E126550C0 /* TabSweepClock.swift */; };
 		27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA0C2299D7B396616C6EE7E /* NavigationRequestBuilder.swift */; };
 		288B6FC14800ADEDBEC2882D /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAD4F48AAADD750585F40AB /* NavigationBar.swift */; };
@@ -57,6 +58,7 @@
 		46434A6A6301F03AE371D46B /* LibraryDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8823D7DB2E8EB97B61B06127 /* LibraryDownloads.swift */; };
 		4705C23650C813A161C69316 /* ExtensionToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC26A88B488509DE62829A8 /* ExtensionToolbar.swift */; };
 		474C8D54045B639253D0D8F4 /* DocumentTabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13156B38A908E66662AFF69B /* DocumentTabItem.swift */; };
+		4A358ADD1654078B82FECBEF /* SidebarPinnedGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E4FBAD7C2590131C0F73ECF /* SidebarPinnedGrid.swift */; };
 		4BB47B91D1A497DAB48DB876 /* SpaceSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65ED66F20AE55D36E3B79E54 /* SpaceSwitcher.swift */; };
 		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
 		4EE45757F76BCE50BA2AED6D /* BrowserShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1371EC35AEAB2357849190 /* BrowserShellView.swift */; };
@@ -272,6 +274,7 @@
 		7CA337274A4F23ED7FF72368 /* Site.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Site.swift; sourceTree = "<group>"; };
 		7CF5395CC7CB1F1610C68137 /* TabSplitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSplitTests.swift; sourceTree = "<group>"; };
 		7E48EF71136ABD49814186EC /* ExtensionTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionTab.swift; sourceTree = "<group>"; };
+		7E4FBAD7C2590131C0F73ECF /* SidebarPinnedGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarPinnedGrid.swift; sourceTree = "<group>"; };
 		7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateBadge.swift; sourceTree = "<group>"; };
 		7F8C4A4C50DA11F9B9115642 /* SpaceCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceCommands.swift; sourceTree = "<group>"; };
 		81018FBD0857C80DE7347A16 /* HistoryMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryMenu.swift; sourceTree = "<group>"; };
@@ -281,6 +284,7 @@
 		875E7F241F959DD45E691CEA /* TabReordering.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabReordering.swift; sourceTree = "<group>"; };
 		87C357E43C325692F733FA5E /* DocumentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentStoreTests.swift; sourceTree = "<group>"; };
 		8823D7DB2E8EB97B61B06127 /* LibraryDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDownloads.swift; sourceTree = "<group>"; };
+		89740C1128C0629831BE2A8E /* PinnedTileLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedTileLayoutTests.swift; sourceTree = "<group>"; };
 		8CE7C857A026C6258CF096A9 /* EaselClipView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EaselClipView.swift; sourceTree = "<group>"; };
 		8E0D8B72636BB66A1C1A7A8D /* ChromeTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTheme.swift; sourceTree = "<group>"; };
 		8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedTabShape.swift; sourceTree = "<group>"; };
@@ -403,6 +407,7 @@
 				0266CA58A74F7DF8FAE2DF32 /* PeekView.swift */,
 				7F051A3333C75DCC3F63EA71 /* PrivateBadge.swift */,
 				B4A8077A99B1B7F8AD4A2A2C /* SavePagePanel.swift */,
+				7E4FBAD7C2590131C0F73ECF /* SidebarPinnedGrid.swift */,
 				04D28A7D2B78FAF8E9627AE8 /* SidebarTabView.swift */,
 				E46FF27DE8D8B8B1C8C427D2 /* SiteControls.swift */,
 				C8F2B914158DA789C71247F6 /* SiteMonogram.swift */,
@@ -629,6 +634,7 @@
 				55F1BE1EEC7CD3C49C11312B /* NowPlayingTests.swift */,
 				9F9441DA6B0B13627F88CD19 /* PageCaptureTests.swift */,
 				B035625AA34C20AF6AE5C781 /* PageZoomTests.swift */,
+				89740C1128C0629831BE2A8E /* PinnedTileLayoutTests.swift */,
 				8545037732F73C17A697C420 /* PinsTests.swift */,
 				4553C173601A5AA1E8F48DB8 /* PinStoreTests.swift */,
 				C727569DA84301B3DC2A1235 /* PrivateFaviconStoreTests.swift */,
@@ -779,6 +785,7 @@
 				EBCB0000D38DD297DF7CF1A0 /* PageCaptureTests.swift in Sources */,
 				E5AE51EE2CE832AA6664568B /* PageZoomTests.swift in Sources */,
 				075071FC14BEC2D2E1702E6A /* PinStoreTests.swift in Sources */,
+				26FEA5A3E79318DC9EC621E2 /* PinnedTileLayoutTests.swift in Sources */,
 				922B57035DCAEB53B1DAEB44 /* PinsTests.swift in Sources */,
 				CBF6FD46EB056C2293A94B5C /* PrivateFaviconStoreTests.swift in Sources */,
 				F60B406A31496424B3AEE1B7 /* SidebarTreeTests.swift in Sources */,
@@ -898,6 +905,7 @@
 				14F9E6C68FB8FC3EFDBEFA65 /* SearchSuggestions.swift in Sources */,
 				CAA22E0A90AC837D1ECC1F3D /* SessionStore.swift in Sources */,
 				977F645F67233DA4050A9B29 /* SettingsView.swift in Sources */,
+				4A358ADD1654078B82FECBEF /* SidebarPinnedGrid.swift in Sources */,
 				7873CE0BDD7C315BBE04ABB4 /* SidebarTabView.swift in Sources */,
 				874933CBFE80325EC0933239 /* SidebarTree.swift in Sources */,
 				215018DF2FB2C80480C034F5 /* Site.swift in Sources */,
