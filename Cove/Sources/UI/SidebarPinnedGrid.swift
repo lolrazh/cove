@@ -67,11 +67,11 @@ private struct SidebarPinnedTile: View {
     }
 }
 
-/// The favicon supplies several soft colors; its original stays crisp above.
-/// This only uses the cached favicon, never page sampling or color extraction.
+/// The favicon stays crisp above one shared color field for the fill and rim.
 private struct PinnedTileSurface: View {
     let image: NSImage?
     let isActive: Bool
+    @State private var colorField: NSImage?
 
     var body: some View {
         RoundedRectangle(cornerRadius: 10)
@@ -82,19 +82,34 @@ private struct PinnedTileSurface: View {
                     .opacity(isActive ? 1 : 0)
             }
             .overlay {
-                if let image, isActive {
-                    GeometryReader { proxy in
-                        Image(nsImage: image)
+                if isActive {
+                    if let colorField {
+                        Image(nsImage: colorField)
                             .resizable()
-                            .scaledToFill()
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                            .blur(radius: 14)
-                            .opacity(0.24)
+                            .interpolation(.high)
+                            .opacity(0.40)
                     }
-                    .transition(.opacity)
                 }
             }
             .clipShape(.rect(cornerRadius: 10))
+            .overlay {
+                if isActive {
+                    let rim = RoundedRectangle(cornerRadius: 10)
+                    // Keep the edge readable for monochrome or missing icons.
+                    rim.strokeBorder(ChromePalette.onTheme, lineWidth: 2)
+                        .opacity(0.24)
+                    if let colorField {
+                        Image(nsImage: colorField)
+                            .resizable()
+                            .interpolation(.high)
+                            .saturation(1.2)
+                            .mask(rim.strokeBorder(lineWidth: 2))
+                    }
+                }
+            }
+            .onChange(of: image, initial: true) { _, image in
+                colorField = image.flatMap(PinColorField.make)
+            }
             .allowsHitTesting(false)
     }
 }
