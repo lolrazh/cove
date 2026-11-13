@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WebKit
 @testable import Cove
 
 @MainActor
@@ -38,4 +39,64 @@ struct ProfileDataTests {
         let closed = try #require(restored.archive.lastClosed)
         #expect(restored.archive.take(closed.id)?.interactionState == Data([7]))
     }
+    @Test func switchingProfilesChangesEveryDataSourceAndRetainsTabs() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let suite = "ProfileSwitchTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            defaults.removePersistentDomain(forName: suite)
+        }
+        defaults.set(false, forKey: BrowserSettingKeys.contentBlockingEnabled)
+        let settings = BrowserSettingsStore(defaults: defaults)
+        let extensions = ExtensionLibrary(directory: nil)
+        let store = ProfileStore(fileURL: nil) { id in
+            let data = ProfileData(id: id, settings: settings, root: root)
+            return .profile(id, faviconStore: data.favicons, extensions: extensions, profileData: data, persistent: false)
+        }
+        let first = store.profiles.profiles[0]
+        var second = first
+        store.change { second = $0.addProfile() }
+        let context = store.context(for: first)
+        let data = try #require(context.profileData)
+        let services = TabSessionServices(historyStore: data.history, faviconStore: data.favicons,
+            downloadManager: data.downloads, webKitEnvironment: data.environment,
+            contentBlocker: data.blocker, context: context, siteZoom: data.zoom, boosts: data.boosts)
+        let pins = PinStore(fileURL: nil)
+        let manager = TabManager(settings: settings, services: services, archive: data.archive,
+            pins: pins, profiles: store, documents: data.documents, session: nil)
+        manager.addTab(url: "file:///dev/null")
+        let pinned = try #require(manager.activeTabID)
+        manager.pinTab(pinned)
+        data.history.recordVisit(url: "https://only-personal.example", title: "Only Personal")
+        let cookie = try #require(HTTPCookie(properties: [.domain: "isolation.example", .path: "/", .name: "profile", .value: "personal"]))
+        await context.dataStore.httpCookieStore.setCookie(cookie)
+        let secondContext = store.context(for: second)
+        #expect(await secondContext.dataStore.httpCookieStore.allCookies().isEmpty)
+        manager.switchToProfile(second.id)
+        #expect(manager.services.context === secondContext)
+        #expect(manager.pinned.isEmpty)
+        #expect(manager.archive !== data.archive)
+        #expect(manager.documentStore !== data.documents)
+        manager.commandBar.present(.newTab)
+        #expect(!manager.commandBar.results.contains { $0.destination == "https://only-personal.example" })
+        manager.commandBar.dismiss()
+        let secondTab = try #require(manager.activeTabID)
+        // A child opened by the parked profile cannot join the visible one.
+        manager.addTab(request: URLRequest(url: URL(string: "file:///dev/null?child")!), nextTo: pinned)
+        #expect(manager.activeTabID == secondTab)
+        #expect(!manager.tabs.contains { $0.currentURL.contains("child") })
+        manager.switchToProfile(first.id)
+        #expect(manager.pinned.tabs.map(\.id) == [pinned])
+        #expect(manager.tabs.contains { $0.currentURL.contains("child") })
+        #expect(manager.services.historyStore === data.history)
+        manager.switchToProfile(second.id)
+        #expect(manager.activeTabID == secondTab)
+        store.change { $0.removeProfile(second.id) }
+        #expect(manager.activeProfileID == first.id)
+        #expect(!manager.allTabs.contains { $0.id == secondTab })
+        #expect(!data.archive.entries.contains { $0.url.contains("child") })
+        manager.allTabs.forEach { $0.close() }
+    }
+
 }

@@ -38,8 +38,8 @@ final class BrowsingContext {
 
     /// Another profile's: a persistent data store of its own, found again by
     /// the profile's ID on every launch, and extension storage the same way.
-    static func profile(_ id: UUID, faviconStore: FaviconStore, extensions library: ExtensionLibrary, profileData: ProfileData? = nil) -> BrowsingContext {
-        let dataStore = WKWebsiteDataStore(forIdentifier: id)
+    static func profile(_ id: UUID, faviconStore: FaviconStore, extensions library: ExtensionLibrary, profileData: ProfileData? = nil, persistent: Bool = true) -> BrowsingContext {
+        let dataStore = persistent ? WKWebsiteDataStore(forIdentifier: id) : .nonPersistent()
         return BrowsingContext(
             dataStore: dataStore,
             faviconStore: faviconStore,

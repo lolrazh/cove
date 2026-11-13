@@ -283,6 +283,18 @@ final class TabManager: ObservableObject {
     }
 
     func addTab(request: URLRequest, nextTo openerID: UUID? = nil) {
+        // A background page can open a child after the user switches profiles.
+        // Keep that child with its opener, on the opener's browsing context.
+        if let openerID, let owner = profiles.first(where: { profile in
+            profile.id != activeProfileID && (parkedProfiles[profile.id]?.today.contains { $0.id == openerID } == true
+                || pinStore.pins(in: profile.id).pin(openerID) != nil)
+        }) {
+            let tab = makeTab(initialRequest: request, showsStartPage: false, services: services(for: owner))
+            if parkedProfiles[owner.id] == nil { parkedProfiles[owner.id] = ParkedProfile(today: [], activeTabID: nil, activeDocumentID: nil, splits: []) }
+            parkedProfiles[owner.id]?.today.append(.tab(tab))
+            if parkedProfiles[owner.id]?.activeTabID == nil { parkedProfiles[owner.id]?.activeTabID = tab.id }
+            return
+        }
         let tab = makeTab(initialRequest: request, showsStartPage: false)
         open(tab, nextTo: openerID ?? activeTabID)
     }
