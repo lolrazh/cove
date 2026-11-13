@@ -156,9 +156,15 @@ private struct SidebarSections: View {
     @ViewBuilder
     private var pinned: some View {
         if !page.pinned.isEmpty {
+            let tabs = page.pinned.items.compactMap(\.tab)
+            let otherItems = page.pinned.items.filter { $0.tab == nil }
             VStack(spacing: ChromeMetrics.sidebarSectionSpacing) {
-                SidebarPinnedGrid(tabs: page.pinned.items.compactMap(\.tab), tabManager: tabManager)
-                SidebarPinnedList(items: page.pinned.items.filter { $0.tab == nil }, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                if !tabs.isEmpty {
+                    SidebarPinnedGrid(tabs: tabs, tabManager: tabManager)
+                }
+                if !otherItems.isEmpty {
+                    SidebarPinnedList(items: otherItems, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                }
             }
             .acceptsTabDrops(toEndOf: .pinned, in: tabManager, dragging: $tabManager.draggedTabID)
         } else if showsDropZones {

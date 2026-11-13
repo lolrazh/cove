@@ -21,27 +21,34 @@ struct SidebarPinnedGrid: View {
 }
 
 private struct SidebarPinnedTile: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ObservedObject var tab: TabSession
     let tabManager: TabManager
     let isActive: Bool
     @State private var isRenaming = false
     @State private var draftTitle = ""
+    @State private var isHovered = false
 
     var body: some View {
         Button { tabManager.selectTab(tab.id) } label: {
             FaviconView(image: tab.favicon, size: 16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background {
-                    if isActive {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(ChromePalette.raised)
-                    }
+                    PinnedTileSurface(image: tab.favicon, isActive: isActive)
                 }
-                .chromeHoverSurface(restingFill: !isActive, minimumRadius: 10)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(ChromePalette.hover)
+                        .opacity(isHovered ? 0.35 : 0)
+                        .allowsHitTesting(false)
+                }
                 .contentShape(.rect(cornerRadius: 10))
                 .geometryGroup()
         }
         .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .animation(reduceMotion ? nil : ChromeMotion.hover, value: isHovered)
+        .animation(reduceMotion ? nil : ChromeMotion.hover, value: isActive)
         .opacity(tab.isAsleep ? 0.7 : 1)
         .help(tab.title)
         .accessibilityLabel(tab.title)
@@ -57,6 +64,38 @@ private struct SidebarPinnedTile: View {
             Button("Cancel", role: .cancel) {}
             Button("Save") { tab.rename(draftTitle) }
         }
+    }
+}
+
+/// The favicon supplies several soft colors; its original stays crisp above.
+/// This only uses the cached favicon, never page sampling or color extraction.
+private struct PinnedTileSurface: View {
+    let image: NSImage?
+    let isActive: Bool
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(ChromePalette.resting)
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(ChromePalette.raised)
+                    .opacity(isActive ? 1 : 0)
+            }
+            .overlay {
+                if let image, isActive {
+                    GeometryReader { proxy in
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .blur(radius: 14)
+                            .opacity(0.24)
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .clipShape(.rect(cornerRadius: 10))
+            .allowsHitTesting(false)
     }
 }
 
