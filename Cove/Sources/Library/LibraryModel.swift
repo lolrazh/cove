@@ -32,6 +32,8 @@ final class LibraryModel: ObservableObject {
 
     @Published private(set) var isPresented = false
     @Published var downloadsPresented = false
+    @Published var downloadFeedbackActive = false
+    @Published var downloadPulse = 0
     @Published var section: Section = .downloads
 
     var downloads: DownloadManager { tabManager.services.downloadManager }

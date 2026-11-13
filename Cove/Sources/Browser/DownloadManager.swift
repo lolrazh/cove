@@ -7,6 +7,8 @@ final class DownloadManager: NSObject, ObservableObject {
     @Published private(set) var items: [DownloadItem] = []
     @Published private(set) var hasUnseenDownloads = false
     @Published private(set) var hasSessionDownloads = false
+    let started = PassthroughSubject<DownloadStarted, Never>()
+    private var origins: [WKDownload: (window: Int, point: CGPoint, page: CGRect)] = [:]
     let settings: BrowserSettingsStore
     var dataStore: WKWebsiteDataStore = .nonPersistent()
     private let recordsURL: URL?
@@ -36,7 +38,16 @@ final class DownloadManager: NSObject, ObservableObject {
         }
     }
 
-    func handleDownload(_ download: WKDownload) { download.delegate = self }
+    func handleDownload(_ download: WKDownload, from webView: WKWebView) {
+        if let window = webView.window {
+            let cursor = window.convertPoint(fromScreen: NSEvent.mouseLocation)
+            let page = webView.convert(webView.bounds, to: nil)
+            // Keyboard downloads have no page click; use the page center in that case.
+            let source = page.contains(cursor) ? cursor : CGPoint(x: page.midX, y: page.midY)
+            origins[download] = (window.windowNumber, source, page)
+        }
+        download.delegate = self
+    }
 
     func cancelDownload(_ item: DownloadItem) {
         guard item.state == .downloading else { return }
@@ -167,6 +178,7 @@ extension DownloadManager: WKDownloadDelegate {
 
     private func prepare(_ download: WKDownload, filename: String) async -> URL? {
         let existing = downloadToItem[download]
+        let origin = origins.removeValue(forKey: download)
         guard let destination = await destination(for: filename) else {
             if let existing { cancelDownload(existing) }
             return nil
@@ -200,11 +212,15 @@ extension DownloadManager: WKDownloadDelegate {
         item.observeProgress(of: download)
         save()
         hasSessionDownloads = true
+        if let origin {
+            started.send(DownloadStarted(windowNumber: origin.window, sourceInWindow: origin.point, pageInWindow: origin.page, icon: item.fileIcon))
+        }
         return partial
     }
 
     nonisolated func downloadDidFinish(_ download: WKDownload) {
         Task { @MainActor in
+            self.origins.removeValue(forKey: download)
             guard let item = self.downloadToItem.removeValue(forKey: download) else { return }
             if let url = item.fileURL { self.reservations.remove(url) }
             self.retryViews.removeValue(forKey: item.id)
@@ -230,6 +246,7 @@ extension DownloadManager: WKDownloadDelegate {
     nonisolated func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         let message = error.localizedDescription
         Task { @MainActor in
+            self.origins.removeValue(forKey: download)
             guard let item = self.downloadToItem.removeValue(forKey: download) else { return }
             if let url = item.fileURL { self.reservations.remove(url) }
             self.retryViews.removeValue(forKey: item.id)

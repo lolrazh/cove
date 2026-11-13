@@ -6,10 +6,23 @@ struct DownloadsButton: View {
     @ObservedObject var manager: DownloadManager
     let colorScheme: ColorScheme
     var isVisible = true
-    @Environment(\.controlActiveState) private var controlState
+    @State private var highlight = false
+    @State private var highlightTask: Task<Void, Never>?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        Group {
+            if manager.hasSessionDownloads {
+                downloadButton
+            } else {
+                Color.clear.frame(width: ChromeMetrics.iconButtonSize, height: ChromeMetrics.iconButtonSize)
+                    .accessibilityHidden(true)
+            }
+        }
+        .anchorPreference(key: DownloadButtonAnchor.self, value: .bounds) { isVisible ? $0 : nil }
+    }
+
+    private var downloadButton: some View {
         Button { library.downloadsPresented.toggle() } label: {
             ZStack {
                 Circle().stroke(.secondary.opacity(0.18), lineWidth: 1.5)
@@ -24,6 +37,13 @@ struct DownloadsButton: View {
                     .font(.system(size: 11, weight: .semibold))
             }
             .frame(width: 18, height: 18)
+            .symbolEffect(.bounce, options: .speed(1.5), value: reduceMotion ? 0 : library.downloadPulse)
+            .background {
+                Circle().fill(.tint.opacity(0.25))
+                    .frame(width: 30, height: 30)
+                    .blur(radius: 4)
+                    .opacity(highlight ? 1 : 0)
+            }
             .overlay(alignment: .topTrailing) {
                 if manager.hasUnseenDownloads {
                     Circle().fill(.tint).frame(width: 5, height: 5).offset(x: 3, y: -2)
@@ -34,9 +54,19 @@ struct DownloadsButton: View {
         .accessibilityLabel("Downloads")
         .accessibilityValue(manager.hasActiveDownloads ? "Downloading" : manager.hasUnseenDownloads ? "New downloads" : "")
         .help("Downloads (⇧⌘J)")
-        .opacity(manager.hasSessionDownloads ? 1 : 0)
-        .allowsHitTesting(manager.hasSessionDownloads)
-        .accessibilityHidden(!manager.hasSessionDownloads)
+        .onChange(of: library.downloadPulse) {
+            guard isVisible else { return }
+            highlightTask?.cancel()
+            highlightTask = Task { @MainActor in
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { highlight = true }
+                try? await Task.sleep(for: .milliseconds(80))
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: reduceMotion ? 0.25 : 3)) { highlight = false }
+            }
+        }
+        .onDisappear { highlightTask?.cancel(); highlight = false }
         .popover(isPresented: Binding(
             get: { isVisible && library.downloadsPresented },
             set: { if isVisible { library.downloadsPresented = $0 } }
@@ -60,5 +90,6 @@ struct DownloadsButton: View {
             .environment(\.colorScheme, colorScheme)
         }
 
+        .accessibilityHidden(!manager.hasSessionDownloads || !isVisible)
     }
 }

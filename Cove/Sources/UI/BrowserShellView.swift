@@ -62,6 +62,16 @@ struct BrowserShellView<Content: View>: View {
         .overlay {
             CommandBarOverlay(model: tabManager.commandBar, onOpenLittleCove: appServices.externalURLRouter.openLittleCove)
         }
+        .overlayPreferenceValue(DownloadButtonAnchor.self) { anchor in
+            GeometryReader { geometry in
+                DownloadFeedback(manager: tabManager.services.downloadManager, library: tabManager.library,
+                                 destination: anchor.map { CGPoint(x: geometry[$0].midX, y: geometry[$0].midY) },
+                                 reduceMotion: reduceMotion)
+                    .id(tabManager.activeProfileID)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
         .backgroundPreferenceValue(ProfileEditorAnchor.self) { anchor in
             GeometryReader { geometry in
                 ProfileEditorPopover(
@@ -90,9 +100,13 @@ struct BrowserShellView<Content: View>: View {
             guard isSidebarHideable else { return }
             areTabsVisible = isPresented || isPointerOverTabs
         }
+        .onReceive(tabManager.library.$downloadFeedbackActive) { active in
+            if active && tabManager.hideTabs { areTabsVisible = true }
+            if !active { DispatchQueue.main.async { hideIfOutside() } }
+        }
         .onReceive(tabManager.library.$downloadsPresented) { isPresented in
             if isPresented && tabManager.hideTabs { areTabsVisible = true }
-            if !isPresented { hideIfOutside() }
+            if !isPresented { DispatchQueue.main.async { hideIfOutside() } }
         }
         .onChange(of: tabManager.isShowingSiteControls) { _, isPresented in
             if !isPresented { hideIfOutside() }
@@ -292,7 +306,7 @@ struct BrowserShellView<Content: View>: View {
     private func hideIfOutside() {
         guard tabManager.hideTabs, areTabsVisible, !isPointerOverTabs,
               !tabManager.isShowingSiteControls, !tabManager.library.isPresented,
-              !tabManager.library.downloadsPresented,
+              !tabManager.library.downloadsPresented, !tabManager.library.downloadFeedbackActive,
               tabManager.profileToEdit == nil else { return }
         areTabsVisible = false
     }

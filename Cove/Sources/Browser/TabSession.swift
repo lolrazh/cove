@@ -779,11 +779,11 @@ extension TabSession: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
-        services.downloadManager.handleDownload(download)
+        services.downloadManager.handleDownload(download, from: webView)
     }
 
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
-        services.downloadManager.handleDownload(download)
+        services.downloadManager.handleDownload(download, from: webView)
     }
 }
 
