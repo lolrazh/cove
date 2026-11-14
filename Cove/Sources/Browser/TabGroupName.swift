@@ -9,7 +9,7 @@ enum TabGroupName {
             let words = first.split(separator: " ").map(String.init)
             let shared = titles.dropFirst().reduce(words) { prefix, title in
                 let other = title.split(separator: " ").map(String.init)
-                return Array(zip(prefix, other).prefix { $0.caseInsensitiveCompare($1) == .orderedSame }.map(\.0))
+                return Array(zip(prefix, other).prefix { pair in pair.0.caseInsensitiveCompare(pair.1) == .orderedSame }.map(\.0))
             }
             let name = shared.count >= 2 ? shared.joined(separator: " ") : first
             return shortened(name)

@@ -22,7 +22,10 @@ extension TabManager {
             // Already on screen; pages it opens go beside its opener.
             host: TabSession.Host(
                 select: {},
-                openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: openerID) }
+                openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: openerID) },
+                openLinkInNewTab: { [weak self] request, background in
+                    self?.addTab(request: request, nextTo: openerID, grouping: background ? .backgroundLink : .foregroundLink)
+                }
             )
         )
         peek = Peek(tab: tab, openerID: openerID)
@@ -37,6 +40,6 @@ extension TabManager {
     func expandPeek() {
         guard let peek else { return }
         self.peek = nil
-        adoptTab(peek.tab, nextTo: peek.openerID)
+        adoptTab(peek.tab, nextTo: peek.openerID, grouping: .foregroundLink)
     }
 }

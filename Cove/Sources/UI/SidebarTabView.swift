@@ -114,6 +114,7 @@ private struct SidebarSections: View {
             + page.pinned.documents
             + page.pinned.folders.map(\.id)
             + page.splits.map(\.id)
+            + page.tabGroups.map(\.id)
     }
 
     private var tabAnimation: Animation? {
@@ -178,14 +179,17 @@ private struct SidebarSections: View {
     /// A split's tabs share one row.
     private var today: some View {
         VStack(spacing: ChromeMetrics.sidebarRowSpacing) {
-            ForEach(page.today.entries(splits: page.splits)) { entry in
+            ForEach(groupedEntries) { entry in
                 switch entry {
-                case .tab(let tab):
-                    SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
-                case .document(let id):
-                    SidebarDocumentRow(id: id, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
-                case .split(_, let tabs):
-                    SidebarSplitRow(tabs: tabs, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+                case .item(let item):
+                    todayRow(item)
+                case .group(let group, let items):
+                    SidebarTabGroup(group: group, tabs: group.members.compactMap { id in page.today.compactMap(\.tab).first { $0.id == id } }, tabManager: tabManager) {
+                        ForEach(items.filter { !group.isCollapsed || $0.contains(page.selection) }) { item in
+                            todayRow(item)
+                        }
+                    }
+                    .transition(.opacity)
                 }
             }
 
@@ -201,6 +205,52 @@ private struct SidebarSections: View {
         }
     }
 
+    private var groupedEntries: [GroupedSidebarEntry] {
+        let entries = page.today.entries(splits: page.splits)
+        var shown: Set<UUID> = []
+        return entries.compactMap { entry in
+            guard let group = page.tabGroups.first(where: { group in group.members.contains { entry.contains($0) } }) else {
+                return .item(entry)
+            }
+            guard shown.insert(group.id).inserted else { return nil }
+            return .group(group, entries.filter { item in group.members.contains { item.contains($0) } })
+        }
+    }
+
+    @ViewBuilder
+    private func todayRow(_ entry: TabEntry<TabSession>) -> some View {
+        switch entry {
+        case .tab(let tab):
+            SidebarTabRow(tab: tab, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+        case .document(let id):
+            SidebarDocumentRow(id: id, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+        case .split(_, let tabs):
+            SidebarSplitRow(tabs: tabs, tabManager: tabManager, draggedTabID: $tabManager.draggedTabID)
+        }
+    }
+
+}
+
+private enum GroupedSidebarEntry: Identifiable {
+    case item(TabEntry<TabSession>)
+    case group(TabGroup<UUID>, [TabEntry<TabSession>])
+    var id: UUID {
+        switch self {
+        case .item(let item): item.id
+        case .group(let group, _): group.id
+        }
+    }
+}
+
+private extension TabEntry where Tab == TabSession {
+    func contains(_ id: UUID?) -> Bool {
+        guard let id else { return false }
+        switch self {
+        case .tab(let tab): return tab.id == id
+        case .document(let document): return document == id
+        case .split(_, let tabs): return tabs.contains { $0.id == id }
+        }
+    }
 }
 
 extension EnvironmentValues {
