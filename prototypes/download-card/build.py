@@ -21,7 +21,7 @@ subprocess.run(['swiftc', '-parse-as-library', str(factory),
     str(ROOT / 'Cove/Sources/Library/DownloadProgressText.swift'),
     str(ROOT / 'prototypes/download-card/render.swift'), '-o', str(output / 'render')], check=True)
 subprocess.run([str(output / 'render'), str(metadata), str(output / 'cards')], check=True)
-rows = '\n'.join(f'''<article><img data-card="{i}" src="cards/{i}-16-dark.png" alt="Download card for {html.escape(s['name'], quote=True)}">
+rows = '\n'.join(f'''<article><img data-card="{i}" src="cards/{i}-12-dark.png" alt="Download card for {html.escape(s['name'], quote=True)}">
 <p>{html.escape(s['name'])}</p><small>{s['bytes'] / 1e6:.1f} MB</small></article>''' for i, s in enumerate(samples))
 page = '''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cove — Download card study</title>
@@ -40,7 +40,7 @@ article p{margin:18px 0 0;overflow-wrap:anywhere;font-size:13px}h2{font-size:21p
 </style>
 <main><h1>The download card, paused</h1>
 <p class="intro">COUNT recent file downloads. Images excluded. These are still simulations from Cove’s actual card renderer; no files are downloaded again.</p>
-<nav><label>Corners <select id="radius"><option value="16">16 pt · Current</option><option value="12">12 pt · Tighter</option><option value="10">10 pt · Tighter still</option></select></label>
+<nav><label>Corners <select id="radius"><option value="12">12 pt · Current</option><option value="16">16 pt · Previous</option><option value="10">10 pt · Tighter still</option></select></label>
 <label>Appearance <select id="appearance"><option value="dark">Dark</option><option value="light">Light</option></select></label>
 <label>Size <select id="zoom"><option value="1">Actual · 220 × 36 pt</option><option value="2">2× close-up</option></select></label></nav>
 <div class="grid">ROWS</div>

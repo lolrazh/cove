@@ -25,14 +25,14 @@ struct Sample: Decodable { let name: String; let bytes: Int64 }
                 }
             }
         }
-        try renderSheets(directory: directory)
+        try renderSheets(samples: samples, directory: directory)
     }
 }
 
 import SwiftUI
 
 @MainActor
-func renderSheets(directory: URL) throws {
+func renderSheets(samples: [Sample], directory: URL) throws {
     func save(_ view: some View, name: String) throws {
         let renderer = ImageRenderer(content: view.environment(\.colorScheme, .dark))
         renderer.scale = 2
@@ -46,13 +46,29 @@ func renderSheets(directory: URL) throws {
             .font(.system(size: 13)).foregroundStyle(.secondary)
         ForEach([16, 12, 10], id: \.self) { radius in
             VStack(alignment: .leading, spacing: 8) {
-                Text(radius == 16 ? "16 pt — current" : "\(radius) pt — option")
+                Text(radius == 12 ? "12 pt — current" : "\(radius) pt — option")
                     .font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
                 Image(nsImage: NSImage(contentsOf: directory.appendingPathComponent("0-\(radius)-dark.png"))!)
                     .resizable().frame(width: 440, height: 72)
             }
         }
     }.padding(32).foregroundStyle(.white).background(Color(white: 0.07)), name: "corners.png")
+    try save(VStack(alignment: .leading, spacing: 20) {
+        Text("Recent file downloads").font(.system(size: 22, weight: .semibold))
+        Text("Selected 12 pt corners · actual card rendering · dark and light")
+            .font(.system(size: 13)).foregroundStyle(.secondary)
+        ForEach(samples.indices, id: \.self) { index in
+            VStack(alignment: .leading, spacing: 8) {
+                Text(samples[index].name).font(.system(size: 12)).foregroundStyle(.secondary)
+                HStack(spacing: 16) {
+                    ForEach(["dark", "light"], id: \.self) { mode in
+                        Image(nsImage: NSImage(contentsOf: directory.appendingPathComponent("\(index)-12-\(mode).png"))!)
+                            .resizable().frame(width: 220, height: 36)
+                    }
+                }
+            }
+        }
+    }.padding(32).foregroundStyle(.white).background(Color(white: 0.07)), name: "files.png")
     let cases: [(String, Int64, Int64, Int?)] = [
         ("Your format", 25_800_000, 258_000_000, 18),
         ("Whole decimal stays visible", 26_000_000, 258_000_000, 17),
