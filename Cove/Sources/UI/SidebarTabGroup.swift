@@ -59,15 +59,29 @@ private struct TabGroupHeader: View {
     @State private var isHovered = false
 
     var body: some View {
-        Group {
-            if isRenaming {
-                header
-            } else {
-                Button { tabManager.toggleGroupCollapsed(group.id) } label: { header }
-                    .buttonStyle(.plain)
-                    .highPriorityGesture(TapGesture().modifiers(.command).onEnded { toggleGroupSelection() })
+        HStack(spacing: 0) {
+            Group {
+                if isRenaming {
+                    header
+                } else {
+                    Button { tabManager.toggleGroupCollapsed(group.id) } label: { header }
+                        .buttonStyle(.plain)
+                        .highPriorityGesture(TapGesture().modifiers(.command).onEnded { toggleGroupSelection() })
+                }
             }
+            Button { tabManager.closeGroup(group.id) } label: {
+                Image(systemName: ChromeSymbols.Tabs.close)
+                    .foregroundStyle(ChromePalette.onTheme)
+                    .opacity(0.65)
+            }
+            .buttonStyle(ChromeTabPresentation.sidebar.accessoryStyle)
+            .help("Close Group")
+            .accessibilityLabel("Close Group")
+            .opacity(isHovered && !isRenaming ? 1 : 0)
+            .allowsHitTesting(isHovered && !isRenaming)
+            .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         }
+        .background(ChromePalette.hover.opacity(isHovered || allSelected ? 1 : 0), in: .rect(cornerRadius: 10))
         .onHover { isHovered = $0 }
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isHovered)
         .contextMenu { groupMenu }
@@ -99,7 +113,6 @@ private struct TabGroupHeader: View {
         .foregroundStyle(ChromePalette.onTheme)
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.sidebarRowHeight)
-        .background(ChromePalette.hover.opacity(isHovered || allSelected ? 1 : 0), in: .rect(cornerRadius: 10))
         .contentShape(Rectangle())
         .accessibilityElement(children: isRenaming ? .contain : .combine)
         .accessibilityLabel(title)
