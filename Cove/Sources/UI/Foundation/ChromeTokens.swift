@@ -29,9 +29,9 @@ enum ChromeMetrics {
     /// Profile between the zoom button and the first tab.
     static let trafficLightTrailingGap: CGFloat = 10
 
-    /// The sidebar is resized by dragging its trailing edge; the lower bound
-    /// keeps the header's four controls clear of the traffic lights.
-    static let sidebarWidthRange: ClosedRange<CGFloat> = 220...400
+    /// Dia's visible sidebar measures 190 pt. Keep that compact width as the
+    /// default while retaining the resize range for longer titles.
+    static let sidebarWidthRange: ClosedRange<CGFloat> = 190...400
     static let sidebarDefaultWidth: CGFloat = sidebarWidthRange.lowerBound
     /// Room around sidebar rows, independent of the thin page frame.
     static let sidebarInset: CGFloat = 8

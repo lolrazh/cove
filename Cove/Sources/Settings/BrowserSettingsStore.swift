@@ -55,7 +55,7 @@ final class BrowserSettingsStore: ObservableObject {
         let savedSidebarWidth = defaults.double(forKey: BrowserSettingKeys.sidebarWidth)
         // Adopt the narrower default for the previous default-sized sidebar.
         // Keep widths that the user resized to another value.
-        self.sidebarWidth = savedSidebarWidth == 240 ? ChromeMetrics.sidebarDefaultWidth : savedSidebarWidth
+        self.sidebarWidth = [220, 240].contains(savedSidebarWidth) ? ChromeMetrics.sidebarDefaultWidth : savedSidebarWidth
         self.contentBlockingEnabled = defaults.bool(forKey: BrowserSettingKeys.contentBlockingEnabled)
         self.saveBrowsingHistory = defaults.bool(forKey: BrowserSettingKeys.saveBrowsingHistory)
         self.showRecentSites = defaults.bool(forKey: BrowserSettingKeys.showRecentSites)
