@@ -103,7 +103,7 @@ handling, `4db229c` bounded pending saves, `d3229c1` scoped wake opacity, and
 `4c12384` actual hidden-event barrier. This log and the short comparison clip
 are a separate commit.
 
-## Final build and cleanup
+## First final-build check and cleanup
 
 The final full suite passed **211 tests in 47 suites** in 13.975 seconds.
 Log: `/tmp/cove-close-restore-final-tests.log`. Result:
@@ -121,3 +121,68 @@ the original user window and download preview remain. Removed only our fixture
 tabs from the new Dia window. Another workflow had added a page there, so that
 window was kept. Stopped the fixture server and recordings. No user tabs were
 closed. The previous download-preview server on port 8771 remains available.
+
+## Cold-page follow-up
+
+Review of the longer final recording exposed a dark canvas and toolbar before
+sleeping pages loaded after restart. This was not a tab-order failure. The
+resolved color cache was memory-only, and new WebViews used the system canvas.
+
+Commit `8611739` adds an optional 24-bit RGB value to `SavedTab` and a nullable
+archive column. A restored page uses the current browsing-context cache first,
+then its saved color. Its new WebView receives that color before loading. Real
+document color changes update the canvas, toolbar, and saved session. Existing
+sessions and archives still load. No old-page screenshot or render delay was
+added. Pinned-tab storage is separate and is not changed by this fix.
+
+The focused suite passed 33 tests. Added checks cover legacy JSON, saved-color
+round trips, archive migration, initial WebView canvas color, and a real
+style-only page change that updates the saved color.
+
+The saved canvas color fixed the toolbar, but an archived page could still show
+WebKit's dark initial canvas. A backing fill behind the native view did not help
+and was removed. The final change (`f02e228`, `b5e0238`) keeps the known page
+color over a newly created WebView until the document reports its surface.
+`didFinish` provides a fallback for PDFs and pages without JavaScript. Existing
+WebViews do not restart this cover during normal navigation. The cover does
+not intercept input, hide the loading line, or wait for a fixed timer. Stale
+callbacks cannot change the state of a newer WebView.
+
+Checked two fixed background patches in every captured frame: page
+`(1600, 1100, 32, 32)` and toolbar `(1600, 35, 32, 20)`, in source pixels.
+These fixtures have a light page background. Gray values below 160 identify
+the dark failure here; they are not a general website-quality metric.
+
+| Capture | Frames | Dark page frames | Dark toolbar frames |
+| --- | ---: | ---: | ---: |
+| `cove-clean-burst.mov`, before color persistence | 2459 | 173 | 87 |
+| `cove-cold-colors.mov`, persisted color only | 998 | 61 | 0 |
+| `cove-first-content.mov`, final handoff | 748 | 0 | 0 |
+
+The final page patch stayed at gray 246 throughout. The sequences and lengths
+differ, so this is a regression check, not a timing benchmark. The final test
+restarted Cove with A/B/C, closed into cold B and A, then restored B and C. AX
+confirmed the order; the final screenshot confirmed visible C content, with
+the cover removed. Raw videos, `check-surfaces.py`, and `*-surfaces.json` are
+local under `build/close-restore-study/`.
+
+The full-suite rerun also exposed a timing assumption in the pending-save test.
+Commit `08b384e` captures the one-second deadline when closing, rather than when
+the queued task starts. The test yields until scheduled cleanup runs, with a
+bounded test timeout, and still checks all pages are released and undo creates
+a new session. The subsequent full suite passed 213 tests. Final combined-build
+results and cleanup are recorded below.
+
+## Completion
+
+The combined final build passed **213 tests in 47 suites** in 11.284 seconds:
+`/tmp/cove-close-restore-complete-tests.log`, result
+`build/dia-polish/Logs/Test/Test-Cove-2026.11.14_11-56-09-+0530.xcresult`.
+The lifecycle tests include reuse of an existing WebView, stale old-view
+callbacks, and the non-scripted-document fallback.
+
+Closed the second fixture window after restoring its A/B/C tabs. Stopped its
+server and recording, then relaunched the exact final build. The original Cove
+window and its tabs remain open on Virtual 16:9. The download-preview server
+remains available. All implementation and log changes are small commits on
+`main`; the work is pushed to GitHub.
