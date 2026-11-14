@@ -20,13 +20,30 @@ final class TabManager: ObservableObject {
     /// New tabs append; links open next to their opener. Notes keep their places.
     @Published var today: [TodayItem<TabSession>] = [] {
         // A tab that leaves Today leaves its split.
-        didSet { pruneSplits() }
+        didSet {
+            pruneSplits()
+            pruneTabGroups()
+            // Reordering must agree with grouped sidebar order. Insertions are
+            // arranged after their group metadata is installed, preserving undo slots.
+            let oldTabIDs = Set(oldValue.compactMap(\.tab).map(\.id))
+            if today.compactMap(\.tab).allSatisfy({ oldTabIDs.contains($0.id) }) {
+                let arranged = Self.arrangedToday(today, groups: tabGroups)
+                if arranged.map(\.id) != today.map(\.id) { today = arranged }
+            }
+            selectedTabIDs.formIntersection(Set(tabs.map(\.id)))
+            if let anchor = tabSelectionAnchorID, !tabs.contains(where: { $0.id == anchor }) { tabSelectionAnchorID = nil }
+        }
     }
     /// The profile's tabs shown side by side. A split's tabs stay in `tabs`,
     /// kept next to each other, and show as one entry; selecting any of them
     /// shows the split with that pane focused. Changed through the Split View
     /// calls.
-    @Published var splits: [TabSplit<UUID>] = []
+    @Published var splits: [TabSplit<UUID>] = [] {
+        didSet { containSplitsInGroups() }
+    }
+    @Published var tabGroups: [TabGroup<UUID>] = []
+    @Published var selectedTabIDs: Set<UUID> = []
+    var tabSelectionAnchorID: UUID?
     /// A live tab for each pin in this profile, with optional folders.
     /// Built from the store, so every window shows the same pins with tabs of
     /// its own.
@@ -187,10 +204,16 @@ final class TabManager: ObservableObject {
     /// since are left behind, and so are documents.
     private func restore(_ saved: SavedWindow?) {
         var shown: ParkedProfile?
+        var restoredIDs: Set<UUID> = []
         for savedProfile in saved?.profiles ?? [] {
             guard let profile = knownProfiles.profile(savedProfile.profileID) else { continue }
             let services = services(for: profile)
-            let tabs = savedProfile.tabs.map { makeTab(restoring: $0, services: services) }
+            let tabs = savedProfile.tabs.map { saved -> TabSession in
+                let candidate = saved.id ?? UUID()
+                let id = restoredIDs.insert(candidate).inserted ? candidate : UUID()
+                restoredIDs.insert(id)
+                return makeTab(id: id, restoring: saved, services: services)
+            }
             let documents = (savedProfile.documents ?? []).filter { services.context.profileData?.documents.documents[$0.id] != nil || baseDocuments?.documents[$0.id] != nil }
             let restored = ParkedProfile(
                 today: TodayItem.restoring(tabs: tabs, documents: documents),
@@ -199,6 +222,9 @@ final class TabManager: ObservableObject {
                 activeDocumentID: savedProfile.activeDocumentID,
                 splits: (savedProfile.splits ?? []).compactMap { split in
                     split.map { tabs.indices.contains($0) ? tabs[$0].id : nil }
+                },
+                tabGroups: (savedProfile.tabGroups ?? []).compactMap { group in
+                    group.map { tabs.indices.contains($0) ? tabs[$0].id : nil }
                 }
             )
             if profile.id == activeProfileID {
@@ -233,7 +259,8 @@ final class TabManager: ObservableObject {
             activePinID: profile.activeTabID.flatMap { pinnedTabs[$0] == nil ? nil : $0 },
             splits: profile.splits.compactMap { split in split.map { id in tabs.firstIndex { $0.id == id } } },
             documents: profile.today.documentPlaces(),
-            activeDocumentID: profile.activeDocumentID
+            activeDocumentID: profile.activeDocumentID,
+            tabGroups: profile.tabGroups.compactMap { group in group.map { id in tabs.firstIndex { $0.id == id } } }
         )
     }
 
@@ -284,7 +311,7 @@ final class TabManager: ObservableObject {
         open(tab)
     }
 
-    func addTab(request: URLRequest, nextTo openerID: UUID? = nil) {
+    func addTab(request: URLRequest, nextTo openerID: UUID? = nil, grouping: TabGroupOpenIntent = .none) {
         // A background page can open a child after the user switches profiles.
         // Keep that child with its opener, on the opener's browsing context.
         if let openerID, let owner = profiles.first(where: { profile in
@@ -293,12 +320,25 @@ final class TabManager: ObservableObject {
         }) {
             let tab = makeTab(initialRequest: request, showsStartPage: false, services: services(for: owner))
             if parkedProfiles[owner.id] == nil { parkedProfiles[owner.id] = ParkedProfile(today: [], activeTabID: nil, activeDocumentID: nil, splits: []) }
-            parkedProfiles[owner.id]?.today.append(.tab(tab))
-            if parkedProfiles[owner.id]?.activeTabID == nil { parkedProfiles[owner.id]?.activeTabID = tab.id }
+            if var parked = parkedProfiles[owner.id] {
+                Self.insertLinkedTab(tab, openerID: openerID, grouping: grouping, today: &parked.today,
+                                     groups: &parked.tabGroups, splits: parked.splits,
+                                     openerIsPinned: pinStore.pins(in: owner.id).pin(openerID) != nil)
+                if parked.activeTabID == nil { parked.activeTabID = tab.id }
+                parkedProfiles[owner.id] = parked
+            }
             return
         }
         let tab = makeTab(initialRequest: request, showsStartPage: false)
-        open(tab, nextTo: openerID ?? activeTabID)
+        var nextToday = today
+        var nextGroups = tabGroups
+        Self.insertLinkedTab(tab, openerID: openerID ?? activeTabID, grouping: grouping,
+                             today: &nextToday, groups: &nextGroups, splits: splits,
+                             openerIsPinned: openerID.map { pinnedTabs[$0] != nil } ?? false)
+        today = nextToday
+        tabGroups = nextGroups
+        arrangeTabGroups()
+        if grouping != .backgroundLink { activeTabID = tab.id }
     }
 
     /// Opens a link from outside the window in a new tab, reusing the window's
@@ -315,11 +355,19 @@ final class TabManager: ObservableObject {
     /// included: beside the tab that opened it, or at the top of the profile's
     /// Today, in place of an untouched start page. It's selected. A page
     /// from another profile than the profile's starts again on the profile's.
-    func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil) {
+    func adoptTab(_ tab: TabSession, nextTo openerID: UUID? = nil, grouping: TabGroupOpenIntent = .none) {
         let startPage = untouchedStartPage
         let adopted = rehomed(tab, in: activeProfile) ?? tab
         adopted.host = host(for: tab.id)
-        open(adopted, nextTo: openerID)
+        var nextToday = today
+        var nextGroups = tabGroups
+        Self.insertLinkedTab(adopted, openerID: openerID, grouping: grouping, today: &nextToday,
+                             groups: &nextGroups, splits: splits,
+                             openerIsPinned: openerID.map { pinnedTabs[$0] != nil } ?? false)
+        today = nextToday
+        tabGroups = nextGroups
+        arrangeTabGroups()
+        activeTabID = adopted.id
         startPage.map { closeTab($0.id) }
     }
 
@@ -375,14 +423,15 @@ final class TabManager: ObservableObject {
 
     /// A tab in the profile shown, unless the services of another are given.
     private func makeTab(
-        id tabID: UUID = UUID(),
+        id: UUID? = nil,
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         showsStartPage: Bool = false,
         restoring saved: SavedTab? = nil,
         services tabServices: TabSessionServices? = nil
     ) -> TabSession {
-        TabSession(
+        let tabID = id ?? saved?.id ?? UUID()
+        return TabSession(
             id: tabID,
             initialURL: initialURL,
             initialRequest: initialRequest,
@@ -401,6 +450,9 @@ final class TabManager: ObservableObject {
         TabSession.Host(
             select: { [weak self] in self?.selectTab(tabID) },
             openInNewTab: { [weak self] request in self?.addTab(request: request, nextTo: tabID) },
+            openLinkInNewTab: { [weak self] request, inBackground in
+                self?.addTab(request: request, nextTo: tabID, grouping: inBackground ? .backgroundLink : .foregroundLink)
+            },
             peek: { [weak self] request in self?.openPeek(request, from: tabID) },
             capture: { [weak self] in
                 self?.selectTab(tabID)
@@ -412,7 +464,7 @@ final class TabManager: ObservableObject {
     /// Next to the opener goes past the rest of its split, which stays together.
     private func open(_ tab: TabSession, nextTo openerID: UUID? = nil) {
         if let openerID,
-           let openerIndex = today.lastIndex(where: { splitGroup(of: openerID).contains($0.id) }) {
+           let openerIndex = today.lastIndex(where: { (group(for: openerID)?.members ?? splitGroup(of: openerID)).contains($0.id) }) {
             today.insert(.tab(tab), at: openerIndex + 1)
         } else {
             today.append(.tab(tab))
@@ -444,8 +496,30 @@ final class TabManager: ObservableObject {
         if wasActive {
             activeTabID = neighbor ?? allTabs.first(where: { $0.id != id })?.id
         }
+        let group = group(for: id).map { ArchivedTabGroup(group: $0, closedTabID: id) }
         today.remove(at: index)
-        retire(tab, reason: .closed, todayIndex: index)
+        retire(tab, reason: .closed, todayIndex: index, tabGroup: group)
+    }
+
+    /// A batch chooses its surviving page once; closed background pages never wake.
+    func closeTabs(_ ids: [UUID]) {
+        let closingIDs = Set(ids)
+        let closing = today.enumerated().compactMap { index, item -> (TabSession, Int, ArchivedTabGroup?)? in
+            guard closingIDs.contains(item.id), let tab = item.tab else { return nil }
+            return (tab, index, group(for: tab.id).map { ArchivedTabGroup(group: $0, closedTabID: tab.id) })
+        }
+        guard !closing.isEmpty else { return }
+        if let activeTabID, closingIDs.contains(activeTabID) {
+            if let survivor = allTabs.first(where: { !closingIDs.contains($0.id) }) {
+                selectTab(survivor.id)
+            } else {
+                open(makeTab(showsStartPage: true))
+            }
+        }
+        today.removeAll { closingIDs.contains($0.id) && $0.tab != nil }
+        for (offset, item) in closing.enumerated() {
+            retire(item.0, reason: .closed, todayIndex: item.1 - offset, tabGroup: item.2)
+        }
     }
 
     /// Today tabs can always close. A pinned tab resets while awake or away from its pin.
@@ -483,12 +557,19 @@ final class TabManager: ObservableObject {
         }
         // Other profiles' tabs aren't on screen, their selected ones included.
         for id in parkedProfiles.keys {
+            let groups = parkedProfiles[id]?.tabGroups ?? []
             parkedProfiles[id]?.today.removeAll { item in
                 guard let tab = item.tab else { return false }
                 let action = policy.action(for: TabIdlePolicy.Tab(tab, isActive: false), at: now)
                 if action == .sleep { tab.sleep() }
-                if action == .archive { retire(tab, reason: .idle) }
+                if action == .archive {
+                    let group = groups.first { $0.contains(tab.id) }
+                    retire(tab, reason: .idle, tabGroup: group.map { ArchivedTabGroup(group: $0, closedTabID: tab.id) })
+                }
                 return action == .archive
+            }
+            if let parked = parkedProfiles[id] {
+                parkedProfiles[id]?.tabGroups = Self.prunedGroups(parked.tabGroups, tabIDs: parked.today.compactMap(\.tab).map(\.id))
             }
         }
         sweepIdleDocuments(policy: policy, now: now)
@@ -502,16 +583,17 @@ final class TabManager: ObservableObject {
     /// back/forward list, so it can come back whole.
     private func archiveTab(_ id: UUID) {
         guard !isShown(id), let index = today.firstIndex(where: { $0.id == id }), let tab = today[index].tab else { return }
+        let group = group(for: id).map { ArchivedTabGroup(group: $0, closedTabID: id) }
         today.remove(at: index)
-        retire(tab, reason: .idle)
+        retire(tab, reason: .idle, tabGroup: group)
     }
 
     /// A tab leaving the window goes into the archive.
-    private func retire(_ tab: TabSession, reason: ArchivedTab.Reason, todayIndex: Int? = nil) {
+    private func retire(_ tab: TabSession, reason: ArchivedTab.Reason, todayIndex: Int? = nil, tabGroup: ArchivedTabGroup? = nil) {
         tab.close()
         let archive = tab.services.context.profileData?.archive ?? baseArchive
         if let entryID = archive.add(tab.savedTab, reason: reason,
-            sourceWindowID: todayIndex == nil ? nil : archiveWindowID, todayIndex: todayIndex) {
+            sourceWindowID: todayIndex == nil ? nil : archiveWindowID, todayIndex: todayIndex, tabGroup: tabGroup) {
             archive.saveAfterHiding(tab, entryID: entryID)
         }
     }
@@ -521,7 +603,8 @@ final class TabManager: ObservableObject {
         guard let entry = archive.entries.first(where: { $0.id == id }),
               let taken = archive.takeForRestoration(id) else { return }
         let startPage = untouchedStartPage
-        let restored = taken.live.map { rehomed($0, in: activeProfile) ?? $0 } ?? makeTab(restoring: taken.saved)
+        let restored = taken.live.map { rehomed($0, in: activeProfile) ?? $0 }
+            ?? makeTab(id: taken.saved.id.flatMap { tab($0) == nil ? $0 : UUID() }, restoring: taken.saved)
         restored.host = host(for: restored.id)
         if entry.sourceWindowID == archiveWindowID, let index = entry.todayIndex {
             today.insert(.tab(restored), at: min(max(index, 0), today.count))
@@ -529,6 +612,8 @@ final class TabManager: ObservableObject {
         } else {
             open(restored)
         }
+        restoreGroup(entry.tabGroup, restoredTabID: restored.id)
+        arrangeTabGroups()
         // Select the real page before removing the placeholder, so observers
         // never see a missing selection. A start page with forward history stays.
         startPage.map { closeTab($0.id) }
@@ -572,11 +657,18 @@ final class TabManager: ObservableObject {
     /// A copy of the tab beside it in Today, back and forward history included.
     func duplicateTab(_ id: UUID) {
         guard let tab = tab(id) else { return }
-        open(makeTab(restoring: tab.savedTab), nextTo: id)
+        open(makeTab(id: UUID(), restoring: tab.savedTab), nextTo: id)
     }
 
     /// ⌘W: the note on screen, or else the active tab.
     func closeActiveTab() {
+        if selectedTabIDs.count > 1 {
+            let ids = Array(selectedTabIDs)
+            clearTabSelection()
+            closeTabs(ids)
+            return
+        }
+        clearTabSelection()
         if let activeDocumentID {
             closeDocument(activeDocumentID)
         } else if let activeTabID {
@@ -835,6 +927,7 @@ final class TabManager: ObservableObject {
         } else {
             today.append(item)
         }
+        arrangeTabGroups()
     }
 
     // MARK: - Profiles
@@ -845,11 +938,12 @@ final class TabManager: ObservableObject {
         var activeTabID: UUID?
         var activeDocumentID: UUID?
         var splits: [TabSplit<UUID>]
+        var tabGroups: [TabGroup<UUID>] = []
     }
 
     /// The profile on screen, as it would be parked.
     private var shownProfile: ParkedProfile {
-        ParkedProfile(today: today, activeTabID: activeTabID, activeDocumentID: activeDocumentID, splits: splits)
+        ParkedProfile(today: today, activeTabID: activeTabID, activeDocumentID: activeDocumentID, splits: splits, tabGroups: tabGroups)
     }
 
     /// The profiles to switch between, in order; none in a private window.
@@ -868,7 +962,7 @@ final class TabManager: ObservableObject {
 
     var activeSidebarPage: ProfileSidebarPage {
         ProfileSidebarPage(id: activeProfileID, pinned: pinned,
-                         today: today, splits: splits, selection: activeDocumentID ?? activeTabID)
+                         today: today, splits: splits, selection: activeDocumentID ?? activeTabID, tabGroups: tabGroups)
     }
 
     /// Prepare a neighboring sidebar without selecting it or waking its pages.
@@ -881,7 +975,8 @@ final class TabManager: ObservableObject {
             id: profile.id,
             pinned: pins.pinned.map { liveTab(for: $0, in: profile) },
             today: parked?.today ?? [], splits: parked?.splits ?? [],
-            selection: parked?.activeDocumentID ?? parked?.activeTabID
+            selection: parked?.activeDocumentID ?? parked?.activeTabID,
+            tabGroups: parked?.tabGroups ?? []
         )
     }
 
@@ -951,6 +1046,8 @@ final class TabManager: ObservableObject {
         boostEditor = nil
         isShowingSiteControls = false
         draggedTabID = nil
+        selectedTabIDs = []
+        tabSelectionAnchorID = nil
         activeProfileID = id
         trackDocuments()
         reconcilePinnedTabs(with: pinStore.layout)
@@ -962,8 +1059,13 @@ final class TabManager: ObservableObject {
     private func unpark(_ profile: ParkedProfile?) {
         // The splits first: setting Today drops those whose tabs were
         // archived while the profile was parked.
+        tabGroups = []
         splits = profile?.splits ?? []
         today = profile?.today ?? []
+        tabGroups = profile?.tabGroups ?? []
+        pruneTabGroups()
+        containSplitsInGroups()
+        arrangeTabGroups()
         select(profile?.activeTabID)
         if let document = profile?.activeDocumentID, section(of: document) != nil {
             showDocument(document)

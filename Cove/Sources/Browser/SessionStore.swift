@@ -136,12 +136,13 @@ final class SessionStore {
         let todayChanged = tabManager.$today
             .map { today in Publishers.MergeMany(today.compactMap(\.tab).map(\.savedTabChanges)).prepend(()) }
             .switchToLatest()
-        let changes = Publishers.Merge5(
+        let changes = Publishers.Merge6(
             todayChanged,
             tabManager.$activeTabID.map { _ in },
             tabManager.$activeDocumentID.map { _ in },
             tabManager.$activeProfileID.map { _ in },
-            tabManager.$splits.map { _ in }
+            tabManager.$splits.map { _ in },
+            tabManager.$tabGroups.map { _ in }
         )
             .sink { [weak self] in self?.scheduleSave() }
         trackedWindows.append(TrackedWindow(tabManager: tabManager, placement: placement, changes: changes))

@@ -9,6 +9,7 @@ struct ProfileSidebarPage: Identifiable {
     let today: [TodayItem<TabSession>]
     let splits: [TabSplit<UUID>]
     let selection: UUID?
+    var tabGroups: [TabGroup<UUID>] = []
 }
 
 /// Distance and release rules shared by the gesture and its tests.

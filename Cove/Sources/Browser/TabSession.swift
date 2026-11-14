@@ -53,6 +53,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     struct Host {
         let select: @MainActor () -> Void
         let openInNewTab: @MainActor (URLRequest) -> Void
+        /// Link provenance is distinct from duplicate or extension-created tabs.
+        var openLinkInNewTab: (@MainActor (URLRequest, Bool) -> Void)? = nil
         /// Opens a link in a Peek over the page; nil where there's no page to
         /// peek over.
         var peek: (@MainActor (URLRequest) -> Void)? = nil
@@ -123,7 +125,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var archiveSnapshotID: UUID?
 
     init(
-        id: UUID = UUID(),
+        id: UUID? = nil,
         initialURL: String? = nil,
         initialRequest: URLRequest? = nil,
         restoring saved: SavedTab? = nil,
@@ -133,7 +135,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         requestBuilder: NavigationRequestBuilder = NavigationRequestBuilder(),
         host: Host? = nil
     ) {
-        self.id = id
+        self.id = id ?? saved?.id ?? UUID()
         self.isNewTabPage = showsStartPage
         self.hasSyntheticStartPageEntry = showsStartPage
         self.settings = settings
@@ -203,7 +205,8 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             customTitle: customTitle,
             interactionState: isNewTabPage ? nil : interactionState,
             lastUsedAt: lastUsedAt,
-            backgroundRGB: isNewTabPage ? nil : pageBackgroundColor.flatMap(PageBackground.rgbValue)
+            backgroundRGB: isNewTabPage ? nil : pageBackgroundColor.flatMap(PageBackground.rgbValue),
+            id: id
         )
     }
 
@@ -868,6 +871,10 @@ extension TabSession: WKUIDelegate {
         request.url = url
         if opensInPeek(navigationAction), let peek = host?.peek {
             peek(request)
+        } else if let openLink = host?.openLinkInNewTab {
+            let background = (navigationAction.modifierFlags.contains(.command) || navigationAction.buttonNumber == 2)
+                && !navigationAction.modifierFlags.contains(.shift)
+            openLink(request, background)
         } else {
             host?.openInNewTab(request)
         }
@@ -878,6 +885,8 @@ extension TabSession: WKUIDelegate {
     /// pinned tab to another site, opens over the page instead of leaving it.
     private func opensInPeek(_ action: WKNavigationAction) -> Bool {
         guard action.navigationType == .linkActivated || action.targetFrame == nil, let host = action.request.url?.host() else { return false }
+        // Modified new-tab clicks keep their normal foreground/background meaning.
+        if action.modifierFlags.contains(.command) || action.buttonNumber == 2 { return false }
         if action.modifierFlags.contains(.shift) { return true }
         guard pinnedURL != nil, let site = Site(URL(string: currentURL)) else { return false }
         return !site.contains(host)

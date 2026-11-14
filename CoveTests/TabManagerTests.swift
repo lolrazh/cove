@@ -8,7 +8,7 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct TabManagerTests {
-    private func makeManager(defaults: UserDefaults, archive: TabArchive? = nil) -> TabManager {
+    private func makeManager(defaults: UserDefaults, archive: TabArchive? = nil, session: SessionStore? = nil) -> TabManager {
         defaults.set(false, forKey: BrowserSettingKeys.contentBlockingEnabled)
         let settings = BrowserSettingsStore(defaults: defaults)
         let favicon = FaviconStore(databasePath: Database.inMemory)
@@ -25,7 +25,7 @@ struct TabManagerTests {
             boosts: BoostInjector(store: BoostStore(fileURL: nil))
         )
         return TabManager(settings: settings, services: services, archive: archive ?? TabArchive(directory: nil),
-                          pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: nil)
+                          pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: session)
     }
 
     @Test func `cold pages seed their canvas from saved color and real changes are saved`() async throws {
@@ -77,6 +77,131 @@ struct TabManagerTests {
         #expect(tab.isAwaitingInitialContent)
         tab.webView(replacement, didFinish: nil)
         #expect(!tab.isAwaitingInitialContent)
+    }
+
+    @Test func `link groups respect intent focus and manual singleton lifetime`() throws {
+        let suite = "TabGroups-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let opener = try #require(manager.activeTab)
+        opener.navigate("file:///dev/null#parent")
+        func request(_ name: String) -> URLRequest { URLRequest(url: URL(string: "file:///dev/null#\(name)")!) }
+        manager.addTab(request: request("foreground"), nextTo: opener.id, grouping: .foregroundLink)
+        #expect(manager.tabGroups.isEmpty)
+        manager.selectTab(opener.id)
+        manager.addTab(request: request("child"), nextTo: opener.id, grouping: .backgroundLink)
+        #expect(manager.activeTabID == opener.id)
+        let group = try #require(manager.group(for: opener.id))
+        #expect(group.isAutomatic)
+        #expect(group.members.count == 2)
+        let childID = try #require(group.members.last)
+        manager.addTab(request: request("joined"), nextTo: childID, grouping: .foregroundLink)
+        let joined = try #require(manager.activeTabID)
+        #expect(manager.group(for: joined)?.id == group.id)
+        manager.closeTab(joined)
+        manager.closeTab(childID)
+        #expect(manager.group(for: opener.id) == nil)
+        let manual = try #require(manager.createGroup(tabIDs: [opener.id]))
+        manager.renameGroup(manual, to: "  Research  ")
+        manager.setGroupSymbol(manual, to: "book")
+        #expect(manager.group(for: opener.id)?.customName == "Research")
+        #expect(manager.group(for: opener.id)?.symbolName == "book")
+        manager.duplicateTab(opener.id)
+        #expect(manager.activeTabID != opener.id)
+        #expect(Set(manager.tabs.map(\.id)).count == manager.tabs.count)
+        #expect(manager.group(for: opener.id)?.members == [opener.id])
+    }
+
+    @Test func `groups keep splits whole and batch close never focuses a retiring page`() throws {
+        let suite = "TabGroups-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let a = try #require(manager.activeTabID)
+        manager.activeTab?.navigate("file:///dev/null#a")
+        manager.addTab(url: "file:///dev/null#b")
+        let b = try #require(manager.activeTabID)
+        manager.addTab(url: "file:///dev/null#c")
+        let c = try #require(manager.activeTabID)
+        manager.selectTab(a)
+        manager.openInSplitView(b)
+        let id = try #require(manager.createGroup(tabIDs: [a]))
+        #expect(Set(manager.group(for: a)?.members ?? []) == Set([a, b]))
+        manager.selectTab(a)
+        manager.toggleGroupCollapsed(id)
+        #expect(manager.selectTabForInteraction(b, modifiers: .command))
+        #expect(manager.selectedTabIDs == Set([a, b]))
+        #expect(manager.activeTabID == a)
+        manager.selectedTabIDs = []
+        manager.tabSelectionAnchorID = nil
+        manager.toggleGroupCollapsed(id)
+        manager.moveTabs([c], toGroup: id)
+        #expect(manager.group(for: c)?.members.count == 3)
+        manager.ungroupTabs([a])
+        #expect(manager.group(for: a) == nil && manager.group(for: b) == nil)
+        #expect(manager.group(for: c)?.members == [c])
+        manager.moveTabs([a], toGroup: id)
+        var focused: [UUID] = []
+        let observation = manager.$activeTabID.dropFirst().sink { if let id = $0 { focused.append(id) } }
+        defer { observation.cancel() }
+        manager.closeGroup(id)
+        #expect(manager.tabs.count == 1 && manager.activeTab?.isNewTabPage == true)
+        #expect(!focused.contains(a) && !focused.contains(b) && !focused.contains(c))
+        for _ in 0..<3 { manager.reopenClosedTab() }
+        #expect(manager.tabs.map(\.id) == [a, b, c])
+        #expect(manager.tabGroups.first?.members == [a, b, c])
+        manager.selectTab(c)
+        manager.selectedTabIDs = [a, b]
+        manager.closeActiveTab()
+        #expect(manager.tabs.map(\.id) == [c])
+        #expect(manager.activeTabID == c)
+        #expect(manager.selectedTabIDs.isEmpty)
+    }
+
+    @Test func `moving and grouping keep sidebar and keyboard order identical`() throws {
+        let suite = "TabGroups-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        manager.activeTab?.navigate("file:///dev/null#a")
+        for name in ["b", "c", "d", "e"] { manager.addTab(url: "file:///dev/null#\(name)") }
+        let ids = manager.tabs.map(\.id)
+        _ = manager.createGroup(tabIDs: Array(ids.prefix(3)))
+        let second = try #require(manager.createGroup(tabIDs: Array(ids.suffix(2))))
+        manager.moveTabs([ids[1]], toGroup: second)
+        #expect(manager.tabs.map(\.id) == [ids[0], ids[2], ids[1], ids[3], ids[4]])
+        #expect(TabManager.arrangedToday(manager.today, groups: manager.tabGroups).map(\.id) == manager.today.map(\.id))
+        _ = manager.createGroup(tabIDs: [ids[2], ids[3]])
+        #expect(TabManager.arrangedToday(manager.today, groups: manager.tabGroups).map(\.id) == manager.today.map(\.id))
+        let document = UUID()
+        manager.today.insert(.document(document), at: 1)
+        #expect(manager.today.contains { $0.documentID == document })
+        #expect(Set(manager.tabs.map(\.id)) == Set(ids))
+        #expect(TabManager.arrangedToday(manager.today, groups: manager.tabGroups).map(\.id) == manager.today.map(\.id))
+    }
+
+    @Test func `archive group identity reconnects a dissolved group after restart`() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let suite = "TabGroups-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite); try? FileManager.default.removeItem(at: directory) }
+        let before = makeManager(defaults: defaults, archive: TabArchive(directory: directory))
+        let parent = try #require(before.activeTab)
+        parent.navigate("file:///dev/null#parent")
+        before.addTab(request: URLRequest(url: URL(string: "file:///dev/null#child")!), nextTo: parent.id, grouping: .backgroundLink)
+        let original = try #require(before.group(for: parent.id))
+        let child = try #require(original.members.last)
+        before.closeTab(child)
+        #expect(before.tabGroups.isEmpty)
+        let sessionURL = directory.appendingPathComponent("session.plist")
+        try PropertyListEncoder().encode([before.savedWindow]).write(to: sessionURL)
+        let after = makeManager(defaults: defaults, archive: TabArchive(directory: directory), session: SessionStore(fileURL: sessionURL))
+        #expect(after.tabs.map(\.id) == [parent.id])
+        after.reopenClosedTab()
+        #expect(after.tabs.map(\.id) == [parent.id, child])
+        #expect(after.group(for: child)?.id == original.id)
+        #expect(after.group(for: child)?.members == [parent.id, child])
     }
 
     @Test func `zoom feedback follows its page and clears when it closes`() throws {
