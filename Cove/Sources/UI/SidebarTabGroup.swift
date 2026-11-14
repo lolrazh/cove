@@ -23,27 +23,11 @@ struct SidebarTabGroup<Rows: View>: View {
         }
         .padding(4)
         .background {
-            if let representative = tabs.first {
-                TabGroupSurface(tab: representative)
-            }
+            SidebarGlassSurface(cornerRadius: 14, isEmphasized: isDropTarget)
         }
         .clipShape(.rect(cornerRadius: 14))
-        .overlay {
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(ChromePalette.onTheme.opacity(isDropTarget ? 0.6 : 0), lineWidth: 2)
-                .allowsHitTesting(false)
-        }
         .containerShape(RoundedRectangle(cornerRadius: 14))
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isDropTarget)
-    }
-}
-
-private struct TabGroupSurface: View {
-    @ObservedObject var tab: TabSession
-
-    var body: some View {
-        FaviconColorSurface(image: tab.favicon, isActive: true, cornerRadius: 14,
-                            fillOpacity: 0.26, edgeWidth: 1)
     }
 }
 
@@ -81,7 +65,7 @@ private struct TabGroupHeader: View {
             .allowsHitTesting(isHovered && !isRenaming)
             .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         }
-        .background(ChromePalette.hover.opacity(isHovered || allSelected ? 1 : 0), in: .rect(cornerRadius: 10))
+        .background(Color.white.opacity(allSelected ? 0.12 : isHovered ? 0.06 : 0), in: .rect(cornerRadius: 10))
         .onHover { isHovered = $0 }
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isHovered)
         .contextMenu { groupMenu }

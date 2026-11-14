@@ -1,5 +1,36 @@
 import SwiftUI
 
+/// One translucent layer for groups and active rows. Nested rows blend over
+/// their group instead of replacing it with an opaque or separately tinted fill.
+struct SidebarGlassSurface: View {
+    var cornerRadius: CGFloat = ChromeRadius.tab
+    var tint: Color? = nil
+    var isEmphasized = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        if reduceTransparency || contrast == .increased {
+            shape.fill(ChromePalette.content)
+        } else {
+            shape
+                .fill(LinearGradient(colors: [
+                    .white.opacity(isEmphasized ? 0.25 : 0.16),
+                    .white.opacity(isEmphasized ? 0.18 : 0.10)
+                ], startPoint: .top, endPoint: .bottom))
+                .overlay { shape.fill((tint ?? .clear).opacity(0.18)) }
+                .overlay {
+                    shape.strokeBorder(LinearGradient(colors: [
+                        .white.opacity(0.23), .white.opacity(0.04), .white.opacity(0.10)
+                    ], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 0.5)
+                }
+                .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
 /// Hover for things that act like buttons but hold their own controls, such as
 /// rows with an action button.
 private struct ChromeHoverSurface: ViewModifier {

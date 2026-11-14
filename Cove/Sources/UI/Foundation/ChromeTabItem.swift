@@ -23,7 +23,6 @@ struct ChromeTabItem: View {
     /// Fixed width for top tabs, which share the strip evenly. Sidebar tabs fill.
     var width: CGFloat? = nil
 
-    @Environment(\.isInTabGroup) private var isInTabGroup
     @State private var isHovered = false
     @State private var isRenaming = false
     @State private var draftTitle = ""
@@ -59,18 +58,8 @@ struct ChromeTabItem: View {
         }
         .padding(.leading, presentation == .compact ? 0 : 8)
         .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
-        .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width, isGrouped: isInTabGroup)
-        .overlay {
-            if tabManager.selectedTabIDs.contains(tab.id) {
-                RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous)
-                    .fill(ChromePalette.hover)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous)
-                            .strokeBorder(ChromePalette.onTheme.opacity(0.35), lineWidth: 1)
-                    }
-                    .allowsHitTesting(false)
-            }
-        }
+        .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width,
+                          isSelected: tabManager.selectedTabIDs.contains(tab.id))
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
@@ -222,23 +211,16 @@ extension View {
     /// looking at. In the top strip it also reaches down into the content
     /// card, so tab and page read as one surface. Others only show a fill on
     /// hover.
-    func chromeTabSurface(_ presentation: ChromeTabPresentation, isActive: Bool, isHovered: Bool, width: CGFloat?, isGrouped: Bool = false) -> some View {
+    func chromeTabSurface(_ presentation: ChromeTabPresentation, isActive: Bool, isHovered: Bool, width: CGFloat?, isSelected: Bool = false) -> some View {
         frame(width: width, height: presentation.height)
             .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
             // Makes the close button's ConcentricRectangle follow the tab's corners.
             .containerShape(RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous))
             .background {
-                if isActive {
+                if isActive || isSelected {
                     switch presentation {
                     case .sidebar:
-                        if isGrouped {
-                            ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
-                                .fill(.black.opacity(0.24))
-                        } else {
-                            ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
-                                .fill(ChromePalette.raised)
-                                .chromeShadow(.raised)
-                        }
+                        SidebarGlassSurface(isEmphasized: isSelected)
                     case .horizontal, .compact:
                         AttachedTabShape()
                             .fill(ChromePalette.content)
