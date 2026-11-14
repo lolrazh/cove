@@ -1,4 +1,6 @@
+import AppKit
 import Combine
+import WebKit
 import Foundation
 import Testing
 @testable import Cove
@@ -174,6 +176,104 @@ struct TabManagerTests {
         manager.reopenClosedTab()
         #expect(manager.tabs.count == 2)
         #expect(manager.tabs.first === start)
+    }
+
+    @Test func `immediate undo reuses the page and ignores old save replies`() async throws {
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let original = try #require(manager.activeTab)
+        original.navigate("file:///dev/null#draft")
+        let page = try #require(original.webView)
+        for _ in 0..<3 {
+            manager.closeActiveTab()
+            manager.reopenClosedTab()
+            #expect(manager.activeTab === original)
+            #expect(manager.activeTab?.webView === page)
+        }
+        // Old WebKit callbacks and cancelled deadlines must not sleep the undo.
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(manager.activeTab === original)
+        #expect(original.webView === page)
+        #expect(!original.isAsleep)
+        #expect(manager.tabs.count == 1)
+        #expect(manager.archive.entries.isEmpty)
+    }
+
+    @Test func `pending undo in another window rebinds page callbacks`() throws {
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let first = makeManager(defaults: defaults)
+        let original = try #require(first.activeTab)
+        original.navigate("file:///dev/null#draft")
+        first.closeActiveTab()
+        let firstSelection = first.activeTabID
+        // Two windows of a profile share browsing services and its archive.
+        let second = TabManager(settings: first.settings, services: first.services, archive: first.archive,
+                                pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: nil)
+        second.reopenClosedTab()
+        #expect(second.activeTab === original)
+        #expect(second.tabs.count == 1)
+        second.addTab(url: "file:///dev/null#other")
+        original.host?.select()
+        #expect(second.activeTab === original)
+        #expect(first.activeTabID == firstSelection)
+        original.host?.openInNewTab(URLRequest(url: URL(string: "file:///dev/null#child")!))
+        #expect(second.activeTab?.currentURL == "file:///dev/null#child")
+        #expect(first.tabs.count == 1)
+    }
+
+    @Test func `removing and trimming archives cancel pending page saves`() async throws {
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let archive = TabArchive(directory: nil, limit: 1)
+        let manager = makeManager(defaults: defaults, archive: archive)
+        let first = try #require(manager.activeTab)
+        first.navigate("file:///dev/null#first")
+        manager.closeActiveTab()
+        manager.addTab(url: "file:///dev/null#second")
+        let second = try #require(manager.activeTab)
+        manager.closeActiveTab()
+        #expect(first.isAsleep)
+        let last = try #require(archive.lastClosed)
+        archive.remove(last.id)
+        #expect(second.isAsleep)
+        try await Task.sleep(for: .milliseconds(150))
+        #expect(archive.entries.isEmpty)
+        #expect(first.webView == nil && second.webView == nil)
+    }
+
+    @Test func `pending saves have both a page limit and a deadline`() async throws {
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        var closed: [TabSession] = []
+        // A never-shown test window keeps pages attached, so detach callbacks
+        // cannot complete these jobs. Nothing is placed on a user display.
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 600, height: 400),
+                              styleMask: [], backing: .buffered, defer: true)
+        defer { window.contentView?.subviews.forEach { $0.removeFromSuperview() } }
+        for index in 0..<10 {
+            manager.addTab(url: "file:///dev/null#\(index)")
+            let tab = try #require(manager.activeTab)
+            let page = try #require(tab.webView)
+            try #require(window.contentView).addSubview(page)
+            #expect(page.window === window)
+            closed.append(tab)
+            manager.closeActiveTab()
+        }
+        #expect(closed.filter { !$0.isAsleep }.count == 8)
+        #expect(closed.prefix(2).allSatisfy { $0.isAsleep })
+        try await Task.sleep(for: .milliseconds(1200))
+        #expect(closed.allSatisfy { $0.isAsleep })
+        #expect(manager.archive.entries.count == 10)
+        manager.reopenClosedTab()
+        #expect(manager.activeTab?.currentURL == "file:///dev/null#9")
+        #expect(manager.activeTab !== closed.last)
     }
 
 }

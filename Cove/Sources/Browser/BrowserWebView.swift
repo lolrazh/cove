@@ -15,6 +15,13 @@ final class BrowserWebView: WKWebView {
     weak var extensionPage: WKWebExtensionContext?
     /// Capture, offered at the end of the page's context menu.
     var onCapture: (() -> Void)?
+    /// A closing page can save its state after WebKit sees it leave the window.
+    var onDetached: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil { onDetached?() }
+    }
 
     override func mouseDown(with event: NSEvent) {
         onMouseDown?()

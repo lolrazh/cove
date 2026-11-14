@@ -117,6 +117,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     private var visitAwaitingTitle: String?
     /// Waits for the extension whose page the tab shows to start.
     private var extensionWait: AnyCancellable?
+    private var archiveSnapshotID: UUID?
 
     init(
         id: UUID = UUID(),
@@ -439,6 +440,45 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     func close() {
         clearZoomFeedback()
         pageDidAppear(in: nil)
+    }
+
+    /// Wait for the real detach, then for WebKit to process its hidden-page
+    /// form-state save. The synchronous interactionState getter alone is stale
+    /// while the current page is still visible.
+    func prepareArchiveSnapshot(_ completion: @escaping @MainActor () -> Void) {
+        guard let webView = webView as? BrowserWebView else { completion(); return }
+        let token = UUID()
+        archiveSnapshotID = token
+        webView.stopLoading()
+        webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
+        if webView.cameraCaptureState != .none { webView.setCameraCaptureState(.none, completionHandler: nil) }
+        if webView.microphoneCaptureState != .none { webView.setMicrophoneCaptureState(.none, completionHandler: nil) }
+        let afterDetach = { [weak self, weak webView] in
+            guard let self, let webView, self.archiveSnapshotID == token else { return }
+            webView.onDetached = nil
+            // Let WebKit send its queued visibility update before this barrier.
+            DispatchQueue.main.async { [weak self, weak webView] in
+                guard let self, let webView, self.archiveSnapshotID == token else { return }
+                webView.evaluateJavaScript("void 0") { [weak self] _, _ in
+                    guard self?.archiveSnapshotID == token else { return }
+                    completion()
+                }
+            }
+        }
+        webView.onDetached = afterDetach
+        if webView.window == nil { afterDetach() }
+    }
+
+    /// Undo reuses a page only while its short snapshot operation is pending.
+    /// Finishing or evicting the operation releases the web view.
+    func endArchiveSnapshot(restoring: Bool) {
+        archiveSnapshotID = nil
+        (webView as? BrowserWebView)?.onDetached = nil
+        if restoring {
+            webView?.setAllMediaPlaybackSuspended(false, completionHandler: nil)
+        } else {
+            sleep()
+        }
     }
 
     // MARK: - Observers

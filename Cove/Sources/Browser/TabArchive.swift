@@ -32,6 +32,13 @@ final class TabArchive: ObservableObject {
     private let db: Database?
     /// Beyond this many, the oldest are dropped.
     private let limit: Int
+    @MainActor private final class PendingSave {
+        let tab: TabSession
+        var timeout: Task<Void, Never>?
+        init(_ tab: TabSession) { self.tab = tab }
+    }
+    /// In-flight state saves only: at most eight pages, each for at most a second.
+    private var pendingSaves: [UUID: PendingSave] = [:]
 
     /// A private window passes no directory: its archive lives in memory and
     /// goes with the window.
@@ -73,9 +80,10 @@ final class TabArchive: ObservableObject {
     }
 
     /// Puts a tab in the archive. A start page has nothing to keep.
+    @discardableResult
     func add(_ tab: SavedTab, reason: ArchivedTab.Reason, sourceWindowID: UUID? = nil,
-             todayIndex: Int? = nil, at date: Date = .now) {
-        guard let db, !tab.url.isEmpty else { return }
+             todayIndex: Int? = nil, at date: Date = .now) -> UUID? {
+        guard let db, !tab.url.isEmpty else { return nil }
         let entry = ArchivedTab(id: UUID(), url: tab.url, title: tab.customTitle ?? tab.title, archivedAt: date, reason: reason,
                                 sourceWindowID: sourceWindowID, todayIndex: todayIndex)
         try? db.run(
@@ -84,6 +92,47 @@ final class TabArchive: ObservableObject {
         )
         entries.insert(entry, at: 0)
         trim()
+        return entry.id
+    }
+
+    /// The row is already present for immediate LIFO undo. Refresh only its
+    /// opaque state once the closed page has actually become hidden.
+    func saveAfterHiding(_ tab: TabSession, entryID: UUID) {
+        guard tab.webView != nil, entries.contains(where: { $0.id == entryID }) else { return }
+        let pending = PendingSave(tab)
+        pendingSaves[entryID] = pending
+        pending.timeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            self?.finishPendingSave(entryID)
+        }
+        tab.prepareArchiveSnapshot { [weak self] in self?.finishPendingSave(entryID) }
+        if pendingSaves.count > 8,
+           let oldest = entries.reversed().first(where: { pendingSaves[$0.id] != nil }) {
+            finishPendingSave(oldest.id)
+        }
+    }
+
+    private func finishPendingSave(_ id: UUID) {
+        guard let pending = pendingSaves.removeValue(forKey: id) else { return }
+        pending.timeout?.cancel()
+        if entries.contains(where: { $0.id == id }), let state = pending.tab.savedTab.interactionState {
+            try? db?.run("UPDATE archive SET interaction_state = ? WHERE id = ?", params: [state, id.uuidString])
+        }
+        pending.tab.endArchiveSnapshot(restoring: false)
+    }
+
+    /// Immediate undo can take the live page before its save completes. The
+    /// receiving window must rebind its host; finished saves restore from disk.
+    func takeForRestoration(_ id: UUID) -> (saved: SavedTab, live: TabSession?)? {
+        let pending = pendingSaves.removeValue(forKey: id)
+        pending?.timeout?.cancel()
+        guard let saved = take(id) else {
+            pending?.tab.endArchiveSnapshot(restoring: false)
+            return nil
+        }
+        pending?.tab.endArchiveSnapshot(restoring: true)
+        return (saved, pending?.tab)
     }
 
     /// Removes an archived tab and returns it, ready to be restored.
@@ -101,6 +150,10 @@ final class TabArchive: ObservableObject {
     }
 
     func remove(_ id: UUID) {
+        if let pending = pendingSaves.removeValue(forKey: id) {
+            pending.timeout?.cancel()
+            pending.tab.endArchiveSnapshot(restoring: false)
+        }
         try? db?.run("DELETE FROM archive WHERE id = ?", params: [id.uuidString])
         entries.removeAll { $0.id == id }
     }
@@ -129,7 +182,14 @@ final class TabArchive: ObservableObject {
             "DELETE FROM archive WHERE id IN (SELECT id FROM archive ORDER BY archived_at DESC, rowid DESC LIMIT -1 OFFSET ?)",
             params: [limit]
         )
-        entries.removeLast(entries.count - limit)
+        let removed = entries.suffix(entries.count - limit).map(\.id)
+        entries.removeLast(removed.count)
+        for id in removed {
+            if let pending = pendingSaves.removeValue(forKey: id) {
+                pending.timeout?.cancel()
+                pending.tab.endArchiveSnapshot(restoring: false)
+            }
+        }
     }
 }
 

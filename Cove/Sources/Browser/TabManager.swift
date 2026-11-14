@@ -509,16 +509,20 @@ final class TabManager: ObservableObject {
     /// A tab leaving the window goes into the archive.
     private func retire(_ tab: TabSession, reason: ArchivedTab.Reason, todayIndex: Int? = nil) {
         tab.close()
-        (tab.services.context.profileData?.archive ?? baseArchive).add(tab.savedTab, reason: reason,
-            sourceWindowID: todayIndex == nil ? nil : archiveWindowID, todayIndex: todayIndex)
+        let archive = tab.services.context.profileData?.archive ?? baseArchive
+        if let entryID = archive.add(tab.savedTab, reason: reason,
+            sourceWindowID: todayIndex == nil ? nil : archiveWindowID, todayIndex: todayIndex) {
+            archive.saveAfterHiding(tab, entryID: entryID)
+        }
     }
 
     /// Brings an archived tab back into Today, selected.
     func reopenArchivedTab(_ id: UUID) {
         guard let entry = archive.entries.first(where: { $0.id == id }),
-              let saved = archive.take(id) else { return }
+              let taken = archive.takeForRestoration(id) else { return }
         let startPage = untouchedStartPage
-        let restored = makeTab(restoring: saved)
+        let restored = taken.live.map { rehomed($0, in: activeProfile) ?? $0 } ?? makeTab(restoring: taken.saved)
+        restored.host = host(for: restored.id)
         if entry.sourceWindowID == archiveWindowID, let index = entry.todayIndex {
             today.insert(.tab(restored), at: min(max(index, 0), today.count))
             activeTabID = restored.id
