@@ -19,6 +19,7 @@ struct BrowserShellView<Content: View>: View {
     @Binding var areTabsVisible: Bool
     let content: Content
 
+    @Environment(\.chromeTheme) private var theme
     @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.trafficLightInset) private var trafficLightInset
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -127,7 +128,7 @@ struct BrowserShellView<Content: View>: View {
                             colorScheme: systemColorScheme, isVisible: isVisible)
                 .id(tabManager.activeProfileID)
         }
-            .environment(\.colorScheme, .light)
+            .environment(\.colorScheme, theme.surfaceScheme)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
             .padding(.bottom, ChromeMetrics.tabBottomInset)
@@ -176,7 +177,7 @@ struct BrowserShellView<Content: View>: View {
             acceptsProfileSwipes: showsDockedSidebar,
             popoverColorScheme: systemColorScheme
         )
-        .environment(\.colorScheme, .light)
+        .environment(\.colorScheme, theme.surfaceScheme)
         .frame(width: sidebarWidth)
         .overlay(alignment: .trailing) {
             resizeHandle
@@ -219,7 +220,7 @@ struct BrowserShellView<Content: View>: View {
             acceptsProfileSwipes: showsFloatingSidebar,
             popoverColorScheme: systemColorScheme
         )
-        .environment(\.colorScheme, .light)
+        .environment(\.colorScheme, theme.surfaceScheme)
         .frame(width: sidebarWidth)
         .frame(maxHeight: .infinity)
         .background { ChromeAmbientBackground() }

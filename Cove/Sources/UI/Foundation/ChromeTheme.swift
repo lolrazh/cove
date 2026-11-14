@@ -37,14 +37,42 @@ struct ChromeTheme: Hashable {
     var primaryLight: Color { palette.light.opacity(glow) }
     var secondaryLight: Color { palette.companion.opacity(glow) }
 
-    /// Keep the frame bright in both page appearances. Increased Contrast
-    /// uses the opaque system surface.
+    // Stable stored seeds keep existing profile choices. Blue follows the
+    // measured Dia sweep; the other families use Cove's matching tonal range.
+    private static let frameTones: [(String, String)] = [
+        ("#58656D", "#242E33"), ("#218365", "#123C34"),
+        ("#057AAB", "#043538"), ("#7959A4", "#30233F"),
+        ("#8A6C25", "#3D3320"), ("#A14879", "#3E2639"),
+        ("#A83D53", "#41232D"), ("#A15C32", "#432C23"),
+        ("#1C8385", "#0C3435"), ("#43876A", "#15392F"),
+        ("#167EA6", "#123742"), ("#5755AC", "#282441"),
+        ("#81568D", "#33243C"), ("#A25247", "#412928"),
+        ("#A93444", "#3E2029"), ("#8E754F", "#3C3227"),
+    ]
+
+    private var frameTones: (top: Color, bottom: Color) {
+        if let index = Self.colors.firstIndex(where: { $0.0 == (tint == nil ? "#4BAFF1" : rawValue) }) {
+            let tones = Self.frameTones[index]
+            return (ChromeTheme(rawValue: tones.0).tint!, ChromeTheme(rawValue: tones.1).tint!)
+        }
+        let palette = palette
+        return (Color(hue: palette.hue, saturation: min(palette.saturation, 0.85), brightness: 0.50),
+                Color(hue: palette.companionHue, saturation: palette.saturation * 0.75, brightness: 0.22))
+    }
+
     func frameColor(in environment: EnvironmentValues) -> Color {
         if environment.colorSchemeContrast == .increased {
             return Color(nsColor: .underPageBackgroundColor)
         }
-        return Color.white.mix(with: palette.paper, by: glow)
+        return Color.white.mix(with: frameTones.top, by: glow)
     }
+
+    func frameBottomColor(in environment: EnvironmentValues) -> Color {
+        if environment.colorSchemeContrast == .increased { return frameColor(in: environment) }
+        return Color.white.mix(with: frameTones.bottom, by: glow)
+    }
+
+    var surfaceScheme: ColorScheme { glow > 0.6 ? .dark : .light }
 
 }
 
@@ -135,6 +163,7 @@ struct ThemePalette {
 extension EnvironmentValues {
     @Entry var chromeTheme: ChromeTheme = .system
     @Entry var chromeFrameColor: Color? = nil
+    @Entry var chromeFrameBottomColor: Color? = nil
     @Entry var chromePrimaryLight: Color? = nil
     @Entry var chromeSecondaryLight: Color? = nil
 }
@@ -150,8 +179,9 @@ struct ChromeFrameStyle: ShapeStyle {
 /// system's translucent secondary label blending into the colored light.
 struct ChromeOnThemeStyle: ShapeStyle {
     func resolve(in environment: EnvironmentValues) -> Color {
-        environment.colorSchemeContrast == .increased && environment.colorScheme == .dark
-            ? .white : Color(red: 0.09, green: 0.20, blue: 0.26)
+        let scheme = environment.colorSchemeContrast == .increased
+            ? environment.colorScheme : environment.chromeTheme.surfaceScheme
+        return scheme == .dark ? .white.opacity(0.94) : Color(red: 0.09, green: 0.20, blue: 0.26)
     }
 }
 
@@ -187,6 +217,9 @@ private struct ChromeThemeTransition: ViewModifier {
                 by: Double(min(abs(motion.position), 1)), in: .perceptual)
             : theme.frameColor(in: environment)
         let fraction = Double(min(abs(motion.position), 1))
+        let bottom = motion.isActive
+            ? source.frameBottomColor(in: environment).mix(with: target.frameBottomColor(in: environment), by: fraction, in: .perceptual)
+            : theme.frameBottomColor(in: environment)
         let primary = motion.isActive ? source.primaryLight.mix(with: target.primaryLight, by: fraction, in: .perceptual) : theme.primaryLight
         let secondary = motion.isActive ? source.secondaryLight.mix(with: target.secondaryLight, by: fraction, in: .perceptual) : theme.secondaryLight
         let animation: Animation? = switch motion.phase {
@@ -198,6 +231,7 @@ private struct ChromeThemeTransition: ViewModifier {
             view
                 .environment(\.chromeTheme, theme)
                 .modifier(ResolvedChromeColor(frame.resolve(in: environment), key: \.chromeFrameColor))
+                .modifier(ResolvedChromeColor(bottom.resolve(in: environment), key: \.chromeFrameBottomColor))
                 .modifier(ResolvedChromeColor(primary.resolve(in: environment), key: \.chromePrimaryLight))
                 .modifier(ResolvedChromeColor(secondary.resolve(in: environment), key: \.chromeSecondaryLight))
         }
@@ -248,8 +282,9 @@ enum PageChromeContrast {
 /// backdrop material; Cove adds an 8 pt softening pass and a cached grain tile.
 struct ChromeAmbientBackground: View {
     @Environment(\.chromeTheme) private var theme
-    @Environment(\.chromePrimaryLight) private var primary
-    @Environment(\.chromeSecondaryLight) private var secondary
+    @Environment(\.self) private var environment
+    @Environment(\.chromeFrameColor) private var top
+    @Environment(\.chromeFrameBottomColor) private var bottom
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -259,17 +294,10 @@ struct ChromeAmbientBackground: View {
                 Rectangle().fill(ChromePalette.shell)
             } else {
                 ChromeGlassBackdrop().blur(radius: 8)
-                Rectangle().fill(ChromePalette.shell).opacity(0.94)
-                GeometryReader { geometry in
-                    let extent = max(geometry.size.width, geometry.size.height)
-                    ZStack {
-                        RadialGradient(colors: [(primary ?? theme.primaryLight).opacity(0.62), .clear],
-                                       center: .topLeading, startRadius: 0, endRadius: extent * 0.9)
-                        RadialGradient(colors: [(secondary ?? theme.secondaryLight).opacity(0.62), .clear],
-                                       center: .bottomLeading, startRadius: 0, endRadius: extent * 0.8)
-                    }
-                    .blur(radius: 40)
-                }
+                LinearGradient(colors: [top ?? theme.frameColor(in: environment),
+                                        bottom ?? theme.frameBottomColor(in: environment)],
+                               startPoint: .top, endPoint: .bottom)
+                    .opacity(0.96)
                 Rectangle().fill(ImagePaint(image: Image(nsImage: FineGrain.image)))
                     .blendMode(.softLight)
                     .opacity(0.10)
