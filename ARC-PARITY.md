@@ -35,9 +35,11 @@ Current order:
    are separate per profile. See `agent-logs/2026-11-13_profile-simplification.md`.
    Future, not implemented: an explicit profile-creation option to share
    sign-ins with another profile. Tabs and themes must stay separate.
-4. Next: test download → Finder, close → restore, and History search as complete
-   tasks. Then review profile creation and theme editing across light/dark
-   appearance and accessibility settings.
+4. Downloads and close → restore have been reviewed as complete tasks on
+   Virtual 16:9. See the November 14 download logs and
+   `agent-logs/2026-11-14_close-and-restore.md` for evidence and limits.
+   Next: History search. Then review profile creation and theme editing across
+   light/dark appearance and accessibility settings.
 
 The historical plan follows.
 
