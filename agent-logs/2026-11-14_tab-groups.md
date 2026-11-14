@@ -36,7 +36,7 @@ Detailed local evidence: `build/tab-groups-study/dia-group-static.md`, `ardia-gr
 ## Validation
 
 - Full suite: **229 tests in 50 suites passed**. Output: `/tmp/cove-tab-groups-complete-tests.log`; result: `build/dia-polish/Logs/Test/Test-Cove-2026.11.14_16-45-47-+0530.xcresult`.
-- Final UI build passed after the fold/drop changes: `/tmp/cove-tab-group-drop-build.log`.
+- Final UI build passed after the fold/drop and clipping changes: `/tmp/cove-group-final-build.log`.
 - Virtual runtime checks passed: fresh Command-click groups; source page keeps focus; foreground Command-Shift-click joins the existing group and selects its page; cross-host children; ordinary Command-T stays outside; manual group creation from selected tabs; manual singleton survival; group collapse retaining active row; rename while collapsed; profile switch away/back; complete app restart; group close and two restores; four successive child closes and four restores recovering all five members and their order; dragging out and back through a member row.
 - Multi-selection was verified in the running app: Command-click adds selected traits without changing the web page. Header Command-click selects its members without collapsing. The tests also cover Shift ranges and all visible split panes.
 - Input checks caught missing native Command-click routing and late global modifier reads. Modified links now route before navigation. SwiftUI gestures capture tab-selection modifiers with the event.
@@ -44,9 +44,15 @@ Detailed local evidence: `build/tab-groups-study/dia-group-static.md`, `ardia-gr
 - Frame review of `cove-fold.mov` found New Tab moving before the group, causing a brief overlap. The corrected implementation animates the whole list on collapse state changes and fades inserted group rows. The 120 ms token remains unchanged.
 - Direct drops on the header needed a separate fix. The header now owns its drop target and can recover the exported tab ID after the drag session clears hover state.
 
-### Final visual check pending
+### Final virtual checks
 
-The Mac locked before the corrected fold recording and final header-drop check. Unlock was requested through computer use. The final source builds, but these two corrected visual paths are not yet claimed as verified.
+- After unlock, the corrected fold recording confirmed that the loose tab and New Tab move together with the group. Their spacing remains 37 pt throughout the measured collapse. The active row and header stay stable; no blank page flash was visible.
+- Frame inspection found fading child text outside the shrinking surface. The group now clips its contents to the same 14 pt rounded shape as its surface.
+- Direct header drop passed with the user-approved virtual-only drag helper. The helper checked the named display, app identity, exact test-window frame and every event position. Its path crossed into the page, then entered the header without crossing member rows. The group grew from five to six tabs; the active Notebook Research page did not change.
+- Standard computer-use drag left a native drag session open. Escape cancelled it. This is why the approved helper was used; an attempted computer-use drag alone is not counted as a pass.
+- Final clipping recording: `build/tab-groups-study/cove-fold-clipped.mov`, with a captured collapse and expansion. Frame review confirms that the clipped rows no longer paint over the loose tab or New Tab. Source-frame review is recorded separately alongside the capture.
+
+- Closed the owned test window after verification. The original Cove and Dia windows remain intact. Stopped the port 8774 fixture server.
 
 ### Evidence limits
 
