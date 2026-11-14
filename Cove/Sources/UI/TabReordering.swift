@@ -125,9 +125,26 @@ private struct GroupDropDelegate: DropDelegate {
         let ids = movingIDs
         isTargeted = false
         draggedTabID = nil
-        guard !ids.isEmpty else { return false }
-        tabManager.moveTabs(ids, toGroup: groupID)
-        tabManager.clearTabSelection()
+        if !ids.isEmpty {
+            tabManager.moveTabs(ids, toGroup: groupID)
+            tabManager.clearTabSelection()
+            return true
+        }
+        // The drag session may end before the drop callback. Its exported
+        // identity remains valid even after the hover state has been cleared.
+        guard let provider = info.itemProviders(for: [.coveTab]).first else { return false }
+        let manager = tabManager
+        let destination = groupID
+        let profile = manager.activeProfileID
+        provider.loadDataRepresentation(forTypeIdentifier: UTType.coveTab.identifier) { data, _ in
+            guard let data, let value = String(data: data, encoding: .utf8), let id = UUID(uuidString: value) else { return }
+            Task { @MainActor in
+                guard manager.activeProfileID == profile else { return }
+                let members = manager.selectionTabIDs(for: id).filter { manager.section(of: $0) == .today }
+                manager.moveTabs(members, toGroup: destination)
+                manager.clearTabSelection()
+            }
+        }
         return true
     }
 }

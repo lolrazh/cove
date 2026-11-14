@@ -135,6 +135,7 @@ private struct SidebarSections: View {
                 .padding(.vertical, ChromeMetrics.sidebarSectionSpacing)
                 .acceptsTabDrops(dragging: $tabManager.draggedTabID)
                 .animation(tabAnimation, value: sidebarOrder)
+                .animation(tabAnimation, value: page.tabGroups.map(\.isCollapsed))
                 .animation(tabAnimation, value: tabManager.draggedTabID != nil)
             }
             .onChange(of: page.selection) { _, selection in
@@ -259,6 +260,7 @@ extension EnvironmentValues {
 
 /// A tab's row in Pinned or Today.
 private struct SidebarTabRow: View {
+    @Environment(\.isInTabGroup) private var isInGroup
     @Environment(\.sidebarSelection) private var selection
     let tab: TabSession
     @ObservedObject var tabManager: TabManager
@@ -275,7 +277,7 @@ private struct SidebarTabRow: View {
         .reorderableTab(tab.id, in: tabManager, dragging: $draggedTabID)
         // The selected row covers siblings while they make room beneath it.
         .zIndex(selection == tab.id ? 1 : 0)
-        .transition(.tabSlot(.vertical))
+        .transition(isInGroup ? .opacity : .tabSlot(.vertical))
     }
 }
 

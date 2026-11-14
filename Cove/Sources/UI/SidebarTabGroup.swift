@@ -33,7 +33,6 @@ struct SidebarTabGroup<Rows: View>: View {
         }
         .containerShape(RoundedRectangle(cornerRadius: 14))
         .acceptsTabGroupDrops(into: group.id, in: tabManager, dragging: $tabManager.draggedTabID, isTargeted: $isDropTarget)
-        .animation(reduceMotion ? nil : ChromeMotion.sidebarTab, value: group.isCollapsed)
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isDropTarget)
     }
 }
