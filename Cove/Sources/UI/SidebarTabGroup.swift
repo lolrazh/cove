@@ -103,7 +103,7 @@ private struct TabGroupHeader: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: isRenaming ? .contain : .combine)
         .accessibilityLabel(title)
-        .accessibilityValue("\(tabsCount) tabs, \(group.isCollapsed ? "collapsed" : "expanded")")
+        .accessibilityValue("\(tabsCount) \(tabsCount == 1 ? "tab" : "tabs"), \(group.isCollapsed ? "collapsed" : "expanded")")
     }
 
     @ViewBuilder
