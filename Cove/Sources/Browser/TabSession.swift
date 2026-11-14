@@ -199,14 +199,15 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             title: isNewTabPage ? "" : pageTitle,
             customTitle: customTitle,
             interactionState: isNewTabPage ? nil : interactionState,
-            lastUsedAt: lastUsedAt
+            lastUsedAt: lastUsedAt,
+            backgroundRGB: isNewTabPage ? nil : pageBackgroundColor.flatMap(PageBackground.rgbValue)
         )
     }
 
     /// Fires whenever something in `savedTab` changes enough to save.
     var savedTabChanges: AnyPublisher<Void, Never> {
         $currentURL.map { _ in }
-            .merge(with: $pageTitle.map { _ in }, $customTitle.map { _ in })
+            .merge(with: $pageTitle.map { _ in }, $customTitle.map { _ in }, $pageBackgroundColor.map { _ in })
             .eraseToAnyPublisher()
     }
 
@@ -246,6 +247,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     /// it's selected and woken; its back/forward list comes back with it.
     private func restore(_ saved: SavedTab) {
         pageBackgroundColor = services.context.pageBackgrounds.color(for: saved.url)
+            ?? saved.backgroundRGB.flatMap(PageBackground.color)
         currentURL = saved.url
         pageTitle = saved.title
         updateFavicon(for: URL(string: saved.url))
@@ -577,6 +579,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     }
 
     private func configureWebView(_ webView: WKWebView) {
+        if let pageBackgroundColor { webView.underPageBackgroundColor = pageBackgroundColor }
         webView.navigationDelegate = self
         webView.uiDelegate = self
         (webView as? BrowserWebView)?.onMouseDown = { [weak self] in self?.host?.select() }
@@ -586,6 +589,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             if let url = source.url?.absoluteString {
                 self.services.context.pageBackgrounds.store(color, for: url)
             }
+            source.underPageBackgroundColor = color
             if self.pageBackgroundColor != color { self.pageBackgroundColor = color }
         }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in

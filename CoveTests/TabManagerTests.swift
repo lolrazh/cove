@@ -28,6 +28,46 @@ struct TabManagerTests {
                           pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: nil)
     }
 
+    @Test func `cold pages seed their canvas from saved color and real changes are saved`() async throws {
+        let legacy = Data(#"{"url":"file:///dev/null","title":"Light"}"#.utf8)
+        var saved = try JSONDecoder().decode(SavedTab.self, from: legacy)
+        #expect(saved.backgroundRGB == nil)
+        saved.backgroundRGB = 0xf1f4f8
+        saved = try JSONDecoder().decode(SavedTab.self, from: JSONEncoder().encode(saved))
+        #expect(saved.backgroundRGB == 0xf1f4f8)
+        let suite = "TabManagerTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        #expect(manager.services.context.pageBackgrounds.color(for: saved.url) == nil)
+        let tab = TabSession(restoring: saved, showsStartPage: false, settings: manager.settings, services: manager.services)
+        #expect(tab.pageBackgroundColor.flatMap(PageBackground.rgbValue) == saved.backgroundRGB)
+        let page = tab.wake()
+        defer { tab.sleep() }
+        #expect(PageBackground.rgbValue(of: page.underPageBackgroundColor) == saved.backgroundRGB)
+        var saves = 0
+        let observation = tab.savedTabChanges.sink { saves += 1 }
+        defer { observation.cancel() }
+        page.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
+        page.loadHTMLString("<html><body style='background:#14283c'>Dark</body></html>", baseURL: URL(string: saved.url))
+        for _ in 0..<300 {
+            if tab.savedTab.backgroundRGB == 0x14283c { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(tab.savedTab.backgroundRGB == 0x14283c)
+        #expect(PageBackground.rgbValue(of: page.underPageBackgroundColor) == 0x14283c)
+        saves = 0
+        _ = try await page.evaluateJavaScript("document.body.style.background = '#ffffff'")
+        for _ in 0..<300 {
+            if tab.savedTab.backgroundRGB == 0xffffff { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(tab.savedTab.backgroundRGB == 0xffffff)
+        #expect(saves > 0)
+        #expect(PageBackground.color(rgbValue: -1) == nil)
+        #expect(PageBackground.color(rgbValue: 0x1000000) == nil)
+    }
+
     @Test func `zoom feedback follows its page and clears when it closes`() throws {
         let suite = "TabManagerTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))

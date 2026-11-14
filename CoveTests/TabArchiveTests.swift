@@ -32,6 +32,19 @@ struct TabArchiveTests {
         #expect(archive.take(entry.id) == nil)
     }
 
+    @Test func `resolved document color survives archive storage and older rows remain valid`() throws {
+        let before = archive()
+        before.add(savedTab("https://old.example/"), reason: .closed)
+        var light = savedTab("https://light.example/")
+        light.backgroundRGB = 0xf1f4f8
+        before.add(light, reason: .closed)
+        let after = archive()
+        let newest = try #require(after.lastClosed)
+        #expect(after.take(newest.id)?.backgroundRGB == 0xf1f4f8)
+        let older = try #require(after.lastClosed)
+        #expect(after.take(older.id)?.backgroundRGB == nil)
+    }
+
     @Test func `entries survive a relaunch, newest first`() {
         let before = archive()
         before.add(savedTab("https://a.example/"), reason: .idle, at: Date(timeIntervalSince1970: 1))
@@ -90,6 +103,8 @@ struct TabArchiveTests {
 
         let archive = archive()
         #expect(archive.entries.map(\.reason) == [.idle])
+        let legacyID = try #require(archive.entries.first?.id)
+        #expect(archive.take(legacyID)?.backgroundRGB == nil)
         archive.add(savedTab("https://new.example/"), reason: .closed)
         #expect(self.archive().lastClosed?.url == "https://new.example/")
     }

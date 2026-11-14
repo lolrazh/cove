@@ -5,6 +5,20 @@ import WebKit
 enum PageBackground {
     private static let messageName = "pageBackground"
 
+    static func rgbValue(of color: NSColor) -> Int? {
+        guard let rgb = color.usingColorSpace(.sRGB) else { return nil }
+        let components = [rgb.redComponent, rgb.greenComponent, rgb.blueComponent]
+        guard components.allSatisfy({ $0.isFinite }) else { return nil }
+        return components.reduce(0) { ($0 << 8) | Int((min(1, max(0, $1)) * 255).rounded()) }
+    }
+
+    static func color(rgbValue value: Int) -> NSColor? {
+        guard (0...0xffffff).contains(value) else { return nil }
+        return NSColor(srgbRed: CGFloat((value >> 16) & 255) / 255,
+                       green: CGFloat((value >> 8) & 255) / 255,
+                       blue: CGFloat(value & 255) / 255, alpha: 1)
+    }
+
     private static let script = """
     (() => {
         const root = document.documentElement;

@@ -12,6 +12,8 @@ struct SavedTab: Codable {
     /// When the tab was last looked at, so idle time survives a relaunch.
     /// Unknown counts as now.
     let lastUsedAt: Date?
+    /// Last resolved document surface, as 24-bit sRGB, before the first paint.
+    var backgroundRGB: Int? = nil
 }
 
 /// One profile's Today in a window, and what it had selected.

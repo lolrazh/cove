@@ -66,6 +66,7 @@ final class TabArchive: ObservableObject {
         db?.execute("ALTER TABLE archive ADD COLUMN reason INTEGER NOT NULL DEFAULT 0")
         db?.execute("ALTER TABLE archive ADD COLUMN source_window_id TEXT")
         db?.execute("ALTER TABLE archive ADD COLUMN today_index INTEGER")
+        db?.execute("ALTER TABLE archive ADD COLUMN background_rgb INTEGER")
         entries = loadEntries()
     }
 
@@ -87,8 +88,8 @@ final class TabArchive: ObservableObject {
         let entry = ArchivedTab(id: UUID(), url: tab.url, title: tab.customTitle ?? tab.title, archivedAt: date, reason: reason,
                                 sourceWindowID: sourceWindowID, todayIndex: todayIndex)
         try? db.run(
-            "INSERT INTO archive (id, url, title, custom_title, interaction_state, archived_at, reason, source_window_id, today_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params: [entry.id.uuidString, tab.url, tab.title, tab.customTitle, tab.interactionState, date.timeIntervalSince1970, reason.rawValue, sourceWindowID?.uuidString, todayIndex]
+            "INSERT INTO archive (id, url, title, custom_title, interaction_state, archived_at, reason, source_window_id, today_index, background_rgb) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params: [entry.id.uuidString, tab.url, tab.title, tab.customTitle, tab.interactionState, date.timeIntervalSince1970, reason.rawValue, sourceWindowID?.uuidString, todayIndex, tab.backgroundRGB]
         )
         entries.insert(entry, at: 0)
         trim()
@@ -116,8 +117,10 @@ final class TabArchive: ObservableObject {
     private func finishPendingSave(_ id: UUID) {
         guard let pending = pendingSaves.removeValue(forKey: id) else { return }
         pending.timeout?.cancel()
-        if entries.contains(where: { $0.id == id }), let state = pending.tab.savedTab.interactionState {
-            try? db?.run("UPDATE archive SET interaction_state = ? WHERE id = ?", params: [state, id.uuidString])
+        let saved = pending.tab.savedTab
+        if entries.contains(where: { $0.id == id }), let state = saved.interactionState {
+            try? db?.run("UPDATE archive SET interaction_state = ?, background_rgb = ? WHERE id = ?",
+                        params: [state, saved.backgroundRGB, id.uuidString])
         }
         pending.tab.endArchiveSnapshot(restoring: false)
     }
@@ -138,14 +141,15 @@ final class TabArchive: ObservableObject {
     /// Removes an archived tab and returns it, ready to be restored.
     func take(_ id: UUID) -> SavedTab? {
         guard let db, let entry = entries.first(where: { $0.id == id }) else { return nil }
-        let row = (try? db.query("SELECT title, custom_title, interaction_state FROM archive WHERE id = ?", params: [id.uuidString]))?.first
+        let row = (try? db.query("SELECT title, custom_title, interaction_state, background_rgb FROM archive WHERE id = ?", params: [id.uuidString]))?.first
         remove(id)
         return SavedTab(
             url: entry.url,
             title: row?["title"] as? String ?? entry.title,
             customTitle: row?["custom_title"] as? String,
             interactionState: row?["interaction_state"] as? Data,
-            lastUsedAt: nil
+            lastUsedAt: nil,
+            backgroundRGB: (row?["background_rgb"] as? Int64).flatMap(Int.init(exactly:))
         )
     }
 
