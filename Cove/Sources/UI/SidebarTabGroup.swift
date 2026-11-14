@@ -23,7 +23,7 @@ struct SidebarTabGroup<Rows: View>: View {
         }
         .padding(4)
         .background {
-            SidebarGlassSurface(cornerRadius: 14, tint: group.colorHex.flatMap { ChromeTheme(rawValue: $0).tint },
+            SidebarGlassSurface(cornerRadius: 14, isContainer: true, tint: group.colorHex.flatMap { ChromeTheme(rawValue: $0).tint },
                                 isEmphasized: isDropTarget)
         }
         .clipShape(.rect(cornerRadius: 14))
@@ -62,8 +62,8 @@ private struct TabGroupHeader: View {
             .buttonStyle(ChromeTabPresentation.sidebar.accessoryStyle)
             .help("Close Group")
             .accessibilityLabel("Close Group")
-            .opacity(isHovered && !isRenaming ? 1 : 0)
-            .allowsHitTesting(isHovered && !isRenaming)
+            .opacity((isHovered || allSelected) && !isRenaming ? 1 : 0)
+            .allowsHitTesting((isHovered || allSelected) && !isRenaming)
             .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         }
         .background(Color.white.opacity(allSelected ? 0.12 : isHovered ? 0.06 : 0), in: .rect(cornerRadius: 10))

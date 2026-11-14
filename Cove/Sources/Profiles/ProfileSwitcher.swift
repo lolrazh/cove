@@ -57,7 +57,7 @@ struct SidebarProfileTitle: View {
                         .accessibilityHidden(item.id != profile.id)
                 }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 4)
             .frame(height: ChromeMetrics.sidebarRowHeight - 8)
             .contentShape(Rectangle())
         }

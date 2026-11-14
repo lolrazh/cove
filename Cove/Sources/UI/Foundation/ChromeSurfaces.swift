@@ -4,6 +4,7 @@ import SwiftUI
 /// their group instead of replacing it with an opaque or separately tinted fill.
 struct SidebarGlassSurface: View {
     var cornerRadius: CGFloat = ChromeRadius.tab
+    var isContainer = false
     var tint: Color? = nil
     var isEmphasized = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -11,18 +12,23 @@ struct SidebarGlassSurface: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        // Dia's dark neutral group fill is 10%; its selected secondary tab is 25%.
+        let fillOpacity = (isContainer ? 0.10 : 0.25) + (isEmphasized ? 0.04 : 0)
         if reduceTransparency || contrast == .increased {
-            shape.fill(ChromePalette.content)
+            shape.fill(Color(nsColor: isContainer ? .controlBackgroundColor : .selectedContentBackgroundColor))
+                .overlay {
+                    shape.strokeBorder(Color.primary.opacity(0.45), lineWidth: isContainer ? 0.5 : 1)
+                }
         } else {
             shape
                 .fill(LinearGradient(colors: [
-                    .white.opacity(isEmphasized ? 0.25 : 0.16),
-                    .white.opacity(isEmphasized ? 0.18 : 0.10)
+                    .white.opacity(fillOpacity + 0.01),
+                    .white.opacity(fillOpacity - 0.01)
                 ], startPoint: .top, endPoint: .bottom))
                 .overlay { shape.fill((tint ?? .clear).opacity(0.18)) }
                 .overlay {
                     shape.strokeBorder(LinearGradient(colors: [
-                        .white.opacity(0.23), .white.opacity(0.04), .white.opacity(0.10)
+                        .white.opacity(0.18), .white.opacity(0.04), .white.opacity(0.10)
                     ], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 0.5)
                 }
                 .shadow(color: .black.opacity(0.08), radius: 1.5, y: 1)
