@@ -94,6 +94,21 @@ struct TabArchiveTests {
         #expect(self.archive().lastClosed?.url == "https://new.example/")
     }
 
+    @Test func `closed tab placement survives storage and legacy entries have none`() throws {
+        let sourceWindow = UUID()
+        let before = archive()
+        before.add(savedTab("https://old.example/"), reason: .closed)
+        before.add(savedTab("https://placed.example/"), reason: .closed,
+                   sourceWindowID: sourceWindow, todayIndex: 3)
+        let after = archive()
+        let placed = try #require(after.lastClosed)
+        #expect(placed.sourceWindowID == sourceWindow)
+        #expect(placed.todayIndex == 3)
+        _ = after.take(placed.id)
+        #expect(after.lastClosed?.sourceWindowID == nil)
+        #expect(after.lastClosed?.todayIndex == nil)
+    }
+
     @Test func `a private window's archive is its own and keeps nothing`() {
         let archive = TabArchive(directory: nil)
         archive.add(savedTab("https://private.example/"), reason: .closed)

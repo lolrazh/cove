@@ -83,6 +83,8 @@ final class TabManager: ObservableObject {
     /// Where this window's closed and idle tabs go: the shared archive, or a
     /// private window's own, kept in memory and gone with the window.
     private let baseArchive: TabArchive
+    /// Archive positions belong to this live window, not every window of a profile.
+    private let archiveWindowID = UUID()
     var archive: TabArchive { services.context.profileData?.archive ?? baseArchive }
     /// The shared pins, or a private window's own empty, unsaved ones.
     let pinStore: PinStore
@@ -323,7 +325,7 @@ final class TabManager: ObservableObject {
 
     /// The window's only tab, while it's still a start page nobody has used.
     private var untouchedStartPage: TabSession? {
-        guard tabs.count == 1, let tab = tabs.first, tab.id == activeTabID, tab.isNewTabPage, tab.currentURL.isEmpty else { return nil }
+        guard tabs.count == 1, let tab = tabs.first, tab.id == activeTabID, tab.isNewTabPage, tab.currentURL.isEmpty, !tab.canGoForward else { return nil }
         return tab
     }
 
@@ -443,7 +445,7 @@ final class TabManager: ObservableObject {
             activeTabID = neighbor ?? allTabs.first(where: { $0.id != id })?.id
         }
         today.remove(at: index)
-        retire(tab, reason: .closed)
+        retire(tab, reason: .closed, todayIndex: index)
     }
 
     /// Today tabs can always close. A pinned tab resets while awake or away from its pin.
@@ -505,15 +507,27 @@ final class TabManager: ObservableObject {
     }
 
     /// A tab leaving the window goes into the archive.
-    private func retire(_ tab: TabSession, reason: ArchivedTab.Reason) {
+    private func retire(_ tab: TabSession, reason: ArchivedTab.Reason, todayIndex: Int? = nil) {
         tab.close()
-        (tab.services.context.profileData?.archive ?? baseArchive).add(tab.savedTab, reason: reason)
+        (tab.services.context.profileData?.archive ?? baseArchive).add(tab.savedTab, reason: reason,
+            sourceWindowID: todayIndex == nil ? nil : archiveWindowID, todayIndex: todayIndex)
     }
 
     /// Brings an archived tab back into Today, selected.
     func reopenArchivedTab(_ id: UUID) {
-        guard let saved = archive.take(id) else { return }
-        open(makeTab(restoring: saved))
+        guard let entry = archive.entries.first(where: { $0.id == id }),
+              let saved = archive.take(id) else { return }
+        let startPage = untouchedStartPage
+        let restored = makeTab(restoring: saved)
+        if entry.sourceWindowID == archiveWindowID, let index = entry.todayIndex {
+            today.insert(.tab(restored), at: min(max(index, 0), today.count))
+            activeTabID = restored.id
+        } else {
+            open(restored)
+        }
+        // Select the real page before removing the placeholder, so observers
+        // never see a missing selection. A start page with forward history stays.
+        startPage.map { closeTab($0.id) }
     }
 
     /// Selects a tab, first switching to its profile if it's in another.
