@@ -144,6 +144,7 @@ final class SessionStore {
             tabManager.$splits.map { _ in },
             tabManager.$tabGroups.map { _ in }
         )
+            .merge(with: tabManager.parkedSessionChanges)
             .sink { [weak self] in self?.scheduleSave() }
         trackedWindows.append(TrackedWindow(tabManager: tabManager, placement: placement, changes: changes))
     }

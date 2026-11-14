@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import Testing
 import WebKit
 @testable import Cove
@@ -82,8 +83,19 @@ struct ProfileDataTests {
         #expect(!manager.commandBar.results.contains { $0.destination == "https://only-personal.example" })
         manager.commandBar.dismiss()
         let secondTab = try #require(manager.activeTabID)
+        var parkedSaves = 0
+        var savedBackgroundProfile: SavedProfile?
+        let sessionChanges = manager.parkedSessionChanges.sink { [weak manager] in
+            parkedSaves += 1
+            savedBackgroundProfile = manager?.savedWindow.profiles.first { $0.profileID == first.id }
+        }
+        defer { sessionChanges.cancel() }
         // A child opened by the parked profile cannot join the visible one.
         manager.addTab(request: URLRequest(url: URL(string: "file:///dev/null?child")!), nextTo: pinned, grouping: .backgroundLink)
+        #expect(parkedSaves == 1)
+        #expect(savedBackgroundProfile?.tabs.contains { $0.url.contains("child") } == true)
+        #expect(savedBackgroundProfile?.tabGroups?.first?.pinnedOpenerID == pinned)
+        #expect(savedBackgroundProfile?.tabGroups?.first?.members.count == 1)
         #expect(manager.tabGroups.isEmpty)
         #expect(manager.activeTabID == secondTab)
         #expect(!manager.tabs.contains { $0.currentURL.contains("child") })

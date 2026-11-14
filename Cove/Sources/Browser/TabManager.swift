@@ -42,6 +42,8 @@ final class TabManager: ObservableObject {
         didSet { containSplitsInGroups() }
     }
     @Published var tabGroups: [TabGroup<UUID>] = []
+    /// Parked profiles have no active Today publisher to trigger session saving.
+    let parkedSessionChanges = PassthroughSubject<Void, Never>()
     @Published var selectedTabIDs: Set<UUID> = []
     var tabSelectionAnchorID: UUID?
     /// A live tab for each pin in this profile, with optional folders.
@@ -326,6 +328,7 @@ final class TabManager: ObservableObject {
                                      openerIsPinned: pinStore.pins(in: owner.id).pin(openerID) != nil)
                 if parked.activeTabID == nil { parked.activeTabID = tab.id }
                 parkedProfiles[owner.id] = parked
+                parkedSessionChanges.send()
             }
             return
         }
