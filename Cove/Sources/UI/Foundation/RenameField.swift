@@ -10,25 +10,23 @@ struct RenameField: View {
     let onCancel: () -> Void
 
     @FocusState private var isFocused: Bool
+    @State private var selection: TextSelection?
 
     var body: some View {
-        TextField(prompt, text: $text)
+        // Keep the insertion point visible when a name exceeds the row width.
+        TextField(prompt, text: $text, selection: $selection, axis: .horizontal)
+            .lineLimit(1)
             .textFieldStyle(.plain)
             .focused($isFocused)
             .onAppear { isFocused = true }
             .onSubmit(onCommit)
             .onExitCommand(perform: onCancel)
             .onChange(of: isFocused) { _, isFocused in
-                isFocused ? selectAll() : onCommit()
+                if isFocused {
+                    selection = TextSelection(range: text.startIndex..<text.endIndex)
+                } else {
+                    onCommit()
+                }
             }
-    }
-
-    /// A field focused from code keeps its insertion point where it was,
-    /// unlike one clicked into; the field editor behind it can select all,
-    /// once it exists.
-    private func selectAll() {
-        DispatchQueue.main.async {
-            (NSApp.keyWindow?.firstResponder as? NSTextView)?.selectAll(nil)
-        }
     }
 }
