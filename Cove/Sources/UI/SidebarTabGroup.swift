@@ -23,7 +23,8 @@ struct SidebarTabGroup<Rows: View>: View {
         }
         .padding(4)
         .background {
-            SidebarGlassSurface(cornerRadius: 14, isEmphasized: isDropTarget)
+            SidebarGlassSurface(cornerRadius: 14, tint: group.colorHex.flatMap { ChromeTheme(rawValue: $0).tint },
+                                isEmphasized: isDropTarget)
         }
         .clipShape(.rect(cornerRadius: 14))
         .containerShape(RoundedRectangle(cornerRadius: 14))
@@ -114,6 +115,17 @@ private struct TabGroupHeader: View {
             Button("Website Icon") { tabManager.setGroupSymbol(group.id, to: nil) }
             ForEach(Self.symbols, id: \.symbol) { option in
                 Button(option.title, systemImage: option.symbol) { tabManager.setGroupSymbol(group.id, to: option.symbol) }
+            }
+        }
+        Menu("Group Color") {
+            Button("Default", systemImage: group.colorHex == nil ? "checkmark" : "circle") {
+                tabManager.setGroupColor(group.id, to: nil)
+            }
+            ForEach(Array(ChromeTheme.presets.prefix(8).enumerated()), id: \.offset) { index, theme in
+                Button(ChromeTheme.presetNames[index], systemImage: group.colorHex == theme.rawValue ? "checkmark" : "circle.fill") {
+                    tabManager.setGroupColor(group.id, to: theme.rawValue)
+                }
+                .tint(theme.tint)
             }
         }
         Divider()

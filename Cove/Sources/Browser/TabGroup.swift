@@ -6,6 +6,8 @@ struct TabGroup<Member: Hashable & Codable>: Identifiable, Hashable, Codable {
     var members: [Member]
     var customName: String? = nil
     var symbolName: String? = nil
+    /// No override means neutral glass over the profile theme.
+    var colorHex: String? = nil
     var isCollapsed = false
     var isAutomatic = false
     /// A pin can own a group of Today children without leaving Pinned.
@@ -24,7 +26,7 @@ struct TabGroup<Member: Hashable & Codable>: Identifiable, Hashable, Codable {
     func map<Other: Hashable & Codable>(_ transform: (Member) -> Other?) -> TabGroup<Other>? {
         let mapped = members.compactMap(transform)
         return TabGroup<Other>(id: id, members: mapped, customName: customName,
-                               symbolName: symbolName, isCollapsed: isCollapsed,
+                               symbolName: symbolName, colorHex: colorHex, isCollapsed: isCollapsed,
                                isAutomatic: isAutomatic, pinnedOpenerID: pinnedOpenerID).keeping { _ in true }
     }
 }

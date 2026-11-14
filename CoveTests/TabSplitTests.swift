@@ -136,11 +136,19 @@ struct TabGroupTests {
         #expect(pinned.keeping { _ in false } == nil)
     }
 
+    @Test func groupsSavedBeforeColorSupportStayNeutral() throws {
+        let data = Data("{\"id\":\"\(UUID().uuidString)\",\"members\":[0,1],\"isCollapsed\":false,\"isAutomatic\":true}".utf8)
+        let group = try JSONDecoder().decode(TabGroup<Int>.self, from: data)
+        #expect(group.colorHex == nil)
+        #expect(group.members == [0, 1])
+    }
+
     @Test func groupsUseSavedIndicesAndDecodeLegacyProfilesWithoutGroups() throws {
-        let group = TabGroup(members: ["a", "b"], customName: "Research", symbolName: "book", isCollapsed: true)
+        let group = TabGroup(members: ["a", "b"], customName: "Research", symbolName: "book", colorHex: "#4BAFF1", isCollapsed: true)
         let indexed = try #require(group.map { ["a", "b"].firstIndex(of: $0) })
         let decoded = try JSONDecoder().decode(TabGroup<Int>.self, from: JSONEncoder().encode(indexed))
         #expect(decoded.id == group.id && decoded.members == [0, 1])
+        #expect(decoded.colorHex == group.colorHex)
         #expect(decoded.customName == "Research" && decoded.symbolName == "book" && decoded.isCollapsed)
         let old = Data("{\"profileID\":\"\(UUID().uuidString)\",\"tabs\":[]}".utf8)
         #expect(try JSONDecoder().decode(SavedProfile.self, from: old).tabGroups == nil)

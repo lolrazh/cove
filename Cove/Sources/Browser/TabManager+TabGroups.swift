@@ -55,6 +55,11 @@ extension TabManager {
         tabGroups[index].isAutomatic = false
     }
 
+    func setGroupColor(_ id: UUID, to colorHex: String?) {
+        guard let index = tabGroups.firstIndex(where: { $0.id == id }) else { return }
+        tabGroups[index].colorHex = colorHex
+    }
+
     func toggleGroupCollapsed(_ id: UUID) {
         guard let index = tabGroups.firstIndex(where: { $0.id == id }) else { return }
         tabGroups[index].isCollapsed.toggle()
