@@ -308,7 +308,12 @@ struct TabManagerTests {
         }
         #expect(closed.filter { !$0.isAsleep }.count == 8)
         #expect(closed.prefix(2).allSatisfy { $0.isAsleep })
-        try await Task.sleep(for: .milliseconds(1200))
+        // The main actor also handles WebKit process startup in the full
+        // suite. Yield until deadline jobs run, with a bounded test timeout.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while closed.contains(where: { !$0.isAsleep }), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
         #expect(closed.allSatisfy { $0.isAsleep })
         #expect(manager.archive.entries.count == 10)
         manager.reopenClosedTab()

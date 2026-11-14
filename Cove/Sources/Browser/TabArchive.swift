@@ -102,8 +102,9 @@ final class TabArchive: ObservableObject {
         guard tab.webView != nil, entries.contains(where: { $0.id == entryID }) else { return }
         let pending = PendingSave(tab)
         pendingSaves[entryID] = pending
+        let deadline = ContinuousClock.now.advanced(by: .seconds(1))
         pending.timeout = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(until: deadline, clock: .continuous)
             guard !Task.isCancelled else { return }
             self?.finishPendingSave(entryID)
         }
