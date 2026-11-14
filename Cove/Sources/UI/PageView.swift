@@ -12,6 +12,14 @@ struct PageView: View {
     var body: some View {
         ZStack(alignment: .top) {
             page
+                .overlay {
+                    // WebKit's initial canvas can use the system color before
+                    // the document is ready. Keep its known surface over that gap.
+                    if tab.isAwaitingInitialContent, !tab.isNewTabPage,
+                       tab.loadFailure == nil, let color = tab.pageBackgroundColor {
+                        Color(nsColor: color).allowsHitTesting(false)
+                    }
+                }
             if showsLoadingProgress {
                 PageProgressBar(progress: tab.estimatedProgress, isLoading: tab.isLoading)
                     .id(tab.id)
