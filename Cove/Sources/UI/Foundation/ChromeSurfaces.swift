@@ -15,7 +15,7 @@ struct SidebarGlassSurface: View {
         // Dia's dark neutral group fill is 10%; its selected secondary tab is 25%.
         let fillOpacity = (isContainer ? 0.10 : 0.25) + (isEmphasized ? 0.04 : 0)
         if reduceTransparency || contrast == .increased {
-            shape.fill(Color(nsColor: isContainer ? .controlBackgroundColor : .selectedContentBackgroundColor))
+            shape.fill(Color(nsColor: isContainer ? .controlBackgroundColor : .windowBackgroundColor))
                 .overlay {
                     shape.strokeBorder(Color.primary.opacity(0.45), lineWidth: isContainer ? 0.5 : 1)
                 }
