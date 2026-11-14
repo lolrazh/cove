@@ -75,15 +75,38 @@ struct ChromeTabItem: View {
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
         .onHover { isHovered = $0 }
-        .onTapGesture { tabManager.selectTabForInteraction(tab.id, modifiers: NSEvent.modifierFlags) }
+        .gesture(selectionGesture)
         // Alongside the single click, so selecting a tab never waits to see
         // whether a second click follows.
-        .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .simultaneousGesture(renameGesture)
         .help(presentation == .compact ? title : "")
         .accessibilityAddTraits(tabManager.selectedTabIDs.contains(tab.id) ? .isSelected : [])
         .contextMenu {
             TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: beginRenaming))
         }
+    }
+
+    /// Match modifiers when the click arrives, not after SwiftUI calls the
+    /// action. Global key state may already have changed by that point.
+    private var selectionGesture: some Gesture {
+        selectionTap([.command, .shift], flags: [.command, .shift])
+            .exclusively(before: selectionTap(.command, flags: .command))
+            .exclusively(before: selectionTap(.shift, flags: .shift))
+            .exclusively(before: selectionTap([], flags: []))
+    }
+
+    private func selectionTap(_ modifiers: EventModifiers, flags: NSEvent.ModifierFlags) -> some Gesture {
+        TapGesture().modifiers(modifiers).onEnded {
+            tabManager.selectTabForInteraction(tab.id, modifiers: flags)
+        }
+    }
+
+    /// Modifier double-clicks still select tabs; they must not start renaming.
+    private var renameGesture: some Gesture {
+        TapGesture(count: 2).modifiers([.command, .shift])
+            .exclusively(before: TapGesture(count: 2).modifiers(.command))
+            .exclusively(before: TapGesture(count: 2).modifiers(.shift))
+            .exclusively(before: TapGesture(count: 2).onEnded(beginRenaming))
     }
 
     // MARK: - Title
@@ -103,7 +126,6 @@ struct ChromeTabItem: View {
     }
 
     private func beginRenaming() {
-        guard NSEvent.modifierFlags.intersection([.command, .shift]).isEmpty else { return }
         draftTitle = tab.title
         isRenaming = true
     }
