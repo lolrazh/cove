@@ -161,7 +161,7 @@ final class DownloadFlightView: NSView {
         file.shadowOpacity = 0.28
         file.shadowRadius = 20
         file.shadowOffset = CGSize(width: 0, height: 12)
-        file.shadowPath = CGPath(roundedRect: file.bounds, cornerWidth: 16, cornerHeight: 16, transform: nil)
+        file.shadowPath = CGPath(roundedRect: file.bounds, cornerWidth: file.cornerRadius, cornerHeight: file.cornerRadius, transform: nil)
         file.opacity = 0
         layer.addSublayer(file)
         let id = UUID()
@@ -237,7 +237,7 @@ enum DownloadFlightCard {
     /// Dia's native DownloadItemView is a 220 × 36 pt card, not a loose file icon.
     /// Keep it at readable size until the last part of the flight.
     static func make(filename: String, appearance: NSAppearance, scale: CGFloat,
-                     cornerRadius: CGFloat = 16) -> CALayer {
+                     cornerRadius: CGFloat = 12) -> CALayer {
         let card = CALayer()
         card.bounds = CGRect(x: 0, y: 0, width: 220, height: 36)
         card.cornerRadius = cornerRadius
