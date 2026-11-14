@@ -47,15 +47,17 @@ struct ChromeTabItem: View {
             }
         }
         // A sleeping tab fades a little, as in Arc, until hovered: it's still
-        // there, it just has to wake.
-        .opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
+        // there, it just has to wake. Scope the fade to opacity: a whole-row
+        // transaction also slows its 120 ms movement when a neighbor closes.
+        .animation(ChromeMotion.fade) { content in
+            content.opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
+        }
         .padding(.leading, presentation == .compact ? 0 : 8)
         .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
         .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width)
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
-        .animation(ChromeMotion.fade, value: tab.isAsleep)
         .onHover { isHovered = $0 }
         .onTapGesture { tabManager.selectTab(tab.id) }
         // Alongside the single click, so selecting a tab never waits to see
