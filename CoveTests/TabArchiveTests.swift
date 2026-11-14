@@ -40,6 +40,23 @@ struct TabArchiveTests {
         #expect(archive().entries.map(\.url) == ["https://b.example/", "https://a.example/"])
     }
 
+    @Test func `custom titles and equal-time close order survive a relaunch`() throws {
+        let before = archive(limit: 2)
+        let time = Date(timeIntervalSince1970: 1)
+        before.add(savedTab("https://a.example/"), reason: .closed, at: time)
+        before.add(savedTab("https://b.example/", title: "Page B", customTitle: "My B"), reason: .closed, at: time)
+        before.add(savedTab("https://c.example/", title: "Page C", customTitle: "My C"), reason: .closed, at: time)
+
+        let after = archive(limit: 2)
+        #expect(after.entries.map(\.url) == before.entries.map(\.url))
+        #expect(after.entries.map(\.title) == ["My C", "My B"])
+        let newest = try #require(after.lastClosed)
+        let restored = try #require(after.take(newest.id))
+        #expect(restored.title == "Page C")
+        #expect(restored.customTitle == "My C")
+        #expect(after.lastClosed?.url == "https://b.example/")
+    }
+
     @Test func `a start page is not kept, and the oldest entries go beyond the limit`() {
         let archive = archive(limit: 2)
         archive.add(savedTab(""), reason: .closed)

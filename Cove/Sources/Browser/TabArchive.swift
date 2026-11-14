@@ -98,7 +98,7 @@ final class TabArchive: ObservableObject {
     }
 
     private func loadEntries() -> [ArchivedTab] {
-        let rows = (try? db?.query("SELECT id, url, title, archived_at, reason FROM archive ORDER BY archived_at DESC")) ?? []
+        let rows = (try? db?.query("SELECT id, url, title, custom_title, archived_at, reason FROM archive ORDER BY archived_at DESC, rowid DESC")) ?? []
         return rows.compactMap { row in
             guard let id = (row["id"] as? String).flatMap(UUID.init),
                   let url = row["url"] as? String,
@@ -106,7 +106,7 @@ final class TabArchive: ObservableObject {
             return ArchivedTab(
                 id: id,
                 url: url,
-                title: row["title"] as? String ?? "",
+                title: row["custom_title"] as? String ?? row["title"] as? String ?? "",
                 archivedAt: Date(timeIntervalSince1970: archivedAt),
                 reason: (row["reason"] as? Int64).flatMap { ArchivedTab.Reason(rawValue: Int($0)) } ?? .idle
             )
@@ -116,7 +116,7 @@ final class TabArchive: ObservableObject {
     private func trim() {
         guard entries.count > limit else { return }
         try? db?.run(
-            "DELETE FROM archive WHERE id IN (SELECT id FROM archive ORDER BY archived_at DESC LIMIT -1 OFFSET ?)",
+            "DELETE FROM archive WHERE id IN (SELECT id FROM archive ORDER BY archived_at DESC, rowid DESC LIMIT -1 OFFSET ?)",
             params: [limit]
         )
         entries.removeLast(entries.count - limit)
