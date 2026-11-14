@@ -159,6 +159,37 @@ struct TabManagerTests {
         #expect(manager.selectedTabIDs.isEmpty)
     }
 
+    @Test func `closing a group prefers regular neighbors without waking a pin`() throws {
+        let suite = "TabGroups-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let pin = try #require(manager.activeTab)
+        pin.navigate("file:///dev/null#pin")
+        manager.pinTab(pin.id)
+        manager.addTab(url: "file:///dev/null#loose")
+        let loose = try #require(manager.activeTabID)
+        pin.sleep()
+        manager.addTab(url: "file:///dev/null#a")
+        let a = try #require(manager.activeTabID)
+        manager.addTab(url: "file:///dev/null#b")
+        let b = try #require(manager.activeTabID)
+        let group = try #require(manager.createGroup(tabIDs: [a, b]))
+        manager.closeGroup(group)
+        #expect(manager.activeTabID == loose)
+        #expect(pin.isAsleep)
+        manager.reopenClosedTab()
+        manager.reopenClosedTab()
+        manager.addTab(url: "file:///dev/null#next")
+        let next = try #require(manager.activeTabID)
+        manager.selectTab(a)
+        manager.closeGroup(group)
+        #expect(manager.activeTabID == next)
+        #expect(pin.isAsleep)
+        manager.closeTabs([loose, next])
+        #expect(manager.activeTabID == pin.id)
+    }
+
     @Test func `moving and grouping keep sidebar and keyboard order identical`() throws {
         let suite = "TabGroups-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))

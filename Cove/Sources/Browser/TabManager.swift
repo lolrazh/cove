@@ -513,7 +513,12 @@ final class TabManager: ObservableObject {
         }
         guard !closing.isEmpty else { return }
         if let activeTabID, closingIDs.contains(activeTabID) {
-            if let survivor = allTabs.first(where: { !closingIDs.contains($0.id) }) {
+            let order = tabs
+            let index = order.firstIndex { $0.id == activeTabID } ?? order.count
+            let survivor = order.dropFirst(index).first { !closingIDs.contains($0.id) }
+                ?? order.prefix(index).last { !closingIDs.contains($0.id) }
+                ?? pinned.tabs.last { !closingIDs.contains($0.id) }
+            if let survivor {
                 selectTab(survivor.id)
             } else {
                 open(makeTab(showsStartPage: true))
