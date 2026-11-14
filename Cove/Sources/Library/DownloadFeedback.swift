@@ -153,7 +153,9 @@ final class DownloadFlightView: NSView {
             CGPoint(x: start.x + dx * 0.63, y: start.y + dy * 0.46),
             CGPoint(x: start.x + dx * 0.96, y: start.y + dy * 0.93), end
         ]
-        let file = makeCard(for: event)
+        let file = DownloadFlightCard.make(filename: event.filename,
+            appearance: window?.effectiveAppearance ?? NSAppearance.currentDrawing(),
+            scale: window?.backingScaleFactor ?? 2)
         file.position = end
         file.shadowColor = NSColor.black.cgColor
         file.shadowOpacity = 0.28
@@ -198,47 +200,6 @@ final class DownloadFlightView: NSView {
         CATransaction.commit()
     }
 
-    /// Dia's native DownloadItemView is a 220 × 36 pt card, not a loose file icon.
-    /// Keep it at readable size until the last part of the flight.
-    private func makeCard(for event: DownloadStarted) -> CALayer {
-        let scale = window?.backingScaleFactor ?? 2
-        let card = CALayer()
-        card.bounds = CGRect(x: 0, y: 0, width: 220, height: 36)
-        card.cornerRadius = 16
-        card.cornerCurve = .continuous
-        card.borderWidth = 0.5
-        card.contentsScale = scale
-        let appearance = window?.effectiveAppearance ?? NSAppearance.currentDrawing()
-        appearance.performAsCurrentDrawingAppearance {
-            card.backgroundColor = NSColor.windowBackgroundColor.cgColor
-            card.borderColor = NSColor.secondarySystemFill.cgColor
-            let titleColor: NSColor = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white : .black
-            let icon = CALayer()
-            icon.frame = CGRect(x: 8, y: 8, width: 20, height: 20)
-            let image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)?
-                .withSymbolConfiguration(.init(paletteColors: [NSColor.secondaryLabelColor]))
-            icon.contents = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
-            icon.contentsGravity = .resizeAspect
-            icon.contentsScale = scale
-            card.addSublayer(icon)
-            for (text, size, y, color, truncation) in [
-                (event.filename, 12.0, 3.0, titleColor, CATextLayerTruncationMode.middle),
-                ("Downloading…", 10.0, 18.0, titleColor.withAlphaComponent(0.7), CATextLayerTruncationMode.end)
-            ] {
-                let label = CATextLayer()
-                label.frame = CGRect(x: 36, y: y, width: 176, height: size + 3)
-                label.string = text
-                label.font = NSFont.systemFont(ofSize: size)
-                label.fontSize = size
-                label.foregroundColor = color.cgColor
-                label.truncationMode = truncation
-                label.contentsScale = scale
-                card.addSublayer(label)
-            }
-        }
-        return card
-    }
-
     private func landed() {
         // View updates can supply a newly revealed anchor. Publish after that update.
         Task { @MainActor [weak self] in
@@ -267,5 +228,49 @@ final class DownloadFlightView: NSView {
         let previousLibrary = library
         Task { @MainActor in previousLibrary?.downloadFeedbackActive = false }
         manager = nil
+    }
+}
+
+/// Shared by the flight and the local still-card preview renderer.
+@MainActor
+enum DownloadFlightCard {
+    /// Dia's native DownloadItemView is a 220 × 36 pt card, not a loose file icon.
+    /// Keep it at readable size until the last part of the flight.
+    static func make(filename: String, appearance: NSAppearance, scale: CGFloat,
+                     cornerRadius: CGFloat = 16) -> CALayer {
+        let card = CALayer()
+        card.bounds = CGRect(x: 0, y: 0, width: 220, height: 36)
+        card.cornerRadius = cornerRadius
+        card.cornerCurve = .continuous
+        card.borderWidth = 0.5
+        card.contentsScale = scale
+        appearance.performAsCurrentDrawingAppearance {
+            card.backgroundColor = NSColor.windowBackgroundColor.cgColor
+            card.borderColor = NSColor.secondarySystemFill.cgColor
+            let titleColor: NSColor = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .white : .black
+            let icon = CALayer()
+            icon.frame = CGRect(x: 8, y: 8, width: 20, height: 20)
+            let image = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)?
+                .withSymbolConfiguration(.init(paletteColors: [NSColor.secondaryLabelColor]))
+            icon.contents = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            icon.contentsGravity = .resizeAspect
+            icon.contentsScale = scale
+            card.addSublayer(icon)
+            for (text, size, y, color, truncation) in [
+                (filename, 12.0, 3.0, titleColor, CATextLayerTruncationMode.middle),
+                ("Downloading…", 10.0, 18.0, titleColor.withAlphaComponent(0.7), CATextLayerTruncationMode.end)
+            ] {
+                let label = CATextLayer()
+                label.frame = CGRect(x: 36, y: y, width: 176, height: size + 3)
+                label.string = text
+                label.font = NSFont.systemFont(ofSize: size)
+                label.fontSize = size
+                label.foregroundColor = color.cgColor
+                label.truncationMode = truncation
+                label.contentsScale = scale
+                card.addSublayer(label)
+            }
+        }
+        return card
     }
 }
