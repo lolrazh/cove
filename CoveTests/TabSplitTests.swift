@@ -123,3 +123,29 @@ struct TabSplitTests {
         #expect(entries[2].id == note)
     }
 }
+
+@MainActor
+struct TabGroupTests {
+    @Test func automaticGroupsDissolveButNamedAndPinnedGroupsKeepOneMember() {
+        let automatic = TabGroup(members: ["a", "b"], isAutomatic: true)
+        #expect(automatic.keeping { $0 == "a" } == nil)
+        let manual = TabGroup(members: ["a", "b"])
+        #expect(manual.keeping { $0 == "a" }?.members == ["a"])
+        let pinned = TabGroup(members: ["a"], isAutomatic: true, pinnedOpenerID: UUID())
+        #expect(pinned.keeping { _ in true } != nil)
+        #expect(pinned.keeping { _ in false } == nil)
+    }
+
+    @Test func groupsUseSavedIndicesAndDecodeLegacyProfilesWithoutGroups() throws {
+        let group = TabGroup(members: ["a", "b"], customName: "Research", symbolName: "book", isCollapsed: true)
+        let indexed = try #require(group.map { ["a", "b"].firstIndex(of: $0) })
+        let decoded = try JSONDecoder().decode(TabGroup<Int>.self, from: JSONEncoder().encode(indexed))
+        #expect(decoded.id == group.id && decoded.members == [0, 1])
+        #expect(decoded.customName == "Research" && decoded.symbolName == "book" && decoded.isCollapsed)
+        let old = Data("{\"profileID\":\"\(UUID().uuidString)\",\"tabs\":[]}".utf8)
+        #expect(try JSONDecoder().decode(SavedProfile.self, from: old).tabGroups == nil)
+        let a = UUID(), b = UUID()
+        let bad = TabGroup(members: [a, a, UUID(), b])
+        #expect(bad.keeping { [a, b].contains($0) }?.members == [a, b])
+    }
+}

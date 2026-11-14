@@ -19,6 +19,7 @@ struct ArchivedTab: Identifiable, Hashable {
     /// windows (and a new app session) must not reuse an unrelated index.
     var sourceWindowID: UUID? = nil
     var todayIndex: Int? = nil
+    var tabGroup: ArchivedTabGroup? = nil
 }
 
 /// Tabs that left Today, newest first, as Arc keeps them: every closed tab
@@ -67,6 +68,8 @@ final class TabArchive: ObservableObject {
         db?.execute("ALTER TABLE archive ADD COLUMN source_window_id TEXT")
         db?.execute("ALTER TABLE archive ADD COLUMN today_index INTEGER")
         db?.execute("ALTER TABLE archive ADD COLUMN background_rgb INTEGER")
+        db?.execute("ALTER TABLE archive ADD COLUMN tab_id TEXT")
+        db?.execute("ALTER TABLE archive ADD COLUMN tab_group BLOB")
         entries = loadEntries()
     }
 
@@ -83,13 +86,13 @@ final class TabArchive: ObservableObject {
     /// Puts a tab in the archive. A start page has nothing to keep.
     @discardableResult
     func add(_ tab: SavedTab, reason: ArchivedTab.Reason, sourceWindowID: UUID? = nil,
-             todayIndex: Int? = nil, at date: Date = .now) -> UUID? {
+             todayIndex: Int? = nil, tabGroup: ArchivedTabGroup? = nil, at date: Date = .now) -> UUID? {
         guard let db, !tab.url.isEmpty else { return nil }
         let entry = ArchivedTab(id: UUID(), url: tab.url, title: tab.customTitle ?? tab.title, archivedAt: date, reason: reason,
-                                sourceWindowID: sourceWindowID, todayIndex: todayIndex)
+                                sourceWindowID: sourceWindowID, todayIndex: todayIndex, tabGroup: tabGroup)
         try? db.run(
-            "INSERT INTO archive (id, url, title, custom_title, interaction_state, archived_at, reason, source_window_id, today_index, background_rgb) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            params: [entry.id.uuidString, tab.url, tab.title, tab.customTitle, tab.interactionState, date.timeIntervalSince1970, reason.rawValue, sourceWindowID?.uuidString, todayIndex, tab.backgroundRGB]
+            "INSERT INTO archive (id, url, title, custom_title, interaction_state, archived_at, reason, source_window_id, today_index, background_rgb, tab_id, tab_group) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            params: [entry.id.uuidString, tab.url, tab.title, tab.customTitle, tab.interactionState, date.timeIntervalSince1970, reason.rawValue, sourceWindowID?.uuidString, todayIndex, tab.backgroundRGB, tab.id?.uuidString, tabGroup.flatMap { try? JSONEncoder().encode($0) }]
         )
         entries.insert(entry, at: 0)
         trim()
@@ -142,7 +145,7 @@ final class TabArchive: ObservableObject {
     /// Removes an archived tab and returns it, ready to be restored.
     func take(_ id: UUID) -> SavedTab? {
         guard let db, let entry = entries.first(where: { $0.id == id }) else { return nil }
-        let row = (try? db.query("SELECT title, custom_title, interaction_state, background_rgb FROM archive WHERE id = ?", params: [id.uuidString]))?.first
+        let row = (try? db.query("SELECT title, custom_title, interaction_state, background_rgb, tab_id FROM archive WHERE id = ?", params: [id.uuidString]))?.first
         remove(id)
         return SavedTab(
             url: entry.url,
@@ -150,7 +153,8 @@ final class TabArchive: ObservableObject {
             customTitle: row?["custom_title"] as? String,
             interactionState: row?["interaction_state"] as? Data,
             lastUsedAt: nil,
-            backgroundRGB: (row?["background_rgb"] as? Int64).flatMap(Int.init(exactly:))
+            backgroundRGB: (row?["background_rgb"] as? Int64).flatMap(Int.init(exactly:)),
+            id: (row?["tab_id"] as? String).flatMap(UUID.init)
         )
     }
 
@@ -164,7 +168,7 @@ final class TabArchive: ObservableObject {
     }
 
     private func loadEntries() -> [ArchivedTab] {
-        let rows = (try? db?.query("SELECT id, url, title, custom_title, archived_at, reason, source_window_id, today_index FROM archive ORDER BY archived_at DESC, rowid DESC")) ?? []
+        let rows = (try? db?.query("SELECT id, url, title, custom_title, archived_at, reason, source_window_id, today_index, tab_group FROM archive ORDER BY archived_at DESC, rowid DESC")) ?? []
         return rows.compactMap { row in
             guard let id = (row["id"] as? String).flatMap(UUID.init),
                   let url = row["url"] as? String,
@@ -176,7 +180,8 @@ final class TabArchive: ObservableObject {
                 archivedAt: Date(timeIntervalSince1970: archivedAt),
                 reason: (row["reason"] as? Int64).flatMap { ArchivedTab.Reason(rawValue: Int($0)) } ?? .idle,
                 sourceWindowID: (row["source_window_id"] as? String).flatMap(UUID.init),
-                todayIndex: (row["today_index"] as? Int64).flatMap(Int.init(exactly:))
+                todayIndex: (row["today_index"] as? Int64).flatMap(Int.init(exactly:)),
+                tabGroup: (row["tab_group"] as? Data).flatMap { try? JSONDecoder().decode(ArchivedTabGroup.self, from: $0) }
             )
         }
     }

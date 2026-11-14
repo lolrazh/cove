@@ -14,6 +14,8 @@ struct SavedTab: Codable {
     let lastUsedAt: Date?
     /// Last resolved document surface, as 24-bit sRGB, before the first paint.
     var backgroundRGB: Int? = nil
+    /// Stable across session and archive restores; duplication uses a new ID.
+    var id: UUID? = nil
 }
 
 /// One profile's Today in a window, and what it had selected.
@@ -32,6 +34,7 @@ struct SavedProfile: Codable {
     var documents: [TodayDocumentPlace]? = nil
     /// The note on screen, if one was.
     var activeDocumentID: UUID? = nil
+    var tabGroups: [TabGroup<Int>]? = nil
 }
 
 /// A window: every profile's Today as it was left there, and the profile shown.
@@ -98,8 +101,8 @@ final class SessionStore {
     private var pendingSave: Task<Void, Never>?
     private var terminationObserver: AnyCancellable?
 
-    init() {
-        fileURL = ProfileMigration.root.appendingPathComponent("session.plist")
+    init(fileURL: URL = ProfileMigration.root.appendingPathComponent("session.plist")) {
+        self.fileURL = fileURL
         restorableWindows = StoreFile.read(fileURL) { try? PropertyListDecoder().decode([SavedWindow].self, from: $0) } ?? []
 
         // A change in the last second before quitting would miss the debounce.
