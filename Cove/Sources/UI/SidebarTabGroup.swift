@@ -27,6 +27,7 @@ struct SidebarTabGroup<Rows: View>: View {
                 TabGroupSurface(tab: representative)
             }
         }
+        .clipShape(.rect(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(ChromePalette.onTheme.opacity(isDropTarget ? 0.6 : 0), lineWidth: 2)
