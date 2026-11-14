@@ -53,3 +53,17 @@ the preview-only localhost server remains on port 8771 for review.
 
 Commits: `04f3b1a` progress fix, `bcdc5cf` native preview tool, `e1de630` fixture.
 Work remains on `main`; this log is a separate small commit.
+
+## Selected corners and variation sheet
+
+The user chose 12 pt corners. The flight card now uses that radius. Its shadow
+path reads the card's radius, so the two cannot drift. The flight timing is
+unchanged. The local preview now marks 12 pt as current and adds `cards/files.png`:
+eight recent file names shown in dark and light appearances, including long-name
+truncation. `cards/progress.png` shows nine progress and ETA combinations using
+the production SwiftUI view. Both sheets were rendered and inspected.
+
+The updated Debug build passed (`/tmp/cove-download-radius-build.log`). No new
+unit tests were needed for the radius-only change. The previous progress run
+remains 202 passing tests; the live checks and recording limits above still
+apply. Private filenames and rendered sheets remain local under ignored build/.
