@@ -43,6 +43,7 @@ struct TabManagerTests {
         let tab = TabSession(restoring: saved, showsStartPage: false, settings: manager.settings, services: manager.services)
         #expect(tab.pageBackgroundColor.flatMap(PageBackground.rgbValue) == saved.backgroundRGB)
         let page = tab.wake()
+        #expect(tab.isAwaitingInitialContent)
         defer { tab.sleep() }
         #expect(PageBackground.rgbValue(of: page.underPageBackgroundColor) == saved.backgroundRGB)
         var saves = 0
@@ -55,6 +56,7 @@ struct TabManagerTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(tab.savedTab.backgroundRGB == 0x14283c)
+        #expect(!tab.isAwaitingInitialContent)
         #expect(PageBackground.rgbValue(of: page.underPageBackgroundColor) == 0x14283c)
         saves = 0
         _ = try await page.evaluateJavaScript("document.body.style.background = '#ffffff'")
@@ -66,6 +68,15 @@ struct TabManagerTests {
         #expect(saves > 0)
         #expect(PageBackground.color(rgbValue: -1) == nil)
         #expect(PageBackground.color(rgbValue: 0x1000000) == nil)
+        #expect(tab.wake() === page)
+        #expect(!tab.isAwaitingInitialContent)
+        tab.sleep()
+        let replacement = tab.wake()
+        #expect(tab.isAwaitingInitialContent)
+        tab.webView(page, didFinish: nil)
+        #expect(tab.isAwaitingInitialContent)
+        tab.webView(replacement, didFinish: nil)
+        #expect(!tab.isAwaitingInitialContent)
     }
 
     @Test func `zoom feedback follows its page and clears when it closes`() throws {

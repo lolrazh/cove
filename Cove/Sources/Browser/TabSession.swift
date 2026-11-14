@@ -82,6 +82,9 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
     @Published var favicon: NSImage?
     /// Resolved document color, cached across selections, parking, and sleep.
     @Published private(set) var pageBackgroundColor: NSColor?
+    /// A newly made web view has no document surface yet. Existing pages do
+    /// not re-enter this state when they navigate or return to the window.
+    @Published private(set) var isAwaitingInitialContent = false
     @Published private(set) var loadFailure: LoadFailure?
     /// The link under the pointer, for the preview in the page's corner.
     @Published private(set) var hoveredLink: URL?
@@ -296,6 +299,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
 
     private func openWebView(for url: URL?) -> WKWebView {
         let webView = services.webKitEnvironment.makeWebView(in: services.context, for: url)
+        isAwaitingInitialContent = true
         page = .awake(webView)
         configureWebView(webView)
         setupObservers(for: webView)
@@ -591,6 +595,7 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
             }
             source.underPageBackgroundColor = color
             if self.pageBackgroundColor != color { self.pageBackgroundColor = color }
+            self.isAwaitingInitialContent = false
         }
         LinkHover.install(in: webView.configuration.userContentController) { [weak self] link in
             self?.hoveredLink = link
@@ -715,6 +720,8 @@ extension TabSession: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard self.webView === webView else { return }
+        // PDFs and pages with JavaScript disabled have no document-color report.
+        isAwaitingInitialContent = false
         let url = webView.url?.absoluteString ?? ""
         let title = webView.title ?? ""
         // An extension's pages aren't places to go back to.
