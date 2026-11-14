@@ -10,13 +10,18 @@ final class DownloadItem: ObservableObject, Identifiable {
     let canRestart: Bool
     @Published private(set) var filename: String
     @Published private(set) var state: State = .downloading
-    @Published private(set) var progress: Double = 0
-    @Published private(set) var bytesDownloaded: Int64 = 0
-    @Published private(set) var totalBytes: Int64 = -1
+    @Published private(set) var transfer = DownloadTransfer()
+    var bytesDownloaded: Int64 { transfer.completed }
+    var totalBytes: Int64 { transfer.total }
+    var remainingSeconds: Int? { state == .downloading ? transfer.remainingSeconds : nil }
+    var progress: Double {
+        state == .completed ? 1 : (totalBytes > 0 ? min(1, Double(bytesDownloaded) / Double(totalBytes)) : 0)
+    }
     @Published private(set) var fileURL: URL?
     @Published private(set) var detail: String?
     @Published private(set) var fileExists = true
-    private var progressObservers: [NSKeyValueObservation] = []
+    private var progressObservation: AnyCancellable?
+    private var rateEstimate = DownloadRateEstimate()
     private var attempt = UUID()
     private var cachedIcon: NSImage?
 
@@ -46,8 +51,8 @@ final class DownloadItem: ObservableObject, Identifiable {
         fileURL = record.fileURL
         state = record.state == .downloading ? .failed : record.state
         detail = record.state == .downloading ? "Interrupted" : nil
-        totalBytes = record.totalBytes
-        if state == .completed { progress = 1; bytesDownloaded = totalBytes }
+        transfer = DownloadTransfer(completed: state == .completed ? max(0, record.totalBytes) : 0,
+                                    total: record.totalBytes)
         refreshFileAvailability()
     }
 
@@ -72,9 +77,7 @@ final class DownloadItem: ObservableObject, Identifiable {
 
     func startAgain() {
         stopObserving()
-        progress = 0
-        bytesDownloaded = 0
-        totalBytes = -1
+        transfer = DownloadTransfer()
         detail = nil
         state = .downloading
     }
@@ -82,30 +85,32 @@ final class DownloadItem: ObservableObject, Identifiable {
     func observeProgress(of download: WKDownload) {
         let token = attempt
         let p = download.progress
-        progressObservers = [p.observe(\.completedUnitCount, options: [.initial, .new]) { [weak self] p, _ in
-            let done = p.completedUnitCount, total = p.totalUnitCount
-            Task { @MainActor in
+        // One atomic UI sample per quarter-second, including stalled transfers.
+        // Byte notifications can arrive in bursts; do not redraw for every chunk.
+        updateProgress(completed: p.completedUnitCount, total: p.totalUnitCount)
+        progressObservation = Timer.publish(every: 0.25, on: .main, in: .common)
+            .autoconnect().sink { [weak self] _ in
                 guard let self, self.attempt == token, self.state == .downloading else { return }
-                self.updateProgress(completed: done, total: total)
+                self.updateProgress(completed: p.completedUnitCount, total: p.totalUnitCount)
             }
-        }]
     }
 
-    func updateProgress(completed: Int64, total: Int64) {
+    func updateProgress(completed: Int64, total: Int64,
+                        now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
         guard state == .downloading else { return }
-        bytesDownloaded = max(0, completed)
-        totalBytes = total
-        progress = total > 0 ? min(1, Double(bytesDownloaded) / Double(total)) : 0
+        let done = max(bytesDownloaded, max(0, completed))
+        let knownTotal = total > 0 ? total : totalBytes
+        let remaining = rateEstimate.sample(completed: done, total: knownTotal, now: now)
+        let next = DownloadTransfer(completed: done, total: knownTotal, remainingSeconds: remaining)
+        if transfer != next { transfer = next }
     }
 
     func markCompleted() {
         stopObserving()
         if let url = fileURL, let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
            let size = attrs[.size] as? Int64 {
-            totalBytes = size
-            bytesDownloaded = size
+            transfer = DownloadTransfer(completed: size, total: size)
         }
-        progress = 1
         state = .completed
         refreshFileAvailability()
     }
@@ -130,6 +135,44 @@ final class DownloadItem: ObservableObject, Identifiable {
 
     private func stopObserving() {
         attempt = UUID()
-        progressObservers = []
+        progressObservation = nil
+        rateEstimate = DownloadRateEstimate()
+    }
+}
+
+/// Publish the size and estimate together, so rows never render a partial update.
+struct DownloadTransfer: Equatable {
+    var completed: Int64 = 0
+    var total: Int64 = -1
+    var remainingSeconds: Int?
+}
+
+/// A smoothed estimate from monotonic time. Hide it during warm-up or a stall.
+struct DownloadRateEstimate {
+    private var previous: (time: TimeInterval, bytes: Int64)?
+    private var startedAt: TimeInterval = 0
+    private var lastAdvance: TimeInterval = 0
+    private var rate: Double = 0
+
+    mutating func sample(completed: Int64, total: Int64, now: TimeInterval) -> Int? {
+        guard let previous else {
+            self.previous = (now, completed)
+            startedAt = now
+            lastAdvance = now
+            return nil
+        }
+        let elapsed = now - previous.time
+        guard elapsed > 0 else { return nil }
+        let gained = max(0, completed - previous.bytes)
+        self.previous = (now, completed)
+        if gained > 0 { lastAdvance = now }
+        let speed = Double(gained) / elapsed
+        let weight = 1 - exp(-elapsed / 2)
+        rate = rate == 0 ? speed : rate + weight * (speed - rate)
+        guard now - startedAt >= 0.75, now - lastAdvance < 3,
+              rate > 0, total > completed else { return nil }
+        let seconds = ceil(Double(total - completed) / rate)
+        guard seconds.isFinite, seconds < Double(Int.max) else { return nil }
+        return max(1, Int(seconds))
     }
 }

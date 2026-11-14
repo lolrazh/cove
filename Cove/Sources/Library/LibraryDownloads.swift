@@ -103,7 +103,8 @@ private struct DownloadRow: View {
                     .lineLimit(1).truncationMode(.middle)
                 Group {
                     if item.state == .downloading {
-                        DownloadProgressText(completed: item.bytesDownloaded, total: item.totalBytes)
+                        DownloadProgressText(completed: item.bytesDownloaded, total: item.totalBytes,
+                                             remainingSeconds: item.remainingSeconds)
                     } else {
                         Text(status).monospacedDigit().lineLimit(1)
                     }
@@ -134,7 +135,8 @@ private struct DownloadRow: View {
     private var status: String {
         switch item.state {
         case .downloading:
-            return DownloadProgressSize(total: item.totalBytes).description(completed: item.bytesDownloaded)
+            return DownloadProgressSize(total: item.totalBytes).description(completed: item.bytesDownloaded,
+                                                                           remainingSeconds: item.remainingSeconds)
         case .completed:
             if !item.fileExists { return "File moved or deleted" }
             if let detail = item.detail { return detail }
