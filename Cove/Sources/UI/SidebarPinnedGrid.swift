@@ -34,7 +34,7 @@ private struct SidebarPinnedTile: View {
             FaviconView(image: tab.favicon, size: 16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background {
-                    PinnedTileSurface(image: tab.favicon, isActive: isActive)
+                    FaviconColorSurface(image: tab.favicon, isActive: isActive)
                 }
                 .overlay {
                     RoundedRectangle(cornerRadius: 10)
@@ -64,53 +64,6 @@ private struct SidebarPinnedTile: View {
             Button("Cancel", role: .cancel) {}
             Button("Save") { tab.rename(draftTitle) }
         }
-    }
-}
-
-/// The favicon stays crisp above one shared color field for the fill and rim.
-private struct PinnedTileSurface: View {
-    let image: NSImage?
-    let isActive: Bool
-    @State private var colorField: NSImage?
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(ChromePalette.resting)
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(ChromePalette.raised)
-                    .opacity(isActive ? 1 : 0)
-            }
-            .overlay {
-                if isActive {
-                    if let colorField {
-                        Image(nsImage: colorField)
-                            .resizable()
-                            .interpolation(.high)
-                            .opacity(0.40)
-                    }
-                }
-            }
-            .clipShape(.rect(cornerRadius: 10))
-            .overlay {
-                if isActive {
-                    let rim = RoundedRectangle(cornerRadius: 10)
-                    // Keep the edge readable for monochrome or missing icons.
-                    rim.strokeBorder(ChromePalette.onTheme, lineWidth: 2)
-                        .opacity(0.24)
-                    if let colorField {
-                        Image(nsImage: colorField)
-                            .resizable()
-                            .interpolation(.high)
-                            .saturation(1.2)
-                            .mask(rim.strokeBorder(lineWidth: 2))
-                    }
-                }
-            }
-            .onChange(of: image, initial: true) { _, image in
-                colorField = image.flatMap(PinColorField.make)
-            }
-            .allowsHitTesting(false)
     }
 }
 
