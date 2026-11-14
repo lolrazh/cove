@@ -763,6 +763,19 @@ extension TabSession: WKNavigationDelegate {
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction
     ) async -> WKNavigationActionPolicy {
+        // WKWebView does not provide the browser's modified-click tab policy.
+        // Handle it before an ordinary link can replace its source document.
+        if navigationAction.navigationType == .linkActivated,
+           navigationAction.modifierFlags.contains(.command) || navigationAction.buttonNumber == 2,
+           let host {
+            let inBackground = !navigationAction.modifierFlags.contains(.shift)
+            if let openLink = host.openLinkInNewTab {
+                openLink(navigationAction.request, inBackground)
+            } else {
+                host.openInNewTab(navigationAction.request)
+            }
+            return .cancel
+        }
         if navigationAction.targetFrame?.isMainFrame == true, opensInPeek(navigationAction), let peek = host?.peek {
             peek(navigationAction.request)
             return .cancel
