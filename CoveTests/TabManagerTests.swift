@@ -159,6 +159,39 @@ struct TabManagerTests {
         #expect(manager.selectedTabIDs.isEmpty)
     }
 
+    @Test func `new tabs and keyboard focus clear old multi-selection`() throws {
+        let suite = "TabSelection-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        manager.activeTab?.navigate("file:///dev/null#a")
+        let a = try #require(manager.activeTabID)
+        manager.addTab(url: "file:///dev/null#b")
+        let b = try #require(manager.activeTabID)
+        manager.addTab(url: "file:///dev/null#c")
+        let c = try #require(manager.activeTabID)
+        _ = manager.createGroup(tabIDs: [a, b])
+        manager.selectTab(a)
+        let selectionOnly = manager.selectTabForInteraction(b, modifiers: .command)
+        #expect(selectionOnly)
+        #expect(manager.activeTabID == a)
+        #expect(manager.selectedTabIDs == Set([a, b]))
+        manager.addTab(url: "file:///dev/null#new")
+        let opened = try #require(manager.activeTabID)
+        #expect(opened != a && opened != b)
+        #expect(manager.selectedTabIDs.isEmpty && manager.tabSelectionAnchorID == nil)
+        manager.closeActiveTab()
+        #expect(manager.tabs.map(\.id) == [a, b, c])
+        manager.selectTab(a)
+        manager.selectTabForInteraction(b, modifiers: .command)
+        #expect(manager.activeTabID == a && manager.selectedTabIDs == Set([a, b]))
+        manager.selectAdjacentTab(1)
+        #expect(manager.activeTabID == b)
+        #expect(manager.selectedTabIDs.isEmpty && manager.tabSelectionAnchorID == nil)
+        manager.closeActiveTab()
+        #expect(manager.tabs.map(\.id) == [a, c])
+    }
+
     @Test func `closing a group prefers regular neighbors without waking a pin`() throws {
         let suite = "TabGroups-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suite))

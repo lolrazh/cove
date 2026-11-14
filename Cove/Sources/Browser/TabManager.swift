@@ -58,6 +58,7 @@ final class TabManager: ObservableObject {
     /// long enough.
     @Published var activeTabID: UUID? {
         didSet {
+            if oldValue != activeTabID { clearTabSelection() }
             // Selecting a tab puts its page back on screen.
             activeDocumentID = nil
             // A Peek or a capture belongs to the page it was opened over.
