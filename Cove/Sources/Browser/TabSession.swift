@@ -456,9 +456,21 @@ final class TabSession: NSObject, Identifiable, ObservableObject {
         let afterDetach = { [weak self, weak webView] in
             guard let self, let webView, self.archiveSnapshotID == token else { return }
             webView.onDetached = nil
-            // Let WebKit send its queued visibility update before this barrier.
-            DispatchQueue.main.async { [weak self, weak webView] in
+            // WebKit batches visibility changes after the main queue drains.
+            // Wait for the document to become hidden, not just for detachment.
+            webView.callAsyncJavaScript("""
+                if (!document.hidden) {
+                    await new Promise(resolve => {
+                        document.addEventListener('visibilitychange', resolve, { once: true });
+                    });
+                }
+                return document.hidden;
+                """, arguments: [:], in: nil, in: .defaultClient
+            ) { [weak self, weak webView] result in
                 guard let self, let webView, self.archiveSnapshotID == token else { return }
+                guard case .success(let hidden as Bool) = result, hidden else { return }
+                // The visibility event precedes WebKit's history-state save.
+                // A further round trip lets that save reach the UI process.
                 webView.evaluateJavaScript("void 0") { [weak self] _, _ in
                     guard self?.archiveSnapshotID == token else { return }
                     completion()
