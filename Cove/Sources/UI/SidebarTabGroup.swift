@@ -63,8 +63,9 @@ private struct TabGroupHeader: View {
             if isRenaming {
                 header
             } else {
-                Button(action: activateHeader) { header }
+                Button { tabManager.toggleGroupCollapsed(group.id) } label: { header }
                     .buttonStyle(.plain)
+                    .highPriorityGesture(TapGesture().modifiers(.command).onEnded { toggleGroupSelection() })
             }
         }
         .onHover { isHovered = $0 }
@@ -147,17 +148,13 @@ private struct TabGroupHeader: View {
     private var allSelected: Bool { Set(group.members).isSubset(of: tabManager.selectedTabIDs) }
     private var tabsCount: Int { group.members.count }
 
-    private func activateHeader() {
-        if NSEvent.modifierFlags.contains(.command) {
-            if allSelected {
-                tabManager.selectedTabIDs.subtract(group.members)
-            } else {
-                tabManager.selectedTabIDs.formUnion(group.members)
-            }
-            tabManager.tabSelectionAnchorID = group.members.first
+    private func toggleGroupSelection() {
+        if allSelected {
+            tabManager.selectedTabIDs.subtract(group.members)
         } else {
-            tabManager.toggleGroupCollapsed(group.id)
+            tabManager.selectedTabIDs.formUnion(group.members)
         }
+        tabManager.tabSelectionAnchorID = group.members.first
     }
     private static var symbols: [(title: String, symbol: String)] {
         [("Work", "briefcase"), ("Reading", "book"), ("Research", "magnifyingglass"),
