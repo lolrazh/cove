@@ -64,15 +64,15 @@ struct ChromeTheme: Hashable {
         if environment.colorSchemeContrast == .increased {
             return Color(nsColor: .underPageBackgroundColor)
         }
-        return Color.white.mix(with: frameTones.top, by: glow)
+        return Color(white: 0.16).mix(with: frameTones.top, by: glow)
     }
 
     func frameBottomColor(in environment: EnvironmentValues) -> Color {
         if environment.colorSchemeContrast == .increased { return frameColor(in: environment) }
-        return Color.white.mix(with: frameTones.bottom, by: glow)
+        return Color(white: 0.16).mix(with: frameTones.bottom, by: glow)
     }
 
-    var surfaceScheme: ColorScheme { glow > 0.6 ? .dark : .light }
+    var surfaceScheme: ColorScheme { .dark }
 
 }
 
@@ -157,7 +157,6 @@ struct ThemePalette {
     }
 
     var companion: Color { pairedColor ?? Color(hue: companionHue, saturation: saturation * 0.65, brightness: 0.93) }
-    var paper: Color { light.mix(with: .white, by: 0.22, in: .device) }
 }
 
 extension EnvironmentValues {
@@ -181,7 +180,7 @@ struct ChromeOnThemeStyle: ShapeStyle {
     func resolve(in environment: EnvironmentValues) -> Color {
         let scheme = environment.colorSchemeContrast == .increased
             ? environment.colorScheme : environment.chromeTheme.surfaceScheme
-        return scheme == .dark ? .white.opacity(0.94) : Color(red: 0.09, green: 0.20, blue: 0.26)
+        return scheme == .dark ? .white : Color(red: 0.09, green: 0.20, blue: 0.26)
     }
 }
 

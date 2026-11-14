@@ -20,6 +20,7 @@ struct BrowserShellView<Content: View>: View {
     let content: Content
 
     @Environment(\.chromeTheme) private var theme
+    @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.colorScheme) private var systemColorScheme
     @Environment(\.trafficLightInset) private var trafficLightInset
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -128,7 +129,7 @@ struct BrowserShellView<Content: View>: View {
                             colorScheme: systemColorScheme, isVisible: isVisible)
                 .id(tabManager.activeProfileID)
         }
-            .environment(\.colorScheme, theme.surfaceScheme)
+            .environment(\.colorScheme, contrast == .increased ? systemColorScheme : theme.surfaceScheme)
             .padding(.leading, tabRowLeadingInset)
             .padding(.trailing, ChromeMetrics.gutter)
             .padding(.bottom, ChromeMetrics.tabBottomInset)
@@ -177,7 +178,7 @@ struct BrowserShellView<Content: View>: View {
             acceptsProfileSwipes: showsDockedSidebar,
             popoverColorScheme: systemColorScheme
         )
-        .environment(\.colorScheme, theme.surfaceScheme)
+        .environment(\.colorScheme, contrast == .increased ? systemColorScheme : theme.surfaceScheme)
         .frame(width: sidebarWidth)
         .overlay(alignment: .trailing) {
             resizeHandle
@@ -220,7 +221,7 @@ struct BrowserShellView<Content: View>: View {
             acceptsProfileSwipes: showsFloatingSidebar,
             popoverColorScheme: systemColorScheme
         )
-        .environment(\.colorScheme, theme.surfaceScheme)
+        .environment(\.colorScheme, contrast == .increased ? systemColorScheme : theme.surfaceScheme)
         .frame(width: sidebarWidth)
         .frame(maxHeight: .infinity)
         .background { ChromeAmbientBackground() }
