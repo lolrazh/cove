@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension EnvironmentValues {
+    @Entry var isInTabGroup = false
+}
+
 enum ChromeTabPresentation {
     case horizontal
     /// A pinned tab in the top strip: the favicon alone.
@@ -12,13 +16,14 @@ enum ChromeTabPresentation {
 /// only decides the tab's height and how the active tab is drawn.
 struct ChromeTabItem: View {
     @ObservedObject var tab: TabSession
-    let tabManager: TabManager
+    @ObservedObject var tabManager: TabManager
     let presentation: ChromeTabPresentation
     let isActive: Bool
     let canClose: Bool
     /// Fixed width for top tabs, which share the strip evenly. Sidebar tabs fill.
     var width: CGFloat? = nil
 
+    @Environment(\.isInTabGroup) private var isInTabGroup
     @State private var isHovered = false
     @State private var isRenaming = false
     @State private var draftTitle = ""
@@ -54,16 +59,28 @@ struct ChromeTabItem: View {
         }
         .padding(.leading, presentation == .compact ? 0 : 8)
         .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
-        .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width)
+        .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width, isGrouped: isInTabGroup)
+        .overlay {
+            if tabManager.selectedTabIDs.contains(tab.id) {
+                RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous)
+                    .fill(ChromePalette.hover)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: ChromeRadius.tab, style: .continuous)
+                            .strokeBorder(ChromePalette.onTheme.opacity(0.35), lineWidth: 1)
+                    }
+                    .allowsHitTesting(false)
+            }
+        }
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: showsAudioButton)
         .animation(ChromeMotion.hover, value: tab.isAwayFromPin)
         .onHover { isHovered = $0 }
-        .onTapGesture { tabManager.selectTab(tab.id) }
+        .onTapGesture { tabManager.selectTabForInteraction(tab.id, modifiers: NSEvent.modifierFlags) }
         // Alongside the single click, so selecting a tab never waits to see
         // whether a second click follows.
         .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
         .help(presentation == .compact ? title : "")
+        .accessibilityAddTraits(tabManager.selectedTabIDs.contains(tab.id) ? .isSelected : [])
         .contextMenu {
             TabActions(tab: tab, tabManager: tabManager, placement: .tab(rename: beginRenaming))
         }
@@ -86,6 +103,7 @@ struct ChromeTabItem: View {
     }
 
     private func beginRenaming() {
+        guard NSEvent.modifierFlags.intersection([.command, .shift]).isEmpty else { return }
         draftTitle = tab.title
         isRenaming = true
     }
@@ -182,7 +200,7 @@ extension View {
     /// looking at. In the top strip it also reaches down into the content
     /// card, so tab and page read as one surface. Others only show a fill on
     /// hover.
-    func chromeTabSurface(_ presentation: ChromeTabPresentation, isActive: Bool, isHovered: Bool, width: CGFloat?) -> some View {
+    func chromeTabSurface(_ presentation: ChromeTabPresentation, isActive: Bool, isHovered: Bool, width: CGFloat?, isGrouped: Bool = false) -> some View {
         frame(width: width, height: presentation.height)
             .frame(maxWidth: presentation == .sidebar ? .infinity : nil)
             // Makes the close button's ConcentricRectangle follow the tab's corners.
@@ -191,9 +209,14 @@ extension View {
                 if isActive {
                     switch presentation {
                     case .sidebar:
-                        ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
-                            .fill(ChromePalette.raised)
-                            .chromeShadow(.raised)
+                        if isGrouped {
+                            ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
+                                .fill(.black.opacity(0.24))
+                        } else {
+                            ConcentricRectangle.chrome(minimum: ChromeRadius.tab)
+                                .fill(ChromePalette.raised)
+                                .chromeShadow(.raised)
+                        }
                     case .horizontal, .compact:
                         AttachedTabShape()
                             .fill(ChromePalette.content)

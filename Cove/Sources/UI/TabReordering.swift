@@ -51,6 +51,19 @@ extension View {
         onDrop(of: [.coveTab], delegate: PinnedDropDelegate(tabManager: tabManager, draggedTabID: draggedTabID))
     }
 
+    /// Group drops move the current tab selection without changing page focus.
+    func acceptsTabGroupDrops(
+        into groupID: UUID,
+        in tabManager: TabManager,
+        dragging draggedTabID: Binding<UUID?>,
+        isTargeted: Binding<Bool>
+    ) -> some View {
+        onDrop(of: [.coveTab], delegate: GroupDropDelegate(
+            groupID: groupID, tabManager: tabManager,
+            draggedTabID: draggedTabID, isTargeted: isTargeted
+        ))
+    }
+
     /// Takes a dragged tab dropped between tabs, so it settles where it is
     /// instead of flying back to where it started.
     func acceptsTabDrops(dragging draggedTabID: Binding<UUID?>) -> some View {
@@ -80,7 +93,7 @@ private struct TabDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         guard let draggedTabID, draggedTabID != target else { return }
-        tabManager.moveTab(draggedTabID, onto: target)
+        tabManager.moveTabSelection(draggedTabID, onto: target)
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
@@ -89,6 +102,32 @@ private struct TabDropDelegate: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         draggedTabID = nil
+        return true
+    }
+}
+
+private struct GroupDropDelegate: DropDelegate {
+    let groupID: UUID
+    let tabManager: TabManager
+    @Binding var draggedTabID: UUID?
+    @Binding var isTargeted: Bool
+
+    private var movingIDs: [UUID] {
+        draggedTabID.map { tabManager.selectionTabIDs(for: $0).filter { tabManager.section(of: $0) == .today } } ?? []
+    }
+
+    func dropEntered(info: DropInfo) { isTargeted = !movingIDs.isEmpty }
+    func dropExited(info: DropInfo) { isTargeted = false }
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: movingIDs.isEmpty ? .cancel : .move)
+    }
+    func performDrop(info: DropInfo) -> Bool {
+        let ids = movingIDs
+        isTargeted = false
+        draggedTabID = nil
+        guard !ids.isEmpty else { return false }
+        tabManager.moveTabs(ids, toGroup: groupID)
+        tabManager.clearTabSelection()
         return true
     }
 }

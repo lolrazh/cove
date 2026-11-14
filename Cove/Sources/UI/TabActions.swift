@@ -26,6 +26,11 @@ struct TabActions: View {
 
         Divider()
 
+        if tabManager.section(of: tab.id) == .today {
+            grouping
+            Divider()
+        }
+
         Button("Duplicate Tab") {
             tabManager.duplicateTab(tab.id)
         }
@@ -44,8 +49,8 @@ struct TabActions: View {
         Divider()
 
         if case .tab = placement {
-            Button("Close Tab") {
-                tabManager.closeTab(tab.id)
+            Button(actionTabIDs.count > 1 ? "Close Selected Tabs" : "Close Tab") {
+                tabManager.closeSelectedTabs(from: tab.id)
             }
             .disabled(!tabManager.canCloseTab(tab.id))
         }
@@ -59,6 +64,38 @@ struct TabActions: View {
             tabManager.closeTabs(below: tab.id)
         }
         .disabled(tabManager.tabsInDisplayOrder.elements(after: tab.id).allSatisfy { tabManager.section(of: $0.id) != .today })
+    }
+
+    private var actionTabIDs: [UUID] {
+        tabManager.selectionTabIDs(for: tab.id)
+    }
+
+    @ViewBuilder
+    private var grouping: some View {
+        if tabManager.section(of: tab.id) == .today {
+            let ids = actionTabIDs.filter { tabManager.section(of: $0) == .today }
+            Button(ids.count > 1 ? "New Group with Selected Tabs" : "New Group with Tab") {
+                _ = tabManager.createGroup(tabIDs: ids)
+                tabManager.clearTabSelection()
+            }
+            if !tabManager.tabGroups.isEmpty {
+                Menu("Add to Group") {
+                    ForEach(tabManager.tabGroups) { group in
+                        Button(tabManager.groupTitle(group)) {
+                            tabManager.moveTabs(ids, toGroup: group.id)
+                            tabManager.clearTabSelection()
+                        }
+                        .disabled(ids.allSatisfy { group.members.contains($0) })
+                    }
+                }
+            }
+            if ids.contains(where: { tabManager.group(for: $0) != nil }) {
+                Button("Remove from Group") {
+                    tabManager.ungroupTabs(ids)
+                    tabManager.clearTabSelection()
+                }
+            }
+        }
     }
 
     /// Pin or unpin, with ⌘D from the menu bar; the other section to move to;
