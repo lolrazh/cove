@@ -15,6 +15,7 @@ struct SidebarTabGroup<Rows: View>: View {
         VStack(spacing: ChromeMetrics.sidebarRowSpacing) {
             if let representative = tabs.first {
                 TabGroupHeader(group: group, representative: representative, tabs: tabs, tabManager: tabManager)
+                    .acceptsTabGroupDrops(into: group.id, in: tabManager, dragging: $tabManager.draggedTabID, isTargeted: $isDropTarget)
             }
             rows()
                 .padding(.leading, 12)
@@ -32,7 +33,6 @@ struct SidebarTabGroup<Rows: View>: View {
                 .allowsHitTesting(false)
         }
         .containerShape(RoundedRectangle(cornerRadius: 14))
-        .acceptsTabGroupDrops(into: group.id, in: tabManager, dragging: $tabManager.draggedTabID, isTargeted: $isDropTarget)
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isDropTarget)
     }
 }

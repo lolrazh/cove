@@ -119,7 +119,7 @@ private struct GroupDropDelegate: DropDelegate {
     func dropEntered(info: DropInfo) { isTargeted = !movingIDs.isEmpty }
     func dropExited(info: DropInfo) { isTargeted = false }
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: movingIDs.isEmpty ? .cancel : .move)
+        DropProposal(operation: .move)
     }
     func performDrop(info: DropInfo) -> Bool {
         let ids = movingIDs
