@@ -75,7 +75,7 @@ extension TabManager {
     /// Move the selected rows in one order change. A split remains one unit.
     func moveTabSelection(_ id: UUID, onto target: UUID) {
         let selected = selectionTabIDs(for: id)
-        guard selected.count > 1, section(of: target) == .today,
+        guard !selected.isEmpty, section(of: target) == .today,
               selected.allSatisfy({ section(of: $0) == .today }) else {
             moveTab(id, onto: target)
             return
@@ -83,6 +83,12 @@ extension TabManager {
         let moving = Set(selected.flatMap(splitGroup))
         let targets = splitGroup(of: target)
         guard moving.isDisjoint(with: targets) else { return }
-        today.move(tabs.map(\.id).filter(moving.contains), onto: targets)
+        let ids = tabs.map(\.id).filter(moving.contains)
+        if let destination = group(for: target) {
+            moveTabs(ids, toGroup: destination.id)
+        } else {
+            ungroupTabs(ids)
+        }
+        today.move(ids, onto: targets)
     }
 }
