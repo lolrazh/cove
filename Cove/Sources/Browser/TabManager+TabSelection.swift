@@ -41,7 +41,7 @@ extension TabManager {
         let order = tabsInDisplayOrder.filter { tab in
             guard section(of: tab.id) == .today else { return false }
             guard tabLayout == .sidebar, let group = group(for: tab.id), group.isCollapsed else { return true }
-            return tab.id == activeTabID
+            return isShown(tab.id)
         }.map(\.id)
         var selection = TabSelection(ids: selectedTabIDs, anchorID: tabSelectionAnchorID)
         let selectionOnly = selection.click(id, in: order, activeID: activeTabID, modifiers: modifiers)
