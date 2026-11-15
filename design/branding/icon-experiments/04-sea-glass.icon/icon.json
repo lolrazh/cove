@@ -1,0 +1,59 @@
+{
+  "features": [
+    "refractivity",
+    "specular-location"
+  ],
+  "fill": {
+    "solid": "extended-srgb:0.03529,0.48235,0.50588,1.00000"
+  },
+  "groups": [
+    {
+      "blur-material": 0.12,
+      "layers": [
+        {
+          "image-name": "cove-mark.svg",
+          "name": "cove-mark"
+        }
+      ],
+      "name": "Cove",
+      "refractivity": {
+        "depth": 0.45,
+        "enabled": true,
+        "strength": 0.65
+      },
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.18
+      },
+      "specular": "inside",
+      "translucency": {
+        "enabled": true,
+        "value": 0.82
+      }
+    },
+    {
+      "layers": [
+        {
+          "glass": false,
+          "image-name": "painted-water.png",
+          "name": "painted-water"
+        }
+      ],
+      "name": "Painted water",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.3
+      }
+    }
+  ],
+  "supported-platforms": {
+    "circles": [
+      "watchOS"
+    ],
+    "squares": "shared"
+  }
+}
