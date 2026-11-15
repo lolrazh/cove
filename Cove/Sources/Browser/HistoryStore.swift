@@ -84,6 +84,8 @@ final class HistoryStore: ObservableObject {
 
         db?.execute("CREATE INDEX IF NOT EXISTS idx_history_visited ON history(visited_at DESC)")
 
+        db?.execute("CREATE INDEX IF NOT EXISTS idx_history_url_visit ON history(url, visited_at)")
+
         // FTS5 virtual table for full-text search
         db?.execute("""
             CREATE VIRTUAL TABLE IF NOT EXISTS history_fts USING fts5(
@@ -110,6 +112,32 @@ final class HistoryStore: ObservableObject {
                 INSERT INTO history_fts(rowid, url, title) VALUES (new.id, new.url, new.title);
             END
         """)
+    }
+
+    /// Add selected visits in one transaction. Repeat imports do not add
+    /// duplicate visits, and a failed write does not leave half an import.
+    @discardableResult
+    func importVisits(_ visits: [ImportedHistoryVisit]) throws -> Int {
+        guard let db else { throw DatabaseError.openFailed("History is not available") }
+        try db.run("BEGIN IMMEDIATE TRANSACTION")
+        do {
+            var count = 0
+            for visit in visits {
+                let url = visit.url.absoluteString
+                guard BookmarkImport.tabURL(url) != nil, visit.visitedAt.timeIntervalSince1970.isFinite else { continue }
+                try db.run(
+                    "INSERT INTO history (url, title, visited_at) SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM history WHERE url = ? AND visited_at = ?)",
+                    params: [url, visit.title, visit.visitedAt.timeIntervalSince1970, url, visit.visitedAt.timeIntervalSince1970]
+                )
+                count += Int((try db.query("SELECT changes() AS count").first?["count"] as? Int64) ?? 0)
+            }
+            try db.run("COMMIT")
+            refreshRecentlyVisited()
+            return count
+        } catch {
+            _ = db.execute("ROLLBACK")
+            throw error
+        }
     }
 
     func recordVisit(url: String, title: String) {
