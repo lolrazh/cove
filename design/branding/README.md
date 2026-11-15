@@ -1,6 +1,6 @@
 # Cove identity
 
-**Current app icon: Sea Glass.** Selected by the user on 15 November 2026. The app uses `Cove/Resources/AppIcon.icon`, matching study 04 with refined paint strokes across the full background. The user's glass settings are preserved.
+**Final app icon: Sea Glass with Solid White fill.** Selected by the user on 15 November 2026. The app uses `Cove/Resources/AppIcon.icon`, matching study 04 with refined paint strokes across the full background. The user's glass settings are preserved.
 
 A single soft coastline forms a C around an open, sheltered inlet. The broad shape and clear negative space are intended to work at small sizes.
 
@@ -89,3 +89,7 @@ The selected native document is now copied into `Cove/Resources/AppIcon.icon`. O
 Final texture edit prompt, built-in imagegen (reference: the first restrained refinement of `painted-water.png`):
 
 Refine this same full-bleed sea-glass teal painted background. The user points out that the center looks empty and too uniform. Put visible broad paint strokes ACROSS THE CENTRAL AREA too: several gently overlapping teal and pale seafoam swipes should pass diagonally through the middle, varied in width and length, with natural slightly uneven brush boundaries and pigment coverage. Maintain the reference's calm muted teal palette and fine handmade paint grain. The center must have about the same level of broad stroke variation as the edges: no blank quiet central oval, no uniform flat center, no vignette. Keep the change restrained, not high contrast; pale strokes should be softly mixed into teal, not white ribbons. No new hues, no vivid blue or green, no splatter, no thick 3D paint. It must look like an evenly painted square with a handful of broad spontaneous brush gestures distributed everywhere. Background layer only, no logo, no C, no text, no border, no rounded corners, no glass.
+
+## Final mark fill
+
+The user finalized the logo with the C layer set to Solid White instead of Automatic. The saved Icon Composer value is `fill.solid = extended-gray:1.00000,1.00000`. Copied the exact user-saved document to the production icon. All other material settings and the refined paint texture are unchanged. Regenerated the 1024/56/32 Default previews and rebuilt the app.
