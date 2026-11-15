@@ -10,7 +10,10 @@ struct NavigationBar: View {
     private let presentsSiteControls: Bool
     @State private var toolbarWidth: CGFloat = 900
     @State private var isAddressHovered = false
-    @FocusState private var addressHasFocus: Bool
+    @State private var showsBookmarks = false
+    @State private var showsSplitControls = false
+    private enum AddressAction: Hashable { case bookmark, site, split }
+    @FocusState private var focusedAction: AddressAction?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var systemColorScheme
 
@@ -103,15 +106,17 @@ struct NavigationBar: View {
         .overlay(alignment: .trailing) {
             if tabManager.activeDocumentID == nil {
                 HStack(spacing: 0) {
-                    BookmarkButton(tabManager: tabManager, page: session)
+                    BookmarkButton(tabManager: tabManager, page: session, isPresented: $showsBookmarks)
+                        .focused($focusedAction, equals: .bookmark)
                     SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
-                    SplitControl(tabManager: tabManager, page: session)
+                        .focused($focusedAction, equals: .site)
+                    SplitControl(tabManager: tabManager, page: session, isPresented: $showsSplitControls)
+                        .focused($focusedAction, equals: .split)
                 }
                 .background(Color(nsColor: pageBackground ?? .textBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .focusSection()
-                .focused($addressHasFocus)
-                .opacity(isAddressHovered || addressHasFocus || tabManager.isShowingSiteControls ? 1 : 0.001)
+                .opacity(isAddressHovered || focusedAction != nil || showsBookmarks || showsSplitControls || tabManager.isShowingSiteControls ? 1 : 0.001)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isAddressHovered)
             }
         }

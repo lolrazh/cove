@@ -4,7 +4,7 @@ import SwiftUI
 struct BookmarkButton: View {
     @ObservedObject var tabManager: TabManager
     @ObservedObject var page: TabSession
-    @State private var isPresented = false
+    @Binding var isPresented: Bool
 
     private var isPinned: Bool { tabManager.section(of: page.id) == .pinned }
 
@@ -64,7 +64,7 @@ struct BookmarkButton: View {
 struct SplitControl: View {
     @ObservedObject var tabManager: TabManager
     let page: TabSession
-    @State private var isPresented = false
+    @Binding var isPresented: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
