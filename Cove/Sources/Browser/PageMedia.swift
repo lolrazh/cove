@@ -117,7 +117,7 @@ final class PageMedia {
             if (!current?.isConnected) { return null; }
             const metadata = navigator.mediaSession?.metadata;
             return {
-                playing: !current.paused,
+                playing: !current.paused && !current.ended,
                 title: metadata?.title ?? "",
                 artist: metadata?.artist ?? "",
                 previous: handledByPage("query", "previoustrack"),
@@ -280,8 +280,11 @@ final class PageMedia {
         frames[id] = frame.isAudible || frame.nowPlaying != nil ? frame : nil
         if frame.nowPlaying?.isPlaying == true {
             playerFrameID = id
-        } else if playerFrameID == id, frame.nowPlaying == nil {
-            playerFrameID = frames.first { $0.value.nowPlaying != nil }?.key
+        } else if playerFrameID == id {
+            // Prefer a frame that still plays. Keep this paused frame when
+            // nothing else plays, so Play resumes the same media.
+            playerFrameID = frames.first { $0.value.nowPlaying?.isPlaying == true }?.key
+                ?? (frame.nowPlaying != nil ? id : frames.first { $0.value.nowPlaying != nil }?.key)
         }
         publish()
         return isMuted
