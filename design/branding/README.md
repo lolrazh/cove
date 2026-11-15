@@ -57,3 +57,23 @@ Edit this painted texture into a richer palette: deep cobalt blue and ultramarin
 **Coral + violet**
 
 Edit this painted texture into a warm and cool palette: rich coral and peach paint meeting saturated lavender violet and deep plum, with loose broad overlapping strokes. Preserve the handmade tactile fine paint grain and simple wide brush gestures of the reference. Let coral dominate upper left and violet lower right, with softly mixed pigment where they meet, asymmetrical and spontaneous. Richer contrast and more visible color variation than the reference, but tasteful. No logo, no letters, no glass, no icon frame, no rounded corners. Full-bleed square background layer only. As if a child confidently painted with a wide brush; avoid complex details.
+
+## User material edits: Citrus Glass and Pearl
+
+The user's edited Sea Glass has a pale yellow/lime gradient over teal paint. It is now saved exactly as received as `08-citrus-glass.icon`. Its JSON was not normalized or altered during the rename/copy operation.
+
+The exact pre-edit Sea Glass document and preview are preserved under `icon-experiments/archive/04-sea-glass-original.*`. The current `04-sea-glass.icon` restores the original white color treatment and adopts the user's new material settings. Thus the archive preserves the original, while current Sea Glass stays consistent with the newer glass set.
+
+Material settings from Citrus Glass are copied to current studies 04–07, including both foreground and background groups. Color fills, image references, and group names remain specific to each study. Current shared foreground values:
+
+- Blur material: 0.1
+- Lighting: combined
+- Refraction: enabled, strength 0.8017578125, depth 0.21
+- Shadow: layer-color, opacity 1
+- Specular: true
+- Translucency: enabled, value 0.75
+- Blend mode: normal
+
+`09-cobalt-pearl.icon` and `10-coral-pearl.icon` test a solid white layer fill with translucency reduced to 0.45. That is the intentional material difference; they retain the user's refraction, blur, lighting, specular, and shadow values. These are brighter white alternatives for comparison, not a replacement of the clearer painted studies.
+
+All seven current studies (04–10) were rendered again with the native exporter at 1024, 56, and 32 pixels. The comparison page shows Citrus Glass, restored/current Sea Glass, the exact original, and paired clear/Pearl paint options. The production app icon remains unchanged.
