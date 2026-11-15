@@ -63,6 +63,7 @@
 		46434A6A6301F03AE371D46B /* LibraryDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8823D7DB2E8EB97B61B06127 /* LibraryDownloads.swift */; };
 		4705C23650C813A161C69316 /* ExtensionToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC26A88B488509DE62829A8 /* ExtensionToolbar.swift */; };
 		474C8D54045B639253D0D8F4 /* DocumentTabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13156B38A908E66662AFF69B /* DocumentTabItem.swift */; };
+		47955CEB960D3A2AA5A4EAF9 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 9E4963FA481C29889DC4ABD5 /* AppIcon.icon */; };
 		4A358ADD1654078B82FECBEF /* SidebarPinnedGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E4FBAD7C2590131C0F73ECF /* SidebarPinnedGrid.swift */; };
 		4D620E0E1AE460BA455E0C08 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B521F2DECB254B5E3D0FEE1E /* TabManager.swift */; };
 		4EE45757F76BCE50BA2AED6D /* BrowserShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1371EC35AEAB2357849190 /* BrowserShellView.swift */; };
@@ -323,6 +324,7 @@
 		999005C0373ED2B17A2497D9 /* ExtensionLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionLibrary.swift; sourceTree = "<group>"; };
 		9B0032C19C67BA995DACFBF7 /* ProfileEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileEditor.swift; sourceTree = "<group>"; };
 		9B8C571A09D4C8D9F40BCC3E /* ProfilePaging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePaging.swift; sourceTree = "<group>"; };
+		9E4963FA481C29889DC4ABD5 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		9F9441DA6B0B13627F88CD19 /* PageCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCaptureTests.swift; sourceTree = "<group>"; };
 		A24428BD2191574360191520 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		A25BA8A8A207B7E97431889F /* ProfilesSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilesSettingsPane.swift; sourceTree = "<group>"; };
@@ -666,6 +668,7 @@
 		DF17EA82E1BC6CE4589429F9 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9E4963FA481C29889DC4ABD5 /* AppIcon.icon */,
 				AB6526AAC426FA4B5DB1CA72 /* easylist.json */,
 			);
 			name = Resources;
@@ -813,6 +816,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				47955CEB960D3A2AA5A4EAF9 /* AppIcon.icon in Resources */,
 				B488357C746F33394AD611CF /* easylist.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

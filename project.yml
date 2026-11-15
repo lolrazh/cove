@@ -12,6 +12,8 @@ targets:
     platform: macOS
     sources:
       - path: Cove/Sources
+      - path: Cove/Resources/AppIcon.icon
+        buildPhase: resources
       - path: Cove/Resources/easylist.json
         buildPhase: resources
     settings:
