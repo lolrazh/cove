@@ -215,16 +215,19 @@ final class CommandBarModel: ObservableObject {
     /// they would move to.
     private var availableCommands: [CommandBarCommand] {
         // Over a note, only commands that make sense for it: no page, no tab.
-        let showsPage = tabManager.activeDocumentID == nil
+        guard mode != .splitView else { return [] }
+        let showsPage = tabManager.activeDocumentID == nil && tabManager.activePage != nil
         return CommandBarCommand.allCases.filter { command in
-            switch command {
+            // Layout experiments and drawing tools belong in their own menus.
+            if [.newEasel, .newLittleCove, .showTabsInSidebar, .showTabsOnTop, .hideTabs, .showTabs].contains(command) { return false }
+            return switch command {
             case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
             case .unpinTab: activeSection == .pinned
             case .newFolder, .importBookmarks, .newProfile, .editProfile: !tabManager.isPrivate
             case .newNote, .newEasel: tabManager.documentStore != nil
-            case .duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView where !showsPage: false
-            case .duplicateTab: true
+            case _ where !showsPage && [.duplicateTab, .closeOtherTabs, .muteTab, .unmuteTab, .addSplitView, .rotateSplitView, .separateSplitView, .findInPage, .printPage, .savePage, .viewSource, .pictureInPicture, .capture, .zoomIn, .zoomOut, .actualSize, .siteSettings, .boostSite].contains(command): false
+            case .duplicateTab: showsPage
             case .addSplitView: tabManager.canAddSplitPane
             case .rotateSplitView, .separateSplitView: tabManager.activeSplit != nil
             case .muteTab: tabManager.activeTab.map { $0.isPlayingAudio && !$0.isMuted } ?? false
@@ -279,18 +282,19 @@ final class CommandBarModel: ObservableObject {
             sources: CommandBarRanker.Sources(
                 tabs: tabs,
                 documents: (tabManager.documentStore?.documents.values.sorted { $0.modifiedAt > $1.modifiedAt } ?? [])
-                    .filter { $0.id != tabManager.activeDocumentID }
+                    .filter { mode != .splitView && $0.id != tabManager.activeDocumentID }
                     .map { CommandBarRanker.Document(id: $0.id, kind: $0.kind, title: $0.displayTitle, text: $0.text) },
                 profiles: tabManager.profiles
-                    .filter { $0.id != tabManager.activeProfileID }
+                    .filter { mode != .splitView && $0.id != tabManager.activeProfileID }
                     .map { CommandBarRanker.OtherProfile(id: $0.id, name: $0.name) },
-                extensionActions: tabManager.extensionContexts.map { context in
+                extensionActions: (mode == .splitView ? [] : tabManager.extensionContexts).map { context in
                     CommandBarRanker.ExtensionAction(id: context.uniqueIdentifier, name: context.webExtension.displayName ?? "")
                 },
                 archive: archive.entries,
                 history: history,
                 suggestions: currentSuggestions(for: trimmed),
-                commands: availableCommands
+                commands: availableCommands,
+                isChoosingSplit: mode == .splitView
             )
         )
         sections = ranking.sections

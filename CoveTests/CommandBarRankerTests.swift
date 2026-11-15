@@ -13,11 +13,29 @@ struct CommandBarRankerTests {
         ranker.rank(query: query, sources: sources)
     }
 
-    @Test func `empty input lists recent pages and every command`() {
+    @Test func `empty input lists recent pages and a short set of useful actions`() {
         let ranking = rank("", .init(history: [github], commands: [.settings, .showHistory]))
-        #expect(ranking.sections.map(\.title) == ["Recent", "Commands"])
+        #expect(ranking.sections.map(\.title) == ["Recent", "Quick Actions"])
         #expect(ranking.results.count == 3)
         #expect(ranking.completion == nil)
+    }
+
+    @Test func `empty input does not dump every available command`() {
+        let ranking = rank("", .init(commands: CommandBarCommand.allCases))
+        #expect(ranking.results.map(\.kind) == [.command(.newNote), .command(.reopenClosedTab), .command(.showHistory), .command(.settings)])
+    }
+
+    @Test func `split chooser starts with open tabs without repeating recent pages`() {
+        let tab = CommandBarRanker.OpenTab(id: UUID(), title: "GitHub", url: github.url)
+        let ranking = rank("", .init(tabs: [tab], history: [github], isChoosingSplit: true))
+        #expect(ranking.sections.map(\.title) == ["Open Tabs"])
+        #expect(ranking.results.map(\.kind) == [.tab(tab.id)])
+    }
+
+    @Test func `suggestions stay next to search and are unique`() {
+        let ranking = rank("swift", .init(history: [swiftRepo], suggestions: ["swift tutorial", "Swift tutorial", "swift guide"]))
+        #expect(ranking.sections.map(\.title) == [nil, "Suggestions", "History"])
+        #expect(ranking.sections[1].results.count == 2)
     }
 
     @Test func `a search query puts the search row first`() throws {
@@ -150,13 +168,13 @@ struct CommandBarRankerTests {
         #expect(!rank("home", sources).results.contains { $0.kind == .profile(work.id) })
     }
 
-    @Test func `extensions' buttons are offered by name, and all of them with nothing typed`() {
+    @Test func `extensions are searchable but do not clutter empty input`() {
         let action = CommandBarRanker.ExtensionAction(id: "dark", name: "Dark Reader")
         let sources = CommandBarRanker.Sources(extensionActions: [action])
         #expect(rank("dark", sources).results.contains { $0.kind == .extensionAction("dark") && $0.title == "Dark Reader" })
         #expect(rank("extension", sources).results.contains { $0.kind == .extensionAction("dark") })
         #expect(!rank("light", sources).results.contains { $0.kind == .extensionAction("dark") })
-        #expect(rank("", sources).results.contains { $0.kind == .extensionAction("dark") })
+        #expect(rank("", sources).results.isEmpty)
     }
 
     @Test func `suggestions repeat neither the query nor each other beyond the cap`() {

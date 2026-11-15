@@ -38,6 +38,7 @@ struct CommandBarRanker {
         var history: [HistoryPage] = []
         var suggestions: [String] = []
         var commands: [CommandBarCommand] = []
+        var isChoosingSplit = false
     }
 
     struct Ranking {
@@ -102,8 +103,9 @@ struct CommandBarRanker {
             .prefix(Limit.history)
             .map { Self.historyResult($1) }
 
+        var seenSuggestions = Set([trimmed.lowercased()])
         let suggestions = sources.suggestions
-            .filter { $0.caseInsensitiveCompare(trimmed) != .orderedSame }
+            .filter { seenSuggestions.insert($0.lowercased()).inserted }
             .prefix(Limit.suggestions)
             .map { CommandBarResult(kind: .suggestion, title: $0, destination: $0) }
 
@@ -112,35 +114,45 @@ struct CommandBarRanker {
         let namedCommand = completion == nil && primary.kind == .search ? namedCommand(by: match, in: sources) : nil
         let topHits = [completion?.result, namedCommand, primary].compactMap { $0 }
 
-        let commands = (sources.profiles.map(Self.profileResult).filter { match.matches(title: $0.title, keywords: ["profile"]) }
-            + sources.extensionActions.map(Self.extensionResult).filter { match.matches(title: $0.title, keywords: ["extension"]) }
-            + sources.commands
+        let profiles = sources.profiles.map(Self.profileResult)
+            .filter { match.matches(title: $0.title, keywords: ["profile"]) && $0 != namedCommand }
+        let extensions = sources.extensionActions.map(Self.extensionResult)
+            .filter { match.matches(title: $0.title, keywords: ["extension"]) && $0 != namedCommand }
+        let commands = sources.commands
             .filter { match.matches(title: $0.title, keywords: $0.keywords) }
-            .prefix(Limit.commands)
-            .map(Self.commandResult))
+            .map(Self.commandResult)
             .filter { $0 != namedCommand }
+            .prefix(Limit.commands)
 
         let sections = [
             CommandBarSection(title: nil, results: topHits),
-            CommandBarSection(title: "Switch to Tab", results: tabs),
-            CommandBarSection(title: "Notes", results: documents),
+            CommandBarSection(title: "Suggestions", results: suggestions),
+            CommandBarSection(title: sources.isChoosingSplit ? "Open Tabs" : "Switch to Tab", results: tabs),
+            CommandBarSection(title: "Notes", results: documents.filter { if case .document(_, .note) = $0.kind { true } else { false } }),
+            CommandBarSection(title: "Easels", results: documents.filter { if case .document(_, .easel) = $0.kind { true } else { false } }),
             CommandBarSection(title: "Archive", results: archived),
             CommandBarSection(title: "History", results: history),
-            CommandBarSection(title: "Commands", results: commands),
-            CommandBarSection(title: "Suggestions", results: suggestions),
+            CommandBarSection(title: "Profiles", results: profiles),
+            CommandBarSection(title: "Extensions", results: extensions),
+            CommandBarSection(title: "Commands", results: Array(commands)),
         ]
         return Ranking(sections: sections.filter { !$0.results.isEmpty }, completion: completion?.text)
     }
 
-    /// With nothing typed: recent pages to jump back to, and every command.
+    /// Keep the start state short. Less common actions remain searchable.
     private func rankEmpty(_ sources: Sources) -> Ranking {
-        let recent = sources.history.prefix(Limit.recent).map(Self.historyResult)
-        let commands = sources.commands.map(Self.commandResult)
-            + sources.profiles.map(Self.profileResult)
-            + sources.extensionActions.map(Self.extensionResult)
+        let tabs = sources.isChoosingSplit ? sources.tabs.prefix(6).map {
+            CommandBarResult(kind: .tab($0.id), title: $0.title, destination: $0.url)
+        } : []
+        let openURLs = Set(tabs.map(\.destination))
+        let recent = sources.history.filter { !openURLs.contains($0.url) }
+            .prefix(Limit.recent).map(Self.historyResult)
+        let quickActions: [CommandBarCommand] = [.newNote, .reopenClosedTab, .showHistory, .settings]
+        let commands = quickActions.filter(sources.commands.contains).map(Self.commandResult)
         let sections = [
+            CommandBarSection(title: "Open Tabs", results: tabs),
             CommandBarSection(title: "Recent", results: Array(recent)),
-            CommandBarSection(title: "Commands", results: commands),
+            CommandBarSection(title: "Quick Actions", results: commands),
         ]
         return Ranking(sections: sections.filter { !$0.results.isEmpty }, completion: nil)
     }
