@@ -166,12 +166,8 @@ struct BrowserView: View {
             if let id = tabManager.activeDocumentID, let store = tabManager.documentStore {
                 DocumentPage(id: id, store: store, tabManager: tabManager)
                     .id(id)
-            } else if let split = tabManager.activeSplit {
-                SplitPageView(split: split, tabManager: tabManager, appServices: appServices)
             } else {
-                PageView(tab: tab, appServices: appServices, showsLoadingProgress: false)
-                    .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
-                    .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
+                SplitPageView(tabManager: tabManager, appServices: appServices)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

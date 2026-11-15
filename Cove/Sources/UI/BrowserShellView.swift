@@ -239,7 +239,7 @@ struct BrowserShellView<Content: View>: View {
 
     private var contentCard: some View {
         VStack(spacing: 0) {
-            navigationBar
+            if tabManager.activeDocumentID != nil { navigationBar }
 
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

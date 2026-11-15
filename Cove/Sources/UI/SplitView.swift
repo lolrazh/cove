@@ -1,97 +1,97 @@
 import SwiftUI
 
-/// The split on screen: its tabs' pages side by side (or stacked), each in a
-/// card of its own, with a divider to drag between each pair. A click in a
-/// pane focuses it, and the focused pane is outlined in the accent color.
+/// A stable page deck for both single and split pages. A pane keeps the same
+/// SwiftUI identity and WebKit host while its frame changes.
 struct SplitPageView: View {
-    let split: TabSplit<UUID>
     @ObservedObject var tabManager: TabManager
     let appServices: AppServices
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var previousIDs: [UUID] = []
+    static let gap: CGFloat = 10
 
-    /// The gap between panes, which is also the divider's handle.
-    private static let gap = ChromeMetrics.cardInset
+    private var panes: [TabSession] { tabManager.shownTabs }
+    private var ids: [UUID] { panes.map(\.id) }
+    private var axis: SplitAxis { tabManager.activeSplit?.axis ?? .horizontal }
+    private var fractions: [Double] { tabManager.activeSplit?.fractions ?? [1] }
+    private var animatesChange: Bool {
+        !reduceMotion && !Set(previousIDs).isDisjoint(with: ids)
+    }
 
     var body: some View {
         GeometryReader { geometry in
-            let total = split.axis == .horizontal ? geometry.size.width : geometry.size.height
-            let length = max(total - Self.gap * CGFloat(split.panes.count - 1), 0)
-            let layout = split.axis == .horizontal ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
-
-            layout {
-                ForEach(Array(zip(split.panes.indices, panes)), id: \.1.id) { index, tab in
-                    if index > 0 {
-                        SplitDivider(axis: split.axis) { location in
-                            // The divider's middle sits after the panes before
-                            // it and the gaps between them.
-                            let position = (location - Self.gap * (CGFloat(index) - 0.5)) / length
-                            tabManager.moveSplitDivider(split.id, divider: index - 1, to: position)
+            let horizontal = axis == .horizontal
+            let total = horizontal ? geometry.size.width : geometry.size.height
+            let length = max(total - Self.gap * CGFloat(max(panes.count - 1, 0)), 1)
+            ZStack(alignment: .topLeading) {
+                ForEach(Array(panes.enumerated()), id: \.element.id) { index, tab in
+                    let start = fractions.prefix(index).reduce(0, +) * length + Self.gap * CGFloat(index)
+                    let extent = fractions[index] * length
+                    VStack(spacing: 0) {
+                        NavigationBar(session: tab, tabManager: tabManager,
+                                      presentsSiteControls: tab.id == tabManager.activeTabID)
+                        PageView(tab: tab, appServices: appServices, showsLoadingProgress: false)
+                            .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
+                            .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
+                    }
+                    .simultaneousGesture(TapGesture().onEnded { tabManager.selectTab(tab.id) })
+                    .chromeCard()
+                    .overlay {
+                        ConcentricRectangle.chrome()
+                            .stroke(.tint.opacity(panes.count > 1 && tab.id == tabManager.activeTabID ? 0.45 : 0), lineWidth: 1)
+                            .padding(0.5).allowsHitTesting(false)
+                    }
+                    .frame(width: horizontal ? extent : geometry.size.width,
+                           height: horizontal ? geometry.size.height : extent)
+                    .offset(x: horizontal ? start : 0, y: horizontal ? 0 : start)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                }
+                if let split = tabManager.activeSplit {
+                    ForEach(Array(split.dividers.enumerated()), id: \.offset) { index, position in
+                        let start = position * length + Self.gap * CGFloat(index)
+                        SplitDivider(axis: axis, onReset: { tabManager.equalizeSplit(split.id) }) { location in
+                            let position = (location - Self.gap * (CGFloat(index) + 0.5)) / length
+                            tabManager.moveSplitDivider(split.id, divider: index, to: position,
+                                                        minimumFraction: min(220 / length, 1 / Double(panes.count)))
                         }
+                        .frame(width: horizontal ? Self.gap : geometry.size.width,
+                               height: horizontal ? geometry.size.height : Self.gap)
+                        .offset(x: horizontal ? start : 0, y: horizontal ? 0 : start)
                     }
-                    SplitPane(tab: tab, isFocused: tab.id == tabManager.activeTabID, appServices: appServices) {
-                        tabManager.selectTab(tab.id)
-                    }
-                    .overlay { BoostEditorOverlay(tabManager: tabManager, page: tab) }
-                    .overlay { CaptureOverlay(tabManager: tabManager, page: tab) }
-                        .frame(
-                            width: split.axis == .horizontal ? length * split.fractions[index] : nil,
-                            height: split.axis == .vertical ? length * split.fractions[index] : nil
-                        )
                 }
             }
-            .coordinateSpace(.named(SplitDivider.profile))
+            .animation(animatesChange ? .spring(response: 0.34, dampingFraction: 0.88) : nil, value: ids)
+            .animation(reduceMotion ? nil : .spring(response: 0.34, dampingFraction: 0.88), value: axis)
+            .coordinateSpace(.named(SplitDivider.space))
         }
         .background(ChromePalette.shell)
-    }
-
-    private var panes: [TabSession] {
-        split.panes.compactMap(tabManager.tab)
+        .onChange(of: ids, initial: true) { _, ids in previousIDs = ids }
     }
 }
 
-private struct SplitPane: View {
-    let tab: TabSession
-    let isFocused: Bool
-    let appServices: AppServices
-    /// A click on a start page; a click in a web view reaches the tab itself.
-    let onFocus: () -> Void
-
-    var body: some View {
-        PageView(tab: tab, appServices: appServices, showsLoadingProgress: !isFocused)
-            .simultaneousGesture(TapGesture().onEnded(onFocus))
-            .chromeCard()
-            .overlay {
-                ConcentricRectangle.chrome()
-                    .stroke(.tint, lineWidth: 2)
-                    .padding(1)
-                    .opacity(isFocused ? 0.6 : 0)
-                    .animation(ChromeMotion.hover, value: isFocused)
-                    .allowsHitTesting(false)
-            }
-    }
-}
-
-/// The gap between two panes: drag it to give one more room than the other.
 private struct SplitDivider: View {
-    static let profile = "split"
-
+    static let space = "split"
     let axis: SplitAxis
-    /// The pointer's place along the split's axis, in the split's profile.
+    let onReset: () -> Void
     let onDrag: (CGFloat) -> Void
+    @State private var hovered = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Color.clear
-            .frame(
-                width: axis == .horizontal ? ChromeMetrics.cardInset : nil,
-                height: axis == .vertical ? ChromeMetrics.cardInset : nil
-            )
+            .overlay {
+                Capsule().fill(.primary.opacity(hovered ? 0.22 : 0.08))
+                    .frame(width: axis == .horizontal ? 3 : 28, height: axis == .horizontal ? 28 : 3)
+            }
             .contentShape(Rectangle())
             .pointerStyle(axis == .horizontal ? .columnResize : .rowResize)
-            .gesture(
-                DragGesture(minimumDistance: 1, coordinateSpace: .named(Self.profile))
-                    .onChanged { drag in
-                        onDrag(axis == .horizontal ? drag.location.x : drag.location.y)
-                    }
-            )
+            .onHover { hovered = $0 }
+            .onTapGesture(count: 2) {
+                withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.88), onReset)
+            }
+            .gesture(DragGesture(minimumDistance: 1, coordinateSpace: .named(Self.space))
+                .onChanged { onDrag(axis == .horizontal ? $0.location.x : $0.location.y) })
+            .accessibilityLabel("Resize split panes")
+            .accessibilityAction(named: "Equal sizes", onReset)
     }
 }
 
