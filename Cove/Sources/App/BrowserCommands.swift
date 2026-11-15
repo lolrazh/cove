@@ -65,7 +65,7 @@ struct BrowserViewCommands: Commands {
         }
 
         CommandGroup(after: .importExport) {
-            Button("Import Bookmarks…") {
+            Button("Import Browser Data…") {
                 tabManager?.importBookmarks()
             }
             .disabled(tabManager?.isPrivate ?? true)

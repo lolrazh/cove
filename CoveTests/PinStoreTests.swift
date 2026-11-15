@@ -41,6 +41,23 @@ struct PinStoreTests {
         subscription.cancel()
     }
 
+    @Test func `bookmark import preserves folders skips repeats and stays in its profile`() throws {
+        defer { try? FileManager.default.removeItem(at: fileURL.deletingLastPathComponent()) }
+        let store = PinStore(fileURL: fileURL)
+        let destination = UUID()
+        let other = UUID()
+        store.change(in: other) { $0.add(pin) }
+        let bookmarks: [ImportedBookmark] = [
+            .folder(title: "Reading", children: [.page(title: "Example", url: URL(string: pin.url)!)]),
+            .page(title: "Duplicate", url: URL(string: pin.url)!)
+        ]
+        #expect(store.importBookmarks(bookmarks, from: "Safari", into: destination) == 1)
+        #expect(store.importBookmarks(bookmarks, from: "Safari", into: destination) == 0)
+        #expect(store.pins(in: destination).pinned.folders.map(\.name) == ["Imported from Safari", "Reading"])
+        #expect(store.pins(in: other).all == [pin])
+        #expect(PinStore(fileURL: fileURL).pins(in: destination).all.count == 1)
+    }
+
     @Test func `without a file, nothing is kept`() {
         let store = PinStore(fileURL: nil)
         store.change(in: Profile.defaultID) { $0.add(pin) }

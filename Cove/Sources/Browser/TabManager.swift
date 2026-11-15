@@ -87,6 +87,7 @@ final class TabManager: ObservableObject {
     @Published var peek: Peek?
     /// Whether the active page's site controls are open.
     @Published var isShowingSiteControls = false
+    @Published var importDestination: BrowserImportDestination?
     /// The Boost editor, open over the page it was opened from.
     @Published var boostEditor: BoostEditor?
     /// Capture, over the page it was started on.
@@ -838,26 +839,12 @@ final class TabManager: ObservableObject {
         pinStore.change(in: activeProfileID) { _ = $0.removeFolder(id) }
     }
 
-    /// File › Import Bookmarks…: another browser's bookmark file, chosen in
-    /// an open panel, becomes a folder in Pinned.
+    /// Capture the destination before a picker or profile switch can change it.
     func importBookmarks() {
-        guard let window = activeTab?.webView?.window ?? NSApp.keyWindow else { return }
-        let panel = NSOpenPanel()
-        panel.message = "Choose Safari's Bookmarks.plist or Chrome's Bookmarks file."
-        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Safari")
-        Task {
-            guard await panel.beginSheetModal(for: window) == .OK, let url = panel.url else { return }
-            guard let data = try? Data(contentsOf: url), let bookmarks = try? BookmarkImport.bookmarks(from: data) else {
-                toasts.show("Couldn't Read Bookmarks", symbol: ChromeSymbols.Navigation.loadFailed)
-                return
-            }
-            let folder = SidebarFolder(
-                name: "Imported from \(BookmarkImport.source(of: data).rawValue)",
-                contents: SidebarTree(bookmarks.map(SidebarItem.init))
-            )
-            pinStore.change(in: activeProfileID) { $0.addFolder(folder) }
-            toasts.show("Imported \(folder.contents.tabs.count) Bookmarks", symbol: ChromeSymbols.Tabs.folder)
-        }
+        guard !isPrivate else { return }
+        importDestination = BrowserImportDestination(id: activeProfileID,
+            name: activeProfile?.name ?? "Personal", history: services.historyStore,
+            historyIsEnabled: settings.saveBrowsingHistory)
     }
 
     // MARK: Live tabs for the store's pins

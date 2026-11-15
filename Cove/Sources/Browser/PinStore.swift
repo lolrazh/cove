@@ -95,3 +95,27 @@ final class PinStore: ObservableObject {
         try? data.write(to: fileURL, options: .atomic)
     }
 }
+
+extension PinStore {
+    /// Add new pages only; duplicate URLs do not create empty folder shells.
+    @discardableResult
+    func importBookmarks(_ bookmarks: [ImportedBookmark], from source: String, into profile: UUID) -> Int {
+        var seen = Set(pins(in: profile).all.map(\.url))
+        func unique(_ items: [ImportedBookmark]) -> [ImportedBookmark] {
+            items.compactMap { item in
+                switch item {
+                case .page(_, let url): return seen.insert(url.absoluteString).inserted ? item : nil
+                case .folder(let title, let children):
+                    let kept = unique(children)
+                    return kept.isEmpty ? nil : .folder(title: title, children: kept)
+                }
+            }
+        }
+        let fresh = unique(bookmarks)
+        guard !fresh.isEmpty else { return 0 }
+        let folder = SidebarFolder(name: "Imported from \(source)", contents: SidebarTree(fresh.map(SidebarItem.init)))
+        change(in: profile) { $0.addFolder(folder) }
+        save()
+        return folder.contents.tabs.count
+    }
+}

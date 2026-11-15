@@ -110,7 +110,7 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newFolder: "New Folder"
         case .newNote: "New Note"
         case .newEasel: "New Easel"
-        case .importBookmarks: "Import Bookmarks"
+        case .importBookmarks: "Import Browser Data"
         case .newProfile: "New Profile"
         case .editProfile: "Edit Profile"
         case .duplicateTab: "Duplicate Tab"

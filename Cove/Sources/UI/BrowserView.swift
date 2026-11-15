@@ -73,9 +73,15 @@ struct BrowserView: View {
             .hidden()
             .accessibilityHidden(true)
         }
+        .sheet(item: $tabManager.importDestination) { destination in
+            BrowserImportView(destination: destination, pins: tabManager.pinStore) {
+                tabManager.profiles.contains { $0.id == destination.id }
+            }
+        }
         .onAppear {
             areTabsVisible = !tabManager.hideTabs
             guard !tabManager.isPrivate else { return }
+            if appServices.takeImportWelcome() { tabManager.importBookmarks() }
             for _ in 0..<appServices.sessionStore.takeWindowsToReopen() {
                 openWindow(id: Self.windowID)
             }

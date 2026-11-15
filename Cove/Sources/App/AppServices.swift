@@ -16,9 +16,19 @@ final class AppServices {
     let extensionLibrary: ExtensionLibrary
 
     private var didPrepareLaunch = false
+    private var offersImport = false
+
+    func takeImportWelcome() -> Bool {
+        guard offersImport else { return false }
+        offersImport = false
+        return true
+    }
     private var profilePruning: AnyCancellable?
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, offersImport: Bool = false) {
+        let welcomeKey = "didOfferBrowserImport"
+        self.offersImport = offersImport && !ProfileMigration.isTesting && !defaults.bool(forKey: welcomeKey)
+        if !ProfileMigration.isTesting { defaults.set(true, forKey: welcomeKey) }
         let settings = BrowserSettingsStore(defaults: defaults)
         let data = ProfileData(id: Profile.defaultID, settings: settings)
         let blocker = data.blocker

@@ -7,6 +7,7 @@ struct CoveApp: App {
     private let appServices: AppServices
 
     init() {
+        let firstLaunch = !FileManager.default.fileExists(atPath: ProfileMigration.legacyRoot.path)
         do {
             try ProfileMigration.run(initialTheme: ChromeTheme(rawValue: UserDefaults.standard.string(forKey: BrowserSettingKeys.legacyThemeColor) ?? ""))
         } catch {
@@ -16,7 +17,7 @@ struct CoveApp: App {
             alert.runModal()
             exit(EXIT_FAILURE)
         }
-        let appServices = AppServices()
+        let appServices = AppServices(offersImport: firstLaunch)
         self.appServices = appServices
         appServices.prepareForLaunch()
     }
