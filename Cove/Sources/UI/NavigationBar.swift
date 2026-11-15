@@ -8,6 +8,10 @@ struct NavigationBar: View {
     @ObservedObject var session: TabSession
     @ObservedObject private var tabManager: TabManager
     private let presentsSiteControls: Bool
+    @State private var toolbarWidth: CGFloat = 900
+    @State private var isAddressHovered = false
+    @FocusState private var addressHasFocus: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var systemColorScheme
 
     init(
@@ -22,6 +26,7 @@ struct NavigationBar: View {
 
     var body: some View {
         HStack(spacing: ChromeMetrics.navigationSpacing) {
+            if tabManager.activeSplit?.panes.first == nil || tabManager.activeSplit?.panes.first == session.id {
             Button {
                 tabManager.setHideTabs(!tabManager.hideTabs)
             } label: {
@@ -30,18 +35,29 @@ struct NavigationBar: View {
             .buttonStyle(ChromeButtonStyle())
             .help(tabManager.hideTabs ? "Show tabs" : "Hide tabs")
 
-            NavigationControls(session: session)
+            }
+            NavigationControls(session: session, compact: toolbarWidth < 360)
                 .disabled(tabManager.activeDocumentID != nil)
             addressField
             if tabManager.isPrivate {
                 PrivateBadge()
             }
-            ExtensionToolbar(tabManager: tabManager)
+            if tabManager.activeSplit == nil {
+                ExtensionToolbar(tabManager: tabManager)
+            } else {
+                Button {
+                    tabManager.closeTab(session.id)
+                } label: { Image(systemName: "xmark") }
+                .buttonStyle(ChromeButtonStyle())
+                .help("Close pane")
+                .accessibilityLabel("Close pane")
+            }
             if tabManager.tabLayout == .horizontal {
                 MediaPlayer(tabManager: tabManager, style: .compact)
                 LibraryButton(library: tabManager.library, popoverEdge: .bottom)
             }
         }
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { toolbarWidth = $0 }
         .padding(.horizontal, 6)
         .frame(height: ChromeMetrics.navigationBarHeight)
         .background {
@@ -66,15 +82,37 @@ struct NavigationBar: View {
                     .padding(.leading, 4)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
-
-                Text(displayAddress)
+                Button {
+                    tabManager.selectTab(session.id)
+                    tabManager.editCurrentURL()
+                } label: {
+                    Text(displayAddress)
                     .foregroundStyle(session.currentURL.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 6)
+                .accessibilityLabel("Edit address")
                 AddressZoomIndicator(zoom: session.zoomFeedback)
                     .id(session.id)
+
+            }
+        }
+        .overlay(alignment: .trailing) {
+            if tabManager.activeDocumentID == nil {
+                HStack(spacing: 0) {
+                    BookmarkButton(tabManager: tabManager, page: session)
+                    SiteControlsButton(tabManager: tabManager, page: session, presentsControls: presentsSiteControls)
+                    SplitControl(tabManager: tabManager, page: session)
+                }
+                .background(Color(nsColor: pageBackground ?? .textBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .focusSection()
+                .focused($addressHasFocus)
+                .opacity(isAddressHovered || addressHasFocus || tabManager.isShowingSiteControls ? 1 : 0.001)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isAddressHovered)
             }
         }
         .padding(.horizontal, 4)
@@ -94,9 +132,12 @@ struct NavigationBar: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(perform: tabManager.editCurrentURL)
+        .onHover { isAddressHovered = $0 }
         .accessibilityElement(children: .contain)
-        .accessibilityAction(named: "Edit address", tabManager.editCurrentURL)
+        .accessibilityAction(named: "Edit address") {
+            tabManager.selectTab(session.id)
+            tabManager.editCurrentURL()
+        }
     }
 
     /// Keep the resting address short; editing always receives the full URL.

@@ -3,9 +3,11 @@ import SwiftUI
 /// Back, forward and reload/stop for one tab, above the page in every layout.
 struct NavigationControls: View {
     @ObservedObject var session: TabSession
+    var compact = false
 
     var body: some View {
         HStack(spacing: ChromeMetrics.navigationSpacing) {
+            if !compact {
             Button(action: session.goBack) {
                 Image(systemName: ChromeSymbols.Navigation.back)
             }
@@ -18,6 +20,7 @@ struct NavigationControls: View {
             .disabled(!session.canGoForward)
             .help("Forward")
 
+            }
             Button {
                 session.isLoading ? session.stopLoading() : session.reload()
             } label: {

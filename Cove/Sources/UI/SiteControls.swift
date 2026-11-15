@@ -1,12 +1,6 @@
 import SwiftUI
 
-/// The glyph at the front of the URL pill and the address field: a lock,
-/// globe or search glyph. On a website it opens that site's controls, as
-/// Arc's does, with extensions' buttons beneath; on a start page it's only
-/// a glyph.
-///
-/// Every tab layout has one of these on screen, and only that one presents
-/// the controls, so the Command Bar's Site Settings opens a single popover.
+/// A trailing address-bar action. Only the focused pane presents its popover.
 struct SiteControlsButton: View {
     @ObservedObject var tabManager: TabManager
     @ObservedObject var page: TabSession
@@ -18,12 +12,14 @@ struct SiteControlsButton: View {
                 .frame(width: Self.side, height: Self.side)
         } else {
             Button {
+                tabManager.selectTab(page.id)
                 tabManager.isShowingSiteControls.toggle()
             } label: {
                 glyphImage
             }
             .buttonStyle(ChromeButtonStyle())
             .help("Site Settings")
+            .accessibilityLabel("Site Settings")
             .popover(isPresented: isPresented, arrowEdge: .bottom) {
                 VStack(spacing: 0) {
                     SiteControlsPanel(
@@ -56,18 +52,12 @@ struct SiteControlsButton: View {
     }
 
     private var glyphImage: some View {
-        Image(systemName: glyph)
+        Image(systemName: "slider.horizontal.3")
             .font(.body.weight(.medium))
             .foregroundStyle(.secondary)
     }
 
-    private var glyph: String {
-        switch page.siteURL?.scheme {
-        case nil: page.currentURL.isEmpty ? ChromeSymbols.Navigation.search : ChromeSymbols.Navigation.globe
-        case "https": ChromeSymbols.Navigation.secure
-        default: ChromeSymbols.Navigation.globe
-        }
-    }
+
 }
 
 /// Arc's site controls: who the site is and how it was reached, then what it
