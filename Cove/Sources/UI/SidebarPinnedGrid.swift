@@ -49,7 +49,6 @@ private struct SidebarPinnedTile: View {
         .onHover { isHovered = $0 }
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isHovered)
         .animation(reduceMotion ? nil : ChromeMotion.hover, value: isActive)
-        .opacity(tab.isAsleep ? 0.7 : 1)
         .help(tab.title)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isActive ? .isSelected : [])

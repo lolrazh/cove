@@ -50,12 +50,6 @@ struct ChromeTabItem: View {
                 }
             }
         }
-        // A sleeping tab fades a little, as in Arc, until hovered: it's still
-        // there, it just has to wake. Scope the fade to opacity: a whole-row
-        // transaction also slows its 120 ms movement when a neighbor closes.
-        .animation(ChromeMotion.fade) { content in
-            content.opacity(tab.isAsleep && !isHovered ? Self.asleepOpacity : 1)
-        }
         .padding(.leading, presentation == .compact ? 0 : 8)
         .padding(.trailing, presentation == .compact ? 0 : ChromeMetrics.tabAccessoryInset)
         .chromeTabSurface(presentation, isActive: isActive, isHovered: isHovered, width: width,
@@ -161,8 +155,6 @@ struct ChromeTabItem: View {
     private var pinnedHost: String {
         tab.pinnedURL.flatMap(URL.init).flatMap(\.host) ?? "pinned page"
     }
-
-    private static let asleepOpacity = 0.55
 
     private var closeButton: some View {
         let isVisible = canClose && isHovered
