@@ -30,3 +30,30 @@ Create a square edge-to-edge abstract painted background texture for a tiny macO
 
 - https://developer.apple.com/icon-composer/
 - https://developer.apple.com/videos/play/wwdc2025/361/
+
+## Paint and glass revision — 15 November 2026
+
+The first C retained a fully opaque white SVG fill. It had 30% native translucency, with blur material and refraction off. This made it look closer to a solid white object than glass.
+
+Four new studies (`04` through `07`) use a separate glass foreground SVG with 55% white fill opacity. Native settings: 82% translucency, 12% blur material, 65% refraction strength, 45% depth, inside specular highlights, and an 18% neutral shadow. These are native Icon Composer material settings; no highlights are painted into the source SVG. The material was first configured in Icon Composer, then the saved JSON values were tuned for matched exports. Three fill-opacity trials (20%, 40%, 60%) were checked before selecting 55% for these studies.
+
+- Sea glass: the original teal paint with the new foreground.
+- Cobalt + mint: richer blue, turquoise, and mint paint.
+- Coral + violet: coral, peach, lavender, and plum paint.
+- Vivid tide: an editable SVG gradient with stops `#69E7C0`, `#078EAC`, and `#173D9B`.
+
+The current production icon remains Tidal. These are options for the user to compare before choosing a replacement.
+
+Exports use the `ictool` bundled inside Icon Composer, with platform `macOS`, rendition `Default`, design generation `27`, and scale `1`. Each new study has native renders at 1024, 56, and 32 pixels. The comparison page includes a light/dark backdrop control and the earlier versions. The page backdrop toggle is for contrast review; it does not switch the native icon rendition to Dark.
+
+### New paint prompts
+
+Tool: built-in imagegen, edit mode. Reference: `icon-layers/painted-water.png`. Outputs were saved in `icon-layers/` and copied into the corresponding native documents.
+
+**Cobalt + mint**
+
+Edit this painted texture into a richer palette: deep cobalt blue and ultramarine mixed with lagoon turquoise, with a few confident fresh mint green brush strokes. Preserve the broad handmade loose brush strokes and tactile fine paint grain of the reference. More contrast between the blue and mint areas, clearly visible color changes across the square, rich vibrant pigments but tasteful. No logo, no letters, no glass, no icon frame, no rounded corners. Full-bleed square background layer only. The paint has to look spontaneous and simple, like a child using a wide brush. Do not add small decorative objects or intricate patterns.
+
+**Coral + violet**
+
+Edit this painted texture into a warm and cool palette: rich coral and peach paint meeting saturated lavender violet and deep plum, with loose broad overlapping strokes. Preserve the handmade tactile fine paint grain and simple wide brush gestures of the reference. Let coral dominate upper left and violet lower right, with softly mixed pigment where they meet, asymmetrical and spontaneous. Richer contrast and more visible color variation than the reference, but tasteful. No logo, no letters, no glass, no icon frame, no rounded corners. Full-bleed square background layer only. As if a child confidently painted with a wide brush; avoid complex details.
