@@ -1,6 +1,6 @@
 # Arc Parity
 
-## Current review — 2026-11-13
+## Current review — 2026-11-15
 
 This is the original feature plan. Checked boxes below mean implemented, not
 fully tested in daily use. The later Dia review replaces the old layout and
@@ -40,6 +40,15 @@ Current order:
    `agent-logs/2026-11-14_close-and-restore.md` for evidence and limits.
    Next: History search. Then review profile creation and theme editing across
    light/dark appearance and accessibility settings.
+
+5. November 15: the user moved browser import, saved pages/folders, media,
+   right-side address controls, and split view ahead of History search.
+   This pass is implemented and checked on Virtual 16:9. Import supports
+   bookmarks and history with a review step, folder preservation, and duplicate
+   checks. Split panes retain their page hosts and have per-pane navigation.
+   See `agent-logs/2026-11-15_import-address-controls-and-split-view.md` for
+   source evidence, 241 passing tests, live checks, and remaining limits.
+   History search remains next after feedback on this pass.
 
 The historical plan follows.
 
