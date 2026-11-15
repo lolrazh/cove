@@ -2,35 +2,73 @@ import Foundation
 
 /// A bookmark read from another browser: a page, or a folder of them. It
 /// becomes a Pinned tab or folder when imported.
-enum ImportedBookmark: Equatable {
+enum ImportedBookmark: Equatable, Sendable {
     case page(title: String, url: URL)
     case folder(title: String, children: [ImportedBookmark])
 }
 
-/// Reads other browsers' bookmark files: Safari's `Bookmarks.plist` and
-/// Chrome's `Bookmarks` JSON. Each top-level collection (Favorites, the
-/// bookmarks bar, other bookmarks) comes back as a folder; empty folders,
-/// Safari's Reading List and History, and anything that can't be a tab, like
-/// a bookmarklet, are left out.
+/// Reads only the file selected by the user. Parsing never changes a profile.
 enum BookmarkImport {
-    enum Failure: Error {
+    enum Failure: Error, LocalizedError {
         case unrecognizedFile
+        case fileTooLarge
+
+        var errorDescription: String? {
+            switch self {
+            case .unrecognizedFile: "Choose a bookmarks HTML export, Safari plist, or Chromium Bookmarks file."
+            case .fileTooLarge: "This bookmarks file is too large. Export a smaller collection and try again."
+            }
+        }
     }
 
-    enum Source: String {
+    enum Source: String, Sendable {
         case safari = "Safari"
         case chrome = "Chrome"
+        case html = "Bookmarks File"
     }
 
-    /// Tells the two formats apart by content, since Chrome's file has no
-    /// extension: JSON starts with a brace, a property list doesn't.
+    struct Preview: Sendable {
+        let source: Source
+        let bookmarks: [ImportedBookmark]
+
+        var pageCount: Int { counts.pages }
+        var folderCount: Int { counts.folders }
+
+        private var counts: (pages: Int, folders: Int) {
+            var pending = bookmarks
+            var pages = 0
+            var folders = 0
+            while let item = pending.popLast() {
+                switch item {
+                case .page: pages += 1
+                case .folder(_, let children):
+                    folders += 1
+                    pending.append(contentsOf: children)
+                }
+            }
+            return (pages, folders)
+        }
+    }
+
+    static func preview(from data: Data) throws -> Preview {
+        Preview(source: source(of: data), bookmarks: try bookmarks(from: data))
+    }
+
     static func source(of data: Data) -> Source {
-        let firstByte = data.first { !Character(UnicodeScalar($0)).isWhitespace }
-        return firstByte == UInt8(ascii: "{") ? .chrome : .safari
+        let prefix = String(decoding: data.prefix(4096), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines.union(CharacterSet(charactersIn: "\u{FEFF}")))
+        if prefix.hasPrefix("{") { return .chrome }
+        if prefix.localizedCaseInsensitiveContains("NETSCAPE-Bookmark-file-1") { return .html }
+        return .safari
     }
 
     static func bookmarks(from data: Data) throws -> [ImportedBookmark] {
-        source(of: data) == .chrome ? try chrome(data) : try safari(data)
+        guard data.count <= 32 * 1024 * 1024 else { throw Failure.fileTooLarge }
+        switch source(of: data) {
+        case .chrome: return try chrome(data)
+        case .safari: return try safari(data)
+        case .html: return try BookmarkHTML.read(data)
+        }
     }
 
     // MARK: - Safari
@@ -129,8 +167,10 @@ enum BookmarkImport {
     // MARK: - Shared
 
     /// Only web pages make tabs.
-    private static func tabURL(_ string: String?) -> URL? {
-        guard let string, let url = URL(string: string), ["http", "https"].contains(url.scheme?.lowercased()) else {
+    static func tabURL(_ string: String?) -> URL? {
+        guard let string, let url = URL(string: string),
+              ["http", "https"].contains(url.scheme?.lowercased()),
+              let host = url.host, !host.isEmpty else {
             return nil
         }
         return url

@@ -3,6 +3,41 @@ import Testing
 @testable import Cove
 
 struct BookmarkImportTests {
+    @Test func htmlPreservesFoldersUnicodeAndEntities() throws {
+        let html = """
+        <!DOCTYPE NETSCAPE-Bookmark-file-1>
+        <DL><p>
+          <DT><H3>Work &amp; &#x1F30A;</H3>
+          <DL><p>
+            <DT><A HREF="https://example.com/?a=1&amp;b=2">தமிழ் &quot;Web&quot;</A>
+            <DT><H3>Nested</H3><DL>
+              <DT><A HREF='https://swift.org/'>Swift &#38; Web</A>
+              <DT><A HREF="javascript:alert(1)">Bad</A>
+              <DT><A HREF="https:missing-host">Bad</A>
+            </DL>
+          </DL>
+        </DL>
+        """
+        let preview = try BookmarkImport.preview(from: Data(html.utf8))
+        #expect(preview.source == .html)
+        #expect(preview.pageCount == 2)
+        #expect(preview.folderCount == 2)
+        #expect(preview.bookmarks == [.folder(title: "Work & 🌊", children: [
+            .page(title: "தமிழ் \"Web\"", url: URL(string: "https://example.com/?a=1&b=2")!),
+            .folder(title: "Nested", children: [.page(title: "Swift & Web", url: URL(string: "https://swift.org/")!)])
+        ])])
+    }
+
+    @Test func htmlDecodesOnceAndRejectsUnrelatedDocuments() throws {
+        let html = "<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><A HREF=https://example.com>&amp;amp; &#60; &#128512;</A></DL>"
+        #expect(try BookmarkImport.bookmarks(from: Data(html.utf8)) == [
+            .page(title: "&amp; < 😀", url: URL(string: "https://example.com")!)
+        ])
+        #expect(throws: BookmarkImport.Failure.self) {
+            try BookmarkImport.bookmarks(from: Data("<!doctype html><a href='https://example.com'>Page</a>".utf8))
+        }
+    }
+
     private let swift = URL(string: "https://swift.org/")!
     private let webkit = URL(string: "https://webkit.org/")!
 
