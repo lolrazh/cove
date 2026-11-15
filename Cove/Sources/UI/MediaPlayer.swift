@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// Arc's media player: when a tab in the background plays audio or video, its
-/// controls, without going back to it. A card above the sidebar's footer, or
-/// a compact control in the navigation bar in top-tab mode.
+/// Controls for audio or video playing in a background tab. A card above the
+/// sidebar's footer, or a compact control in the navigation bar in top-tab mode.
 struct MediaPlayer: View {
     enum Style {
         /// Title, site, skip back and forward, play or pause, and mute.
@@ -14,6 +13,8 @@ struct MediaPlayer: View {
     @ObservedObject var tabManager: TabManager
     let style: Style
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         Group {
             if let tab = tabManager.mediaTab {
@@ -21,7 +22,7 @@ struct MediaPlayer: View {
                     tabManager.selectTab(tab.id)
                 }
                 .id(tab.id)
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.96)))
             }
         }
         .animation(ChromeMotion.tab, value: tabManager.mediaTab?.id)
@@ -33,6 +34,7 @@ private struct MediaPlayerControls: View {
     let style: MediaPlayer.Style
     let openTab: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
     var body: some View {
@@ -48,25 +50,29 @@ private struct MediaPlayerControls: View {
 
     private func card(_ nowPlaying: NowPlaying) -> some View {
         VStack(spacing: 4) {
-            HStack(spacing: 8) {
-                FaviconView(image: tab.favicon, size: 16)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(title(nowPlaying))
-                        .font(.callout.weight(.medium))
-                    Text(subtitle(nowPlaying))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                Button(action: openTab) {
+                    HStack(spacing: 8) {
+                        FaviconView(image: tab.favicon, size: 16)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(title(nowPlaying))
+                                .font(.system(size: 12, weight: .medium))
+                            Text(subtitle(nowPlaying))
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.leading, 6)
+                    .contentShape(Rectangle())
                 }
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Show Tab: \(title(nowPlaying))")
+                .help("Show Tab")
 
                 closeButton
             }
-            .padding(.leading, 6)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: openTab)
-            .help("Show Tab")
 
             HStack(spacing: 0) {
                 skipButton(nowPlaying, forward: false)
@@ -87,7 +93,7 @@ private struct MediaPlayerControls: View {
         .animation(ChromeMotion.hover, value: isHovered)
     }
 
-    /// Shows on hover. Pauses the media and puts the player away.
+    /// Pauses the media and puts the player away.
     private var closeButton: some View {
         Button { tab.media?.closePlayer() } label: {
             Image(systemName: ChromeSymbols.Media.close)
@@ -95,18 +101,19 @@ private struct MediaPlayerControls: View {
         }
         .buttonStyle(ChromeButtonStyle(size: .accessory()))
         .help("Close Player")
-        .opacity(isHovered ? 1 : 0)
-        .allowsHitTesting(isHovered)
+        .accessibilityLabel("Close Player")
+        .opacity(isHovered ? 1 : 0.45)
     }
 
     private var muteButton: some View {
         Button(action: tab.toggleMuted) {
             Image(systemName: tab.isMuted ? ChromeSymbols.Tabs.muted : ChromeSymbols.Tabs.playingAudio)
                 .foregroundStyle(.secondary)
-                .contentTransition(.symbolEffect(.replace))
+                .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         }
         .buttonStyle(controlStyle)
         .help(tab.isMuted ? "Unmute Tab" : "Mute Tab")
+        .accessibilityLabel(tab.isMuted ? "Unmute Tab" : "Mute Tab")
     }
 
     // MARK: - Compact
@@ -117,6 +124,7 @@ private struct MediaPlayerControls: View {
                 FaviconView(image: tab.favicon, size: 16)
             }
             .help("Show Tab: \(title(nowPlaying)), \(subtitle(nowPlaying))")
+            .accessibilityLabel("Show Tab: \(title(nowPlaying))")
 
             playButton(nowPlaying)
         }
@@ -136,10 +144,11 @@ private struct MediaPlayerControls: View {
     private func control(_ action: MediaAction) -> some View {
         Button { tab.media?.perform(action) } label: {
             Image(systemName: action.symbol)
-                .contentTransition(.symbolEffect(.replace))
+                .contentTransition(reduceMotion ? .opacity : .symbolEffect(.replace))
         }
         .buttonStyle(controlStyle)
         .help(action.help)
+        .accessibilityLabel(action.help)
     }
 
     private var controlStyle: ChromeButtonStyle {
