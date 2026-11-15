@@ -1,5 +1,7 @@
 # Cove identity
 
+**Current app icon: Sea Glass.** Selected by the user on 15 November 2026. The app uses `Cove/Resources/AppIcon.icon`, matching study 04 with refined paint strokes across the full background. The user's glass settings are preserved.
+
 A single soft coastline forms a C around an open, sheltered inlet. The broad shape and clear negative space are intended to work at small sizes.
 
 `cove-mark-concept.png` is the flat black-on-white concept, generated with the built-in imagegen tool on 15 November 2026. It is the approved raster design study. The production SVG is a clean redraw of its silhouette; it does not retain the raster brush texture.
@@ -14,7 +16,7 @@ A minimalist two-color logo on a pure white background. One single SOLID BLACK o
 - `icon-layers/painted-water.png`: generated paint texture, kept separate from the mark.
 - `icon-experiments/index.html`: comparison of native exports, including 64 and 32 pixel previews.
 - `icon-experiments/*.icon`: three editable Icon Composer documents: Lagoon, Tidal, and Painted water.
-- `../../Cove/Resources/AppIcon.icon`: Tidal, the current build candidate.
+- `../../Cove/Resources/AppIcon.icon`: Sea Glass, the selected app icon.
 
 The documents were created and checked in Apple's Icon Composer. The mark uses native Liquid Glass, with 30% translucency and a 28% neutral shadow. The painted background has glass and translucency disabled. The PNG previews were exported from Icon Composer with the Default appearance at 1024 points, 1x. They are review assets, not the build input. Xcode compiles the layered `.icon` document.
 
@@ -77,3 +79,13 @@ Material settings from Citrus Glass are copied to current studies 04–07, inclu
 `09-cobalt-pearl.icon` and `10-coral-pearl.icon` test a solid white layer fill with translucency reduced to 0.45. That is the intentional material difference; they retain the user's refraction, blur, lighting, specular, and shadow values. These are brighter white alternatives for comparison, not a replacement of the clearer painted studies.
 
 All seven current studies (04–10) were rendered again with the native exporter at 1024, 56, and 32 pixels. The comparison page shows Citrus Glass, restored/current Sea Glass, the exact original, and paired clear/Pearl paint options. The production app icon remains unchanged.
+
+## Selected Sea Glass: full-area brush variation
+
+The user selected the current Sea Glass and requested slightly more prominent strokes and variation. The first texture revision still left the center too quiet. A second revision added broad soft strokes through the center. `icon-layers/painted-water-refined.png` is the selected texture; the original texture and exact original Sea Glass remain saved.
+
+The selected native document is now copied into `Cove/Resources/AppIcon.icon`. Only its texture was refined; the user's glass material settings were not changed. The current study previews and gallery were refreshed.
+
+Final texture edit prompt, built-in imagegen (reference: the first restrained refinement of `painted-water.png`):
+
+Refine this same full-bleed sea-glass teal painted background. The user points out that the center looks empty and too uniform. Put visible broad paint strokes ACROSS THE CENTRAL AREA too: several gently overlapping teal and pale seafoam swipes should pass diagonally through the middle, varied in width and length, with natural slightly uneven brush boundaries and pigment coverage. Maintain the reference's calm muted teal palette and fine handmade paint grain. The center must have about the same level of broad stroke variation as the edges: no blank quiet central oval, no uniform flat center, no vignette. Keep the change restrained, not high contrast; pale strokes should be softly mixed into teal, not white ribbons. No new hues, no vivid blue or green, no splatter, no thick 3D paint. It must look like an evenly painted square with a handful of broad spontaneous brush gestures distributed everywhere. Background layer only, no logo, no C, no text, no border, no rounded corners, no glass.
