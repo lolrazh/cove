@@ -6,6 +6,7 @@ enum NoteTextStyle: CaseIterable {
     case heading
     case subheading
     case body
+    case monospaced
 
     var name: String {
         switch self {
@@ -13,17 +14,31 @@ enum NoteTextStyle: CaseIterable {
         case .heading: "Heading"
         case .subheading: "Subheading"
         case .body: "Body"
+        case .monospaced: "Monospaced"
         }
     }
 
     var font: NSFont {
         switch self {
-        case .title: .systemFont(ofSize: 24, weight: .bold)
-        case .heading: .systemFont(ofSize: 18, weight: .semibold)
-        case .subheading: .systemFont(ofSize: 15, weight: .semibold)
-        case .body: .systemFont(ofSize: 14)
+        case .title: .systemFont(ofSize: 28, weight: .bold)
+        case .heading: .systemFont(ofSize: 22, weight: .semibold)
+        case .subheading: .systemFont(ofSize: 17, weight: .semibold)
+        case .body: .systemFont(ofSize: 17)
+        case .monospaced: .monospacedSystemFont(ofSize: 15, weight: .regular)
         }
     }
+
+    var paragraphStyle: NSParagraphStyle {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineSpacing = 4
+        paragraph.paragraphSpacing = self == .body || self == .monospaced ? 6 : 10
+        return paragraph
+    }
+
+    var attributes: [NSAttributedString.Key: Any] {
+        [.font: font, .foregroundColor: NSColor.textColor, .paragraphStyle: paragraphStyle]
+    }
+
 }
 
 /// The lists a note has. A list item starts with its marker between tabs, as
@@ -94,7 +109,7 @@ enum NoteList: CaseIterable {
     /// Markers sit in a narrow gutter, and wrapped lines line up with the
     /// text after them.
     var paragraphStyle: NSParagraphStyle {
-        let style = NSMutableParagraphStyle()
+        let style = NoteTextStyle.body.paragraphStyle.mutableCopy() as! NSMutableParagraphStyle
         style.textLists = [textList]
         style.tabStops = [NSTextTab(textAlignment: .natural, location: 6), NSTextTab(textAlignment: .natural, location: 26)]
         style.headIndent = 26
@@ -108,6 +123,37 @@ enum NoteList: CaseIterable {
 final class NoteTextView: NSTextView {
     /// A link clicked in the note.
     var onOpenLink: ((URL) -> Void)?
+
+    /// Attach a layout without assigning `font` or `textColor`: those setters
+    /// rewrite the shared storage and erase saved rich-text formatting.
+    static func editor(for note: Note) -> NoteTextView {
+        let layout = NSLayoutManager()
+        note.text.addLayoutManager(layout)
+        let container = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
+        container.widthTracksTextView = true
+        layout.addTextContainer(container)
+        let editor = NoteTextView(frame: .zero, textContainer: container)
+        editor.isRichText = true
+        editor.importsGraphics = true
+        editor.allowsUndo = true
+        editor.isAutomaticLinkDetectionEnabled = true
+        editor.isAutomaticQuoteSubstitutionEnabled = true
+        editor.isAutomaticDashSubstitutionEnabled = true
+        editor.isContinuousSpellCheckingEnabled = true
+        editor.smartInsertDeleteEnabled = true
+        editor.usesFindBar = true
+        editor.isIncrementalSearchingEnabled = true
+        editor.drawsBackground = false
+        editor.typingAttributes = NoteTextStyle.body.attributes
+        editor.defaultParagraphStyle = NoteTextStyle.body.paragraphStyle
+        editor.textContainerInset = NSSize(width: 0, height: 12)
+        editor.isVerticallyResizable = true
+        editor.isHorizontallyResizable = false
+        editor.autoresizingMask = [.width]
+        editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        editor.setAccessibilityLabel("Note body")
+        return editor
+    }
 
     // MARK: - Keys
 
@@ -280,7 +326,7 @@ final class NoteTextView: NSTextView {
     /// The list item holding a character, if its paragraph is one: it starts
     /// with a tab, a short marker and another tab, and is styled as a list.
     private func listItem(at index: Int) -> ListItem? {
-        guard let textStorage, index >= 0, index <= textStorage.length else { return nil }
+        guard let textStorage, textStorage.length > 0, index >= 0, index <= textStorage.length else { return nil }
         let text = textStorage.string as NSString
         let paragraph = text.paragraphRange(for: NSRange(location: min(index, max(text.length - 1, 0)), length: 0))
         guard paragraph.length > 0 || index == text.length,

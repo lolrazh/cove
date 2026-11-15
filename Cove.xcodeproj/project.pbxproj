@@ -154,6 +154,7 @@
 		BBEDB684E3929F84604C7605 /* PinStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6623BE858515BE95A23EF1 /* PinStore.swift */; };
 		BD53739261197BBC68670588 /* AttachedTabShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9A2151C4AD7FEC13EC12C3 /* AttachedTabShape.swift */; };
 		BDC91372DCCB4E1FA8F6E61C /* Today.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DAD7675F6BDA46CC4E76F5 /* Today.swift */; };
+		BE4BE2B43BB767089AB9F9B4 /* NoteTextViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8EBEA8D2EB45C43743D73CF /* NoteTextViewTests.swift */; };
 		BF2A758849DCB7CBAA27A17A /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = E625DEA5F1298F39BCA4B402 /* Profile.swift */; };
 		C0632964414F0F23C36B7296 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2749D56643B607ECB91473AA /* LibraryView.swift */; };
 		C251B65293E073833ADBBE3B /* LittleCove.swift in Sources */ = {isa = PBXBuildFile; fileRef = D586D3F1BF5B093CAD226E56 /* LittleCove.swift */; };
@@ -361,6 +362,7 @@
 		B4A8077A99B1B7F8AD4A2A2C /* SavePagePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavePagePanel.swift; sourceTree = "<group>"; };
 		B521F2DECB254B5E3D0FEE1E /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		B5BE57FA7379B178E5F270D2 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
+		B8EBEA8D2EB45C43743D73CF /* NoteTextViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteTextViewTests.swift; sourceTree = "<group>"; };
 		B8F2DFCC94DC9CB6FDFFF7D3 /* ChromeTabSlot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChromeTabSlot.swift; sourceTree = "<group>"; };
 		BC4045F2A420281D29A42EF3 /* PageToolsCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageToolsCommands.swift; sourceTree = "<group>"; };
 		BD83CEF4CAED1187500036C2 /* DocumentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPage.swift; sourceTree = "<group>"; };
@@ -717,6 +719,7 @@
 				4202A359D38DEBD964995D4A /* EaselTests.swift */,
 				FA576A52926E39D59DF56179 /* ExtensionLibraryTests.swift */,
 				56AC8CCCCF6D6C27C2A08F8F /* ExtensionPermissionTests.swift */,
+				B8EBEA8D2EB45C43743D73CF /* NoteTextViewTests.swift */,
 				55F1BE1EEC7CD3C49C11312B /* NowPlayingTests.swift */,
 				9F9441DA6B0B13627F88CD19 /* PageCaptureTests.swift */,
 				B035625AA34C20AF6AE5C781 /* PageZoomTests.swift */,
@@ -862,6 +865,7 @@
 				24E5B3D1A1A79003A53DB07C /* EaselTests.swift in Sources */,
 				EDD31F4A9841813A30D9954B /* ExtensionLibraryTests.swift in Sources */,
 				C3BF201B7AF07612B894871E /* ExtensionPermissionTests.swift in Sources */,
+				BE4BE2B43BB767089AB9F9B4 /* NoteTextViewTests.swift in Sources */,
 				AD828BAAE857C984A2935D8E /* NowPlayingTests.swift in Sources */,
 				EBCB0000D38DD297DF7CF1A0 /* PageCaptureTests.swift in Sources */,
 				E5AE51EE2CE832AA6664568B /* PageZoomTests.swift in Sources */,

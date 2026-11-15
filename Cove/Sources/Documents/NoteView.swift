@@ -11,18 +11,18 @@ struct NoteView: View {
     @State private var textView: NoteTextView?
     @FocusState private var isTitleFocused: Bool
 
-    private static let columnWidth: CGFloat = 720
+    private static let columnWidth: CGFloat = 680
 
     var body: some View {
         VStack(spacing: 0) {
             NoteFormattingBar(textView: textView)
             Divider()
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 titleField
                 NoteTextEditor(note: note, onOpenLink: onOpenLink) { textView = $0 }
             }
             .frame(maxWidth: Self.columnWidth)
-            .padding(.top, 28)
+            .padding(.top, 32)
             .padding(.horizontal, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -107,28 +107,7 @@ private struct NoteTextEditor: NSViewRepresentable {
     let onMake: (NoteTextView) -> Void
 
     func makeNSView(context: Context) -> NSScrollView {
-        let layoutManager = NSLayoutManager()
-        note.text.addLayoutManager(layoutManager)
-        let container = NSTextContainer(size: NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude))
-        container.widthTracksTextView = true
-        layoutManager.addTextContainer(container)
-
-        let textView = NoteTextView(frame: .zero, textContainer: container)
-        textView.isRichText = true
-        textView.importsGraphics = true
-        textView.allowsUndo = true
-        textView.isAutomaticLinkDetectionEnabled = true
-        textView.isAutomaticQuoteSubstitutionEnabled = true
-        textView.isAutomaticDashSubstitutionEnabled = true
-        textView.drawsBackground = false
-        textView.textColor = .textColor
-        textView.font = Note.bodyFont
-        textView.typingAttributes = [.font: Note.bodyFont, .foregroundColor: NSColor.textColor]
-        textView.textContainerInset = NSSize(width: 0, height: 8)
-        textView.isVerticallyResizable = true
-        textView.isHorizontallyResizable = false
-        textView.autoresizingMask = [.width]
-        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        let textView = NoteTextView.editor(for: note)
         textView.onOpenLink = onOpenLink
 
         let scrollView = NSScrollView()
