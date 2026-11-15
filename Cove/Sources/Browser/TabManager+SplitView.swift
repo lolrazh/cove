@@ -93,9 +93,14 @@ extension TabManager {
         splits.removeAll { $0.id == id }
     }
 
-    func moveSplitDivider(_ id: UUID, divider: Int, to position: Double) {
+    func moveSplitDivider(_ id: UUID, divider: Int, to position: Double, minimumFraction: Double = TabSplit<UUID>.minFraction) {
         guard let index = splits.firstIndex(where: { $0.id == id }) else { return }
-        splits[index].moveDivider(divider, to: position)
+        splits[index].moveDivider(divider, to: position, minimumFraction: minimumFraction)
+    }
+
+    func equalizeSplit(_ id: UUID) {
+        guard let index = splits.firstIndex(where: { $0.id == id }) else { return }
+        splits[index].equalize()
     }
 
     /// Rotate Split View: side by side, or stacked.

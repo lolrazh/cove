@@ -77,14 +77,17 @@ struct TabSplit<Pane: Hashable & Codable>: Identifiable, Hashable, Codable {
     /// Drags the divider after pane `index` to `position` along the axis,
     /// moving length between the two panes beside it. Neither goes below the
     /// smallest share; the other panes stay as they are.
-    mutating func moveDivider(_ index: Int, to position: Double) {
+    mutating func moveDivider(_ index: Int, to position: Double, minimumFraction: Double = Self.minFraction) {
         guard fractions.indices.contains(index + 1) else { return }
         let start = index == 0 ? 0 : dividers[index - 1]
         let pair = fractions[index] + fractions[index + 1]
-        let first = min(max(position - start, Self.minFraction), pair - Self.minFraction)
+        let minimum = min(max(minimumFraction, 0), pair / 2)
+        let first = min(max(position - start, minimum), pair - minimum)
         fractions[index] = first
         fractions[index + 1] = pair - first
     }
+
+    mutating func equalize() { fractions = Self.equalShares(panes.count) }
 
     /// The same split over other panes, as for saving: nil if a pane has no
     /// counterpart or fewer than two are left.

@@ -9,6 +9,14 @@ struct TabSplitTests {
         values.map { ($0 * 1000).rounded() / 1000 }
     }
 
+    @Test func `pane width clamp never makes a neighboring fraction negative`() {
+        var split = TabSplit(panes: [1, 2, 3], fractions: [0.15, 0.15, 0.7])
+        split.moveDivider(0, to: 0.9, minimumFraction: 0.4)
+        #expect(split.fractions == [0.15, 0.15, 0.7])
+        split.equalize()
+        #expect(split.fractions.allSatisfy { abs($0 - 1.0 / 3) < 0.001 })
+    }
+
     @Test func `a new split shares its length equally unless saved shares fit`() {
         #expect(Split(panes: ["a", "b"]).fractions == [0.5, 0.5])
         #expect(Split(panes: ["a", "b"], fractions: [0.3, 0.7]).fractions == [0.3, 0.7])
