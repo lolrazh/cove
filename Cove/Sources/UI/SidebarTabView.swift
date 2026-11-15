@@ -353,13 +353,14 @@ private struct SidebarPinnedList: View {
     }
 }
 
-/// A folder's row: click to fold or unfold, double-click to rename, drop a
-/// tab on it to file the tab inside.
+/// Click a folder to fold or unfold it. Rename it from its context menu,
+/// or drop a tab on it to file the tab inside.
 private struct SidebarFolderRow: View {
     let folder: SidebarFolder<TabSession>
     @ObservedObject var tabManager: TabManager
     @Binding var draggedTabID: UUID?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
     @State private var isDropTarget = false
     @State private var isRenaming = false
@@ -393,10 +394,20 @@ private struct SidebarFolderRow: View {
         .contentShape(Rectangle())
         .animation(ChromeMotion.hover, value: isHovered)
         .animation(ChromeMotion.hover, value: isDropTarget)
-        .animation(ChromeMotion.sidebarTab, value: folder.isCollapsed)
+        .animation(reduceMotion ? nil : ChromeMotion.sidebarTab, value: folder.isCollapsed)
         .onHover { isHovered = $0 }
-        .onTapGesture { tabManager.toggleFolderCollapsed(folder.id) }
-        .simultaneousGesture(TapGesture(count: 2).onEnded(beginRenaming))
+        .onTapGesture {
+            guard !isRenaming else { return }
+            tabManager.toggleFolderCollapsed(folder.id)
+        }
+        .accessibilityElement(children: isRenaming ? .contain : .combine)
+        .accessibilityLabel(folder.name)
+        .accessibilityValue(folder.isCollapsed ? "Collapsed" : "Expanded")
+        .accessibilityAction {
+            guard !isRenaming else { return }
+            tabManager.toggleFolderCollapsed(folder.id)
+        }
+        .accessibilityAction(named: "Rename Folder", beginRenaming)
         .contextMenu {
             Button("Rename Folder…", action: beginRenaming)
             Button("New Folder") {
@@ -429,6 +440,7 @@ private struct SidebarFolderRow: View {
     }
 
     private func beginRenaming() {
+        guard !isRenaming else { return }
         draftName = folder.name
         isRenaming = true
     }
