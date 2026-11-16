@@ -22,7 +22,7 @@ struct CommandBarRankerTests {
 
     @Test func `empty input does not dump every available command`() {
         let ranking = rank("", .init(commands: CommandBarCommand.allCases))
-        #expect(ranking.results.map(\.kind) == [.command(.newNote), .command(.reopenClosedTab)])
+        #expect(ranking.results.map(\.kind) == [.command(.newNote), .command(.newEasel), .command(.reopenClosedTab)])
     }
 
     @Test func `split chooser starts with open tabs without repeating recent pages`() {

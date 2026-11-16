@@ -55,7 +55,7 @@ struct CommandBarRanker {
         static let documents = 3
         static let archive = 3
         static let history = 5
-        static let recent = 4
+        static let recent = 3
         static let suggestions = 4
         static let commands = 3
     }
@@ -147,7 +147,7 @@ struct CommandBarRanker {
         let openURLs = Set(tabs.map(\.destination))
         let recent = sources.history.filter { !openURLs.contains($0.url) }
             .prefix(Limit.recent).map(Self.historyResult)
-        let quickActions: [CommandBarCommand] = [.newNote, .reopenClosedTab]
+        let quickActions: [CommandBarCommand] = [.newNote, .newEasel, .reopenClosedTab]
         let commands = quickActions.filter(sources.commands.contains).map(Self.commandResult)
         let sections = [
             CommandBarSection(title: "Open Tabs", results: tabs),

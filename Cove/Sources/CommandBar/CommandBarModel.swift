@@ -218,8 +218,6 @@ final class CommandBarModel: ObservableObject {
         guard mode != .splitView else { return [] }
         let showsPage = tabManager.activeDocumentID == nil && tabManager.activePage != nil
         return CommandBarCommand.allCases.filter { command in
-            // Layout experiments and drawing tools belong in their own menus.
-            if [.newEasel, .newLittleCove, .showTabsInSidebar, .showTabsOnTop, .hideTabs, .showTabs].contains(command) { return false }
             return switch command {
             case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
