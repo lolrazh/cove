@@ -46,13 +46,16 @@ struct CommandBarOverlay: View {
     /// Scenes can only be opened from a view's environment, so those commands
     /// run here; the model does the rest.
     private func open(_ result: CommandBarResult, inNewTab: Bool) {
+        guard model.isEnabled(result) else { return }
         switch result.kind {
         case .command(.newWindow): openWindow(id: BrowserView.windowID)
         case .command(.newPrivateWindow): openWindow(id: BrowserView.privateWindowID)
         case .command(.newLittleCove): onOpenLittleCove()
         case .command(.showHistory): openWindow(id: HistoryWindow.windowID, value: model.profileID)
         case .command(.extensions): SettingsPane.show(.extensions, with: openSettings)
-        case .command(.settings): openSettings()
+        case .command(.settings): SettingsPane.show(.general, with: openSettings)
+        case .command(.appearanceSettings): SettingsPane.show(.appearance, with: openSettings)
+        case .command(.privacySettings): SettingsPane.show(.privacy, with: openSettings)
         default: break
         }
         model.open(result, inNewTab: inNewTab)
@@ -82,8 +85,10 @@ private struct CommandBarPanel: View {
             field
             if !model.sections.isEmpty {
                 results
-                footer
+            } else if model.isBrowsingTools {
+                Text("No tools match your search.").foregroundStyle(.secondary).padding()
             }
+            footer
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -103,7 +108,7 @@ private struct CommandBarPanel: View {
             CommandBarField(
                 text: $model.query,
                 completion: model.completion,
-                placeholder: model.mode == .splitView ? "Open in Split View" : "Search or enter URL",
+                placeholder: model.isBrowsingTools ? "Find a tool" : model.mode == .splitView ? "Open in Split View" : "Search or enter URL",
                 onKey: handle
             )
             .frame(maxWidth: .infinity)
@@ -146,6 +151,7 @@ private struct CommandBarPanel: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .disabled(!model.isEnabled(result))
                             .accessibilityLabel(result.title)
                             .accessibilityValue(detail(for: result) ?? "")
                             .accessibilityAddTraits(result == model.selection ? .isSelected : [])
@@ -175,9 +181,17 @@ private struct CommandBarPanel: View {
 
     private var footer: some View {
         HStack(spacing: 16) {
+            if model.mode != .splitView {
+                Button(model.isBrowsingTools ? "Back to search" : "All tools") {
+                    if model.isBrowsingTools { model.returnToSearch() } else { model.browseTools() }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+                .help("Browse Cove's tools (⇧⌘P)")
+            }
+            Spacer()
             Text("↑↓ Select")
             Text("↵ Open")
-            Spacer()
             Text("Esc Close")
         }
         .font(.system(size: 12))
@@ -185,12 +199,12 @@ private struct CommandBarPanel: View {
         .padding(.horizontal, 22)
         .frame(height: CommandBarMetrics.footerHeight)
         .background(.primary.opacity(0.035))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Use arrow keys or Tab to select. Return to open. Escape to close.")
+        .accessibilityElement(children: .contain)
     }
 
     private func detail(for result: CommandBarResult) -> String? {
-        switch result.kind {
+        if model.isBrowsingTools, case .command(let command) = result.kind { return model.toolDetail(command) }
+        return switch result.kind {
         case .tab, .archived, .history: result.displayURL
         case .search: "\(model.searchEngine.displayName) Search"
         case .url, .suggestion, .command, .profile, .extensionAction, .document: nil

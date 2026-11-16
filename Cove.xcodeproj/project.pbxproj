@@ -55,6 +55,7 @@
 		39D368EA3E9B3AA3011918EE /* ImportedBookmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF9C0F14A8C88E21C70144AE /* ImportedBookmark.swift */; };
 		3AF5863C51F99D9C13B07292 /* BrowserImportPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DA0E841107A43C44EFE06EE /* BrowserImportPreviewTests.swift */; };
 		3AF825DE92C8A7FA1413EF0D /* FaviconFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED634449436374F07F550C3C /* FaviconFetcher.swift */; };
+		3B4F0DC768F81D9FA9A455C4 /* CommandBarCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44395951D4EB6B52DEFD1D05 /* CommandBarCatalog.swift */; };
 		3BB7BADFA4DBB8B2A92FA1D0 /* TabReordering.swift in Sources */ = {isa = PBXBuildFile; fileRef = 875E7F241F959DD45E691CEA /* TabReordering.swift */; };
 		3C8D61184ED738BCD6584506 /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08220A579891A90E90D46C02 /* Document.swift */; };
 		3D75E3AE86A899881F433D2F /* TabManager+SiteControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = F201A912E55E8030D5BE3499 /* TabManager+SiteControls.swift */; };
@@ -263,6 +264,7 @@
 		42B40D098BD34BAFB17B1BDD /* BookmarkImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkImportTests.swift; sourceTree = "<group>"; };
 		42DAE7CCEBA78202A745A545 /* ProfileIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileIconView.swift; sourceTree = "<group>"; };
 		42E1913DE4963FE2433ADCF0 /* ProfileMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileMigration.swift; sourceTree = "<group>"; };
+		44395951D4EB6B52DEFD1D05 /* CommandBarCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarCatalog.swift; sourceTree = "<group>"; };
 		446CCDCA2C716F66CDA3E040 /* BrowserImportPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserImportPreview.swift; sourceTree = "<group>"; };
 		4553C173601A5AA1E8F48DB8 /* PinStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinStoreTests.swift; sourceTree = "<group>"; };
 		4612B5D749B998C0867F1355 /* BrowserWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserWebView.swift; sourceTree = "<group>"; };
@@ -432,6 +434,7 @@
 		01F2DB8E31E71DC7EAA0D68A /* CommandBar */ = {
 			isa = PBXGroup;
 			children = (
+				44395951D4EB6B52DEFD1D05 /* CommandBarCatalog.swift */,
 				2E140A0D78EB1887750909DE /* CommandBarField.swift */,
 				93BA97BC4159CEF20A76719F /* CommandBarModel.swift */,
 				C96626CAA872A2EE0C1AB6F6 /* CommandBarRanker.swift */,
@@ -929,6 +932,7 @@
 				6526E02544A62AD082C9D34F /* ChromeTheme.swift in Sources */,
 				2650DF001201AE15A92D540E /* ChromeTokens.swift in Sources */,
 				CD0467EAAEDB5214FCA38ABD /* CodeEditor.swift in Sources */,
+				3B4F0DC768F81D9FA9A455C4 /* CommandBarCatalog.swift in Sources */,
 				D02E795342C0F0F0CB734A95 /* CommandBarField.swift in Sources */,
 				07A9768290DD91076A594822 /* CommandBarModel.swift in Sources */,
 				9AD612205AE443FE902CCE73 /* CommandBarRanker.swift in Sources */,

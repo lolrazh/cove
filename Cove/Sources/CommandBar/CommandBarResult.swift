@@ -98,6 +98,13 @@ enum CommandBarCommand: CaseIterable, Hashable {
     case newPrivateWindow
     case newLittleCove
     case showLibrary
+    case showDownloads
+    case showArchive
+    case newTabGroup
+    case ungroupTabs
+    case equalizeSplit
+    case appearanceSettings
+    case privacySettings
     case showHistory
     case extensions
     case settings
@@ -142,6 +149,13 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newPrivateWindow: "New Private Window"
         case .newLittleCove: "New Little Cove Window"
         case .showLibrary: "Library"
+        case .showDownloads: "Downloads"
+        case .showArchive: "Closed Tabs"
+        case .newTabGroup: "Group Selected Tabs"
+        case .ungroupTabs: "Remove Tabs from Group"
+        case .equalizeSplit: "Equal Split Sizes"
+        case .appearanceSettings: "Appearance Settings"
+        case .privacySettings: "Privacy Settings"
         case .showHistory: "Show All History"
         case .extensions: "Extensions"
         case .settings: "Settings"
@@ -187,6 +201,13 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newPrivateWindow: ChromeSymbols.Navigation.privateBrowsing
         case .newLittleCove: ChromeSymbols.Tabs.littleCove
         case .showLibrary: ChromeSymbols.Navigation.library
+        case .showDownloads: "arrow.down.circle"
+        case .showArchive: "archivebox"
+        case .newTabGroup: "rectangle.3.group"
+        case .ungroupTabs: "rectangle.3.group"
+        case .equalizeSplit: "rectangle.split.2x1"
+        case .appearanceSettings: "paintpalette"
+        case .privacySettings: "hand.raised"
         case .showHistory: ChromeSymbols.Navigation.history
         case .extensions: ChromeSymbols.Extensions.extensions
         case .settings: ChromeSymbols.Settings.general
@@ -229,10 +250,17 @@ enum CommandBarCommand: CaseIterable, Hashable {
         case .newWindow: []
         case .newPrivateWindow: ["incognito", "private browsing"]
         case .newLittleCove: ["little arc", "mini", "small", "quick"]
-        case .showLibrary: ["downloads", "archive", "history"]
+        case .showLibrary: ["saved", "library"]
+        case .showDownloads: ["files", "download", "progress"]
+        case .showArchive: ["restore", "reopen", "archive", "closed"]
+        case .newTabGroup: ["organize", "group", "selected", "tabs"]
+        case .ungroupTabs: ["ungroup", "remove", "group"]
+        case .equalizeSplit: ["resize", "equal", "balance", "panes"]
+        case .appearanceSettings: ["theme", "layout", "sidebar", "appearance"]
+        case .privacySettings: ["blocking", "trackers", "ads", "history", "suggestions", "privacy"]
         case .showHistory: ["recent", "visited"]
         case .extensions: ["add-ons", "plugins", "manage", "load", "unpacked"]
-        case .settings: ["preferences", "options"]
+        case .settings: ["preferences", "options", "sleep", "automatic", "archive", "search", "engine"]
         }
     }
 }

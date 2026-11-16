@@ -57,6 +57,11 @@ private struct GeneralSettingsPane: View {
 
     var body: some View {
         Form {
+            Section("Cove Tools") {
+                Text("Notes, Easels, Capture, Boosts, tab groups, and more are in Browser → Browse Cove Tools (⇧⌘P).")
+                Text("Peek: Shift-click a link to preview it above the current page.")
+                    .foregroundStyle(.secondary)
+            }
             Section("Search") {
                 Picker("Search engine", selection: settings.binding(\.searchEngine, set: settings.setSearchEngine)) {
                     ForEach(SearchEngine.allCases) { engine in

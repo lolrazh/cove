@@ -17,6 +17,7 @@ final class CommandBarModel: ObservableObject {
 
     @Published private(set) var isPresented = false
     @Published private(set) var mode: Mode = .newTab
+    @Published private(set) var isBrowsingTools = false
     @Published var query = "" {
         didSet { refresh() }
     }
@@ -51,8 +52,45 @@ final class CommandBarModel: ObservableObject {
 
     func present(_ mode: Mode) {
         self.mode = mode
+        isBrowsingTools = false
         isPresented = true
         query = mode == .editURL ? tabManager.activeTab?.currentURL ?? "" : ""
+    }
+
+    func browseTools() {
+        mode = .newTab
+        isBrowsingTools = true
+        isPresented = true
+        suggestionTask?.cancel()
+        query = ""
+    }
+
+    func returnToSearch() {
+        isBrowsingTools = false
+        query = ""
+    }
+
+    func isEnabled(_ result: CommandBarResult) -> Bool {
+        guard case .command(let command) = result.kind else { return true }
+        return availableCommands.contains(command)
+    }
+
+    func toolDetail(_ command: CommandBarCommand) -> String {
+        guard !availableCommands.contains(command) else { return command.summary }
+        let reason: String
+        switch command {
+        case .newNote, .newEasel, .newFolder, .newProfile, .editProfile, .importBookmarks: reason = "Use a regular browser window."
+        case .reopenClosedTab: reason = "No closed tab to restore."
+        case .pinTab: reason = "Select an unpinned page or document."
+        case .unpinTab: reason = "Select a pinned tab."
+        case .newTabGroup, .ungroupTabs: reason = "Select regular tabs in the sidebar."
+        case .rotateSplitView, .separateSplitView, .equalizeSplit: reason = "Open a split view first."
+        case .muteTab, .unmuteTab, .pauseMedia, .playMedia: reason = "Requires matching audio or playback state."
+        case .showTabsInSidebar, .showTabsOnTop, .hideTabs, .showTabs: reason = "Already in use."
+        case .actualSize: reason = "Already at 100%, or no page is open."
+        default: reason = "Open a web page to use this tool."
+        }
+        return reason + " · " + command.summary
     }
 
     func dismiss() {
@@ -68,13 +106,14 @@ final class CommandBarModel: ObservableObject {
     // MARK: - Choosing
 
     func moveSelection(by offset: Int) {
-        let results = results
+        let results = results.filter(isEnabled)
         guard !results.isEmpty else { return }
         let current = selection.flatMap(results.firstIndex) ?? 0
         selection = results[min(max(current + offset, 0), results.count - 1)]
     }
 
     func open(_ result: CommandBarResult, inNewTab: Bool) {
+        guard isEnabled(result) else { return }
         switch result.kind {
         case .tab(let id) where mode == .splitView:
             tabManager.openInSplitView(id)
@@ -204,7 +243,21 @@ final class CommandBarModel: ObservableObject {
             tabManager.reopenClosedTab()
         case .showLibrary:
             tabManager.library.present()
-        case .newWindow, .newPrivateWindow, .newLittleCove, .showHistory, .extensions, .settings:
+        case .showDownloads:
+            tabManager.library.present(.downloads)
+        case .showArchive:
+            tabManager.library.present(.archive)
+        case .newTabGroup:
+            _ = tabManager.createGroup(tabIDs: groupSelection)
+            tabManager.clearTabSelection()
+        case .ungroupTabs:
+            tabManager.ungroupTabs(groupSelection)
+            tabManager.clearTabSelection()
+        case .equalizeSplit:
+            if let split = tabManager.activeSplit {
+                withAnimation(ChromeMotion.pageTool) { tabManager.equalizeSplit(split.id) }
+            }
+        case .newWindow, .newPrivateWindow, .newLittleCove, .showHistory, .extensions, .settings, .appearanceSettings, .privacySettings:
             // Opening a window needs the view's environment or the app's
             // services; the view handles these before calling `open`.
             break
@@ -219,6 +272,10 @@ final class CommandBarModel: ObservableObject {
         let showsPage = tabManager.activeDocumentID == nil && tabManager.activePage != nil
         return CommandBarCommand.allCases.filter { command in
             return switch command {
+            case .showDownloads, .showArchive, .appearanceSettings, .privacySettings: true
+            case .newTabGroup: showsPage && !groupSelection.isEmpty
+            case .ungroupTabs: showsPage && groupSelection.contains { tabManager.group(for: $0) != nil }
+            case .equalizeSplit: showsPage && tabManager.activeSplit != nil
             case .copyURL: showsPage && !(tabManager.activeTab?.currentURL.isEmpty ?? true)
             case .pinTab: canPin && activeSection == .today
             case .unpinTab: activeSection == .pinned
@@ -250,6 +307,11 @@ final class CommandBarModel: ObservableObject {
         }
     }
 
+    private var groupSelection: [UUID] {
+        guard let id = tabManager.activeTabID, tabManager.activeDocumentID == nil else { return [] }
+        return tabManager.selectionTabIDs(for: id).filter { tabManager.section(of: $0) == .today }
+    }
+
     private var activeSection: TabManager.TabSection? {
         (tabManager.activeDocumentID ?? tabManager.activeTabID).flatMap(tabManager.section)
     }
@@ -263,6 +325,14 @@ final class CommandBarModel: ObservableObject {
 
     private func refresh() {
         guard isPresented else { return }
+        if isBrowsingTools {
+            let ranking = ranker.catalog(query: query)
+            sections = ranking.sections
+            completion = nil
+            if let selection, ranking.results.contains(selection), isEnabled(selection) { return }
+            selection = ranking.results.first(where: isEnabled)
+            return
+        }
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
         // This profile's tabs first, then those open in the window's others;

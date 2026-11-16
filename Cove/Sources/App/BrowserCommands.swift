@@ -82,6 +82,10 @@ struct BrowserViewCommands: Commands {
         }
 
         CommandMenu("Browser") {
+            Button("Browse Cove Tools…") { tabManager?.commandBar.browseTools() }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(tabManager == nil)
+            Divider()
             Button("Open Location") {
                 tabManager?.editCurrentURL()
             }
@@ -115,6 +119,11 @@ struct BrowserViewCommands: Commands {
             Divider()
 
             browserLayoutCommands(hideTabsShortcut: nil)
+        }
+
+        CommandGroup(replacing: .help) {
+            Button("Browse Cove Tools…") { tabManager?.commandBar.browseTools() }
+                .disabled(tabManager == nil)
         }
 
         CommandGroup(after: .toolbar) {

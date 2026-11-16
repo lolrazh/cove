@@ -13,6 +13,23 @@ struct CommandBarRankerTests {
         ranker.rank(query: query, sources: sources)
     }
 
+    @Test func `tool catalog includes every command once in stable categories`() {
+        let catalog = ranker.catalog(query: "")
+        #expect(catalog.sections.map(\.title) == CommandBarCommand.Category.allCases.map(\.rawValue))
+        #expect(catalog.results.count == CommandBarCommand.allCases.count)
+        for command in CommandBarCommand.allCases {
+            #expect(catalog.results.filter { $0.kind == .command(command) }.count == 1)
+        }
+        #expect(catalog.completion == nil)
+    }
+
+    @Test func `tool catalog finds features by purpose without a web search`() {
+        #expect(ranker.catalog(query: "canvas").results.contains { $0.kind == .command(.newEasel) })
+        #expect(ranker.catalog(query: "CSS").results.contains { $0.kind == .command(.boostSite) })
+        #expect(ranker.catalog(query: "bookmark").results.contains { $0.kind == .command(.pinTab) })
+        #expect(ranker.catalog(query: "zxqvnotatool").results.isEmpty)
+    }
+
     @Test func `empty input lists recent pages and a short set of useful actions`() {
         let ranking = rank("", .init(history: [github], commands: [.newNote, .reopenClosedTab]))
         #expect(ranking.sections.map(\.title) == ["Recent", "Quick Actions"])

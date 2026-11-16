@@ -28,6 +28,32 @@ struct TabManagerTests {
                           pins: PinStore(fileURL: nil), profiles: nil, documents: nil, session: session)
     }
 
+    @Test func `tool browsing shows unavailable features without allowing them to run`() throws {
+        let suite = "ToolCatalog-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = makeManager(defaults: defaults)
+        let model = manager.commandBar
+        model.browseTools()
+        #expect(model.isBrowsingTools)
+        #expect(model.results.count == CommandBarCommand.allCases.count)
+        let easel = try #require(model.results.first { $0.kind == .command(.newEasel) })
+        #expect(!model.isEnabled(easel)) // This fixture is a private window.
+        #expect(model.toolDetail(.newEasel).hasPrefix("Use a regular browser window."))
+        model.query = "canvas"
+        #expect(model.results.map(\.kind) == [.command(.newEasel)])
+        #expect(model.selection == nil)
+        model.moveSelection(by: 1)
+        #expect(model.selection == nil)
+        model.open(easel, inNewTab: false)
+        #expect(model.isPresented)
+        #expect(manager.activeDocumentID == nil)
+        model.present(.newTab)
+        #expect(!model.isBrowsingTools)
+        #expect(!model.results.contains { $0.kind == .command(.newEasel) })
+        model.dismiss()
+    }
+
     @Test func `cold pages seed their canvas from saved color and real changes are saved`() async throws {
         let legacy = Data(#"{"url":"file:///dev/null","title":"Light"}"#.utf8)
         var saved = try JSONDecoder().decode(SavedTab.self, from: legacy)
