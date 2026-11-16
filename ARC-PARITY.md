@@ -350,6 +350,10 @@ Big, self-contained builds; scheduled after the core features.
 - [x] Capture (⌘⇧2): select a region or element of the page; copy, save, or
       send it to a Note or an Easel.
 - [x] Notes: rich-text notes that live in the sidebar like tabs, pinnable.
+      Native text refresh (16 November): readable system typography, formatting
+      preservation, Notes-style shortcuts, lists/checklists, quotes/highlights,
+      native find/replace, and table cell navigation. See
+      `agent-logs/2026-11-16_command-bar-and-notes.md` for tests and parity limits.
 - [x] Easels: a freeform canvas of text, images, drawings and live web
       clippings (a selected page region that stays live).
 
