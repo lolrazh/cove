@@ -208,4 +208,47 @@ struct NoteTextViewTests {
         #expect(editor.string == "\t1.\tFirst\n\t2.\tMiddle\n\t3.\tLast")
     }
 
+    @Test func `character emphasis does not change paragraph style selection`() {
+        let (_, editor, window) = editor("Heading")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 0, length: 7))
+        editor.apply(.heading)
+        editor.toggleFontTrait(.italicFontMask)
+        #expect(editor.formatting.style == .heading)
+        editor.apply(.body)
+        editor.toggleFontTrait(.boldFontMask)
+        #expect(editor.formatting.style == .body)
+        #expect(editor.formatting.bold)
+    }
+
+    @Test func `mixed selections do not claim the first style or emphasis`() {
+        let (note, editor, window) = editor("Heading\nBody")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 0, length: 7))
+        editor.apply(.heading)
+        editor.setSelectedRange(NSRange(location: 0, length: note.text.length))
+        #expect(editor.formatting.style == nil)
+        #expect(!editor.formatting.bold)
+        editor.toggleFontTrait(.boldFontMask)
+        #expect(editor.formatting.bold)
+        #expect(editor.formatting.style == nil)
+    }
+
+    @Test func `table polish retains shared cells and uses a thin grid`() throws {
+        let table = NSTextTable()
+        table.numberOfColumns = 1
+        let cell = NSTextTableBlock(table: table, startingRow: 0, rowSpan: 1, startingColumn: 0, columnSpan: 1)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.textBlocks = [cell]
+        let text = NSMutableAttributedString(string: "First\nSecond\n", attributes: [.paragraphStyle: paragraph])
+        text.addAttribute(.font, value: NoteTextStyle.heading.font, range: NSRange(location: 0, length: 5))
+        NoteTableAppearance.apply(to: text)
+        let first = try #require((text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)?.textBlocks.first as? NSTextTableBlock)
+        let second = try #require((text.attribute(.paragraphStyle, at: 6, effectiveRange: nil) as? NSParagraphStyle)?.textBlocks.first as? NSTextTableBlock)
+        #expect(first === second)
+        #expect(first.width(for: .border, edge: .minX) == 0.5)
+        #expect(first.table.collapsesBorders)
+        #expect(text.string == "First\nSecond\n")
+    }
+
 }

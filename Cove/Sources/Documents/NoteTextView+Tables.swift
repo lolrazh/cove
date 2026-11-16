@@ -1,5 +1,30 @@
 import AppKit
 
+/// A quiet grid on either system appearance. Keep native cells and contents.
+enum NoteTableAppearance {
+    static func apply(to text: NSMutableAttributedString) {
+        var cells: [ObjectIdentifier: NSTextTableBlock] = [:]
+        text.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+            guard let paragraph = value as? NSParagraphStyle,
+                  paragraph.textBlocks.contains(where: { $0 is NSTextTableBlock }),
+                  let style = paragraph.mutableCopy() as? NSMutableParagraphStyle else { return }
+            style.textBlocks = paragraph.textBlocks.map { block in
+                guard let original = block as? NSTextTableBlock else { return block }
+                let id = ObjectIdentifier(original)
+                if let cell = cells[id] { return cell }
+                let cell = original.copy() as! NSTextTableBlock
+                cell.table.collapsesBorders = true
+                cell.setWidth(0.5, type: .absolute, for: .border)
+                cell.setBorderColor(.separatorColor)
+                cell.setWidth(6, type: .absolute, for: .padding)
+                cells[id] = cell
+                return cell
+            }
+            text.addAttribute(.paragraphStyle, value: style, range: range)
+        }
+    }
+}
+
 extension NoteTextView {
     enum CellDirection { case next, previous, down, up }
 

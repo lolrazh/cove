@@ -172,6 +172,16 @@ final class NoteTextView: NSTextView {
         return editor
     }
 
+    override func orderFrontTablePanel(_ sender: Any?) {
+        undoManager?.beginUndoGrouping()
+        defer { undoManager?.endUndoGrouping() }
+        super.orderFrontTablePanel(sender)
+        guard let textStorage else { return }
+        changeAttributes(in: [NSRange(location: 0, length: textStorage.length)]) { _ in
+            NoteTableAppearance.apply(to: textStorage)
+        }
+    }
+
     // MARK: - Keys
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -218,7 +228,7 @@ final class NoteTextView: NSTextView {
     override func insertNewline(_ sender: Any?) {
         if moveInTable(.down) { return }
         guard let item = listItem(at: selectedRange().location) else {
-            let wasHeading = [.title, .heading, .subheading].contains(formatting.style)
+            let wasHeading = formatting.style.map { [.title, .heading, .subheading].contains($0) } ?? false
             let wasEmptyQuote = formatting.style == .quote && selectedParagraphs.length == 0
             super.insertNewline(sender)
             if wasHeading || wasEmptyQuote { apply(.body) }
@@ -335,14 +345,14 @@ final class NoteTextView: NSTextView {
 
     func toggleFontTrait(_ trait: NSFontTraitMask) {
         let manager = NSFontManager.shared
-        let adding = !manager.traits(of: currentFont).contains(trait)
+        let adding = trait == .boldFontMask ? !formatting.bold : !formatting.italic
         changeFonts { adding ? manager.convert($0, toHaveTrait: trait) : manager.convert($0, toNotHaveTrait: trait) }
     }
 
     /// Underline or strikethrough: on for all of the selection, or off.
     func toggleLine(_ key: NSAttributedString.Key) {
         let ranges = selectedTextRanges
-        let isOn = ((ranges.first.map { textStorage?.attribute(key, at: $0.location, effectiveRange: nil) } ?? typingAttributes[key]) as? Int ?? 0) != 0
+        let isOn = key == .underlineStyle ? formatting.underline : formatting.strikethrough
         let value: Int? = isOn ? nil : NSUnderlineStyle.single.rawValue
         guard !ranges.isEmpty else {
             typingAttributes[key] = value
@@ -356,8 +366,7 @@ final class NoteTextView: NSTextView {
     /// A translucent highlight that remains readable in either appearance.
     func toggleHighlight() {
         let ranges = selectedTextRanges
-        let attributes = ranges.first.flatMap { textStorage?.attributes(at: $0.location, effectiveRange: nil) } ?? typingAttributes
-        let color: NSColor? = attributes[.backgroundColor] == nil ? .systemYellow.withAlphaComponent(0.25) : nil
+        let color: NSColor? = formatting.highlighted ? nil : .systemYellow.withAlphaComponent(0.25)
         guard !ranges.isEmpty else {
             typingAttributes[.backgroundColor] = color
             return
@@ -563,23 +572,50 @@ final class NoteTextView: NSTextView {
     var currentList: NoteList? { listItem(at: selectedRange().location)?.list }
 
     struct Formatting: Equatable {
-        var style: NoteTextStyle = .body
+        var style: NoteTextStyle? = .body
         var bold = false
         var italic = false
         var underline = false
+        var strikethrough = false
+        var highlighted = false
         var list: NoteList?
     }
 
+    /// Read every selected run. Character emphasis must not change the
+    /// paragraph's style, and a mixed selection must not claim the first style.
     var formatting: Formatting {
-        let font = currentFont
-        let traits = NSFontManager.shared.traits(of: font)
-        var style = NoteTextStyle.allCases.first { $0.font == font } ?? .body
-        let attributes = selectedRange().length > 0 ? textStorage?.attributes(at: selectedRange().location, effectiveRange: nil) ?? typingAttributes : typingAttributes
-        if let paragraph = attributes[.paragraphStyle] as? NSParagraphStyle,
-           paragraph.textLists.isEmpty, paragraph.firstLineHeadIndent == 20, paragraph.headIndent == 20 {
-            style = .quote
+        var runs: [[NSAttributedString.Key: Any]] = []
+        if let textStorage, !selectedTextRanges.isEmpty {
+            for range in selectedTextRanges {
+                textStorage.enumerateAttributes(in: range) { attributes, _, _ in runs.append(attributes) }
+            }
+        } else { runs = [typingAttributes] }
+        func style(of attributes: [NSAttributedString.Key: Any]) -> NoteTextStyle? {
+            let font = attributes[.font] as? NSFont ?? Note.bodyFont
+            let paragraph = attributes[.paragraphStyle] as? NSParagraphStyle ?? NoteTextStyle.body.paragraphStyle
+            if paragraph.textLists.isEmpty, paragraph.firstLineHeadIndent == 20, paragraph.headIndent == 20 { return .quote }
+            if NSFontManager.shared.traits(of: font).contains(.fixedPitchFontMask) { return .monospaced }
+            switch font.pointSize {
+            case 28: return .title
+            case 22: return .heading
+            case 17: return paragraph.paragraphSpacing >= 10 ? .subheading : .body
+            default: return nil
+            }
         }
-        return Formatting(style: style, bold: traits.contains(.boldFontMask), italic: traits.contains(.italicFontMask), underline: (attributes[.underlineStyle] as? Int ?? 0) != 0, list: currentList)
+        let styles = runs.map(style)
+        let commonStyle = styles.first.flatMap { first in styles.allSatisfy { $0 == first } ? first : nil }
+        func allHave(_ trait: NSFontTraitMask) -> Bool {
+            runs.allSatisfy { NSFontManager.shared.traits(of: $0[.font] as? NSFont ?? Note.bodyFont).contains(trait) }
+        }
+        let lists = runs.map { attributes -> NoteList? in
+            guard let list = (attributes[.paragraphStyle] as? NSParagraphStyle)?.textLists.first else { return nil }
+            return NoteList(marker: Substring(list.marker(forItemNumber: 1)))
+        }
+        let commonList = lists.first.flatMap { first in lists.allSatisfy { $0 == first } ? first : nil }
+        return Formatting(style: commonStyle, bold: allHave(.boldFontMask), italic: allHave(.italicFontMask),
+                          underline: runs.allSatisfy { ($0[.underlineStyle] as? Int ?? 0) != 0 },
+                          strikethrough: runs.allSatisfy { ($0[.strikethroughStyle] as? Int ?? 0) != 0 },
+                          highlighted: runs.allSatisfy { $0[.backgroundColor] != nil }, list: commonList)
     }
 
     private var currentFont: NSFont {

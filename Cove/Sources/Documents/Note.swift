@@ -25,6 +25,7 @@ final class Note {
         text = NSTextStorage(attributedString: saved ?? NSAttributedString())
         Self.updateLegacyTypography(in: text)
         NoteList.restore(in: text)
+        NoteTableAppearance.apply(to: text)
         // Text is kept without a color and drawn in the system's, so it reads
         // in light and dark mode alike.
         text.addAttribute(.foregroundColor, value: NSColor.textColor, range: NSRange(location: 0, length: text.length))

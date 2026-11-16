@@ -8,6 +8,7 @@ struct NoteView: View {
     @ObservedObject var store: DocumentStore
     let onOpenLink: (URL) -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var textView: NoteTextView?
     @FocusState private var isTitleFocused: Bool
 
@@ -15,7 +16,7 @@ struct NoteView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NoteFormattingBar(textView: textView)
+            NoteFormattingBar(textView: textView, isEditingTitle: isTitleFocused)
             Divider()
             VStack(alignment: .leading, spacing: 8) {
                 titleField
@@ -26,7 +27,7 @@ struct NoteView: View {
             .padding(.horizontal, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(ChromePalette.content)
+        .background(colorScheme == .dark ? Color(white: 0.055) : ChromePalette.content)
         // A new note asks for its title first.
         .onAppear { isTitleFocused = store.documents[id]?.title.isEmpty ?? false }
     }
@@ -49,27 +50,30 @@ struct NoteView: View {
 /// Styles, character traits, lists and links for the note's text view.
 private struct NoteFormattingBar: View {
     let textView: NoteTextView?
+    let isEditingTitle: Bool
     @State private var formatting = NoteTextView.Formatting()
 
     var body: some View {
         HStack(spacing: 6) {
             Menu {
-                ForEach(NoteTextStyle.allCases, id: \.self) { style in
-                    Button {
-                        act { $0.apply(style) }
-                    } label: {
-                        if formatting.style == style { Label(style.name, systemImage: "checkmark") }
-                        else { Text(style.name) }
+                Picker("Text style", selection: Binding(
+                    get: { formatting.style },
+                    set: { style in if let style { act { $0.apply(style) } } }
+                )) {
+                    ForEach(NoteTextStyle.allCases, id: \.self) { style in
+                        Text(style.name).tag(Optional(style))
                     }
                 }
+                .pickerStyle(.inline)
                 Divider()
-                Button("Strikethrough") { act { $0.toggleLine(.strikethroughStyle) } }
-                Button("Highlight") { act { $0.toggleHighlight() } }
+                Toggle("Strikethrough", isOn: Binding(get: { formatting.strikethrough }, set: { _ in act { $0.toggleLine(.strikethroughStyle) } }))
+                Toggle("Highlight", isOn: Binding(get: { formatting.highlighted }, set: { _ in act { $0.toggleHighlight() } }))
                 Divider()
                 Button("Table…") { act { $0.orderFrontTablePanel(nil) } }
             } label: {
-                Label("Text Style", systemImage: "textformat")
-                    .labelStyle(.iconOnly)
+                Text(formatting.style?.name ?? "Mixed Styles")
+                    .font(.system(size: 13, weight: .medium))
+                    .frame(width: 90, alignment: .leading)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.visible)
@@ -84,7 +88,7 @@ private struct NoteFormattingBar: View {
             separator
             Menu {
                 ForEach(NoteList.allCases, id: \.self) { list in
-                    Button(list.name) { act { $0.toggle(list) } }
+                    Toggle(list.name, isOn: Binding(get: { formatting.list == list }, set: { _ in act { $0.toggle(list) } }))
                 }
                 Divider()
                 Button("Indent") { act { $0.indentList(by: 1) } }
@@ -104,10 +108,10 @@ private struct NoteFormattingBar: View {
             button("Find in Note (⌘F)", symbol: "magnifyingglass") { $0.showFindBar() }
         }
         .font(.system(size: 14, weight: .medium))
-        .disabled(textView == nil)
+        .disabled(textView == nil || isEditingTitle)
         .frame(maxWidth: .infinity)
         .frame(height: 44)
-        .onChange(of: textView) { _, _ in refresh() }
+        .onChange(of: textView, initial: true) { _, _ in refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSTextView.didChangeSelectionNotification)) { notification in
             if notification.object as? NoteTextView === textView { refresh() }
         }
