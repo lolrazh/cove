@@ -49,53 +49,95 @@ struct NoteView: View {
 /// Styles, character traits, lists and links for the note's text view.
 private struct NoteFormattingBar: View {
     let textView: NoteTextView?
+    @State private var formatting = NoteTextView.Formatting()
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 6) {
             Menu {
                 ForEach(NoteTextStyle.allCases, id: \.self) { style in
-                    Button(style.name) { textView?.apply(style) }
+                    Button {
+                        act { $0.apply(style) }
+                    } label: {
+                        if formatting.style == style { Label(style.name, systemImage: "checkmark") }
+                        else { Text(style.name) }
+                    }
                 }
+                Divider()
+                Button("Strikethrough") { act { $0.toggleLine(.strikethroughStyle) } }
             } label: {
-                Image(systemName: "textformat.size")
+                Label("Text Style", systemImage: "textformat")
+                    .labelStyle(.iconOnly)
             }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
-            .buttonStyle(ChromeButtonStyle())
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.visible)
             .fixedSize()
-            .help("Text Style")
+            .help("Text style")
+            .accessibilityLabel("Text style")
 
             separator
-            button("Bold", symbol: "bold") { $0.toggleFontTrait(.boldFontMask) }
-            button("Italic", symbol: "italic") { $0.toggleFontTrait(.italicFontMask) }
-            button("Underline", symbol: "underline") { $0.toggleLine(.underlineStyle) }
-            button("Strikethrough", symbol: "strikethrough") { $0.toggleLine(.strikethroughStyle) }
+            button("Bold (⌘B)", symbol: "bold", selected: formatting.bold) { $0.toggleFontTrait(.boldFontMask) }
+            button("Italic (⌘I)", symbol: "italic", selected: formatting.italic) { $0.toggleFontTrait(.italicFontMask) }
+            button("Underline (⌘U)", symbol: "underline", selected: formatting.underline) { $0.toggleLine(.underlineStyle) }
             separator
-            button(NoteList.bulleted.name, symbol: "list.bullet") { $0.toggle(.bulleted) }
-            button(NoteList.numbered.name, symbol: "list.number") { $0.toggle(.numbered) }
-            button(NoteList.checklist.name, symbol: "checklist") { $0.toggle(.checklist) }
+            Menu {
+                ForEach(NoteList.allCases, id: \.self) { list in
+                    Button(list.name) { act { $0.toggle(list) } }
+                }
+                Divider()
+                Button("Indent") { act { $0.indentList(by: 1) } }
+                    .disabled(formatting.list == nil)
+                Button("Outdent") { act { $0.indentList(by: -1) } }
+                    .disabled(formatting.list == nil)
+            } label: {
+                Image(systemName: "list.bullet")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("Lists")
+            .accessibilityLabel("Lists")
+            button("Checklist (⇧⌘L)", symbol: "checklist", selected: formatting.list == .checklist) { $0.toggle(.checklist) }
             separator
-            button("Link", symbol: ChromeSymbols.Navigation.link) { $0.editLink() }
+            button("Link (⌘K)", symbol: ChromeSymbols.Navigation.link) { $0.editLink() }
+            button("Find in Note (⌘F)", symbol: "magnifyingglass") { $0.showFindBar() }
         }
+        .font(.system(size: 14, weight: .medium))
         .disabled(textView == nil)
         .frame(maxWidth: .infinity)
-        .frame(height: ChromeMetrics.navigationBarHeight)
-    }
-
-    private var separator: some View {
-        Divider().frame(height: 16).padding(.horizontal, 6)
-    }
-
-    private func button(_ title: String, symbol: String, action: @escaping (NoteTextView) -> Void) -> some View {
-        Button {
-            guard let textView else { return }
-            action(textView)
-            textView.window?.makeFirstResponder(textView)
-        } label: {
-            Image(systemName: symbol)
+        .frame(height: 44)
+        .onChange(of: textView) { _, _ in refresh() }
+        .onReceive(NotificationCenter.default.publisher(for: NSTextView.didChangeSelectionNotification)) { notification in
+            if notification.object as? NoteTextView === textView { refresh() }
         }
-        .buttonStyle(ChromeButtonStyle())
+        .onReceive(NotificationCenter.default.publisher(for: NSTextView.didChangeTypingAttributesNotification)) { notification in
+            if notification.object as? NoteTextView === textView { refresh() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSText.didChangeNotification)) { notification in
+            if notification.object as? NoteTextView === textView { refresh() }
+        }
+    }
+
+    private var separator: some View { Divider().frame(height: 16).padding(.horizontal, 4) }
+
+    private func refresh() { formatting = textView?.formatting ?? .init() }
+
+    private func act(_ action: (NoteTextView) -> Void) {
+        guard let textView else { return }
+        textView.window?.makeFirstResponder(textView)
+        action(textView)
+        refresh()
+    }
+
+    private func button(_ title: String, symbol: String, selected: Bool = false, action: @escaping (NoteTextView) -> Void) -> some View {
+        Button { act(action) } label: {
+            Image(systemName: symbol)
+                .frame(width: 28, height: 28)
+                .background(selected ? Color.primary.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .help(title)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 

@@ -23,6 +23,24 @@ struct DocumentStoreTests {
         #expect(font.map { NSFontManager.shared.traits(of: $0).contains(.boldFontMask) } == true)
     }
 
+    @Test func `legacy text sizes upgrade without changing custom fonts or links`() throws {
+        let before = DocumentStore(directory: directory)
+        let document = before.create(.note)
+        let note = try #require(before.note(document.id))
+        let link = URL(string: "https://example.com")!
+        note.text.append(NSAttributedString(string: "Legacy", attributes: [.font: NSFont.boldSystemFont(ofSize: 14), .link: link]))
+        let custom = try #require(NSFont(name: "Georgia", size: 14))
+        note.text.append(NSAttributedString(string: "Custom", attributes: [.font: custom]))
+        before.save()
+        let reopened = try #require(DocumentStore(directory: directory).note(document.id))
+        let upgraded = try #require(reopened.text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+        #expect(upgraded.pointSize == 17)
+        #expect(upgraded.familyName == Note.bodyFont.familyName)
+        #expect(NSFontManager.shared.traits(of: upgraded).contains(.boldFontMask))
+        #expect(reopened.text.attribute(.link, at: 0, effectiveRange: nil) as? URL == link)
+        #expect(reopened.text.attribute(.font, at: 6, effectiveRange: nil) as? NSFont == custom)
+    }
+
     @Test func `lists and checked items survive a save`() throws {
         let before = DocumentStore(directory: directory)
         let document = before.create(.note)

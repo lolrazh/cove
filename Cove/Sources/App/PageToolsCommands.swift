@@ -30,7 +30,7 @@ struct PageToolsCommands: Commands {
 
         CommandGroup(after: .textEditing) {
             Menu("Find") {
-                Button("Find on Page…") {
+                Button(tabManager?.activeDocumentID == nil ? "Find on Page…" : "Find in Note…") {
                     find(.showFindInterface) { $0.findInPage() }
                 }
                 .keyboardShortcut("f", modifiers: .command)
@@ -84,7 +84,7 @@ struct PageToolsCommands: Commands {
     /// Finds in the page in a browser window. Elsewhere, like the source
     /// window, the key view's own find bar takes the action.
     private func find(_ action: NSTextFinder.Action, inPage: (TabManager) -> Void) {
-        if let tabManager {
+        if let tabManager, tabManager.activeDocumentID == nil {
             inPage(tabManager)
         } else {
             let sender = NSMenuItem()

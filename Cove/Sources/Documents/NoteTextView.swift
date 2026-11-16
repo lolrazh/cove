@@ -47,6 +47,7 @@ enum NoteTextStyle: CaseIterable {
 enum NoteList: CaseIterable {
     case bulleted
     case numbered
+    case dashed
     case checklist
 
     static let unchecked: Character = "☐"
@@ -56,6 +57,7 @@ enum NoteList: CaseIterable {
         switch self {
         case .bulleted: "Bulleted List"
         case .numbered: "Numbered List"
+        case .dashed: "Dashed List"
         case .checklist: "Checklist"
         }
     }
@@ -63,6 +65,7 @@ enum NoteList: CaseIterable {
     var textList: NSTextList {
         switch self {
         case .bulleted: NSTextList(markerFormat: .disc, options: 0)
+        case .dashed: NSTextList(markerFormat: NSTextList.MarkerFormat("–"), options: 0)
         case .numbered: NSTextList(markerFormat: NSTextList.MarkerFormat("{decimal}."), options: 0)
         case .checklist: NSTextList(markerFormat: NSTextList.MarkerFormat(String(Self.unchecked)), options: 0)
         }
@@ -73,10 +76,14 @@ enum NoteList: CaseIterable {
         guard let first = marker.first else { return nil }
         if first == Self.unchecked || first == Self.checked {
             self = .checklist
-        } else if first.isNumber {
+        } else if first.isNumber && marker.last == "." && marker.dropLast().allSatisfy(\.isNumber) {
             self = .numbered
-        } else {
+        } else if marker == "–" || marker == "-" {
+            self = .dashed
+        } else if marker == "•" {
             self = .bulleted
+        } else {
+            return nil
         }
     }
 
@@ -102,7 +109,10 @@ enum NoteList: CaseIterable {
         string.enumerateSubstrings(in: NSRange(location: 0, length: string.length), options: .byParagraphs) { line, range, _, _ in
             guard let line, line.hasPrefix("\t"), let close = line.dropFirst().prefix(8).firstIndex(of: "\t"),
                   let list = NoteList(marker: line[line.index(after: line.startIndex)..<close]) else { return }
-            text.addAttribute(.paragraphStyle, value: list.paragraphStyle, range: range)
+            let restored = (text.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle
+            let style = restored ?? list.paragraphStyle.mutableCopy() as! NSMutableParagraphStyle
+            style.textLists = [list.textList]
+            text.addAttribute(.paragraphStyle, value: style, range: range)
         }
     }
 
@@ -158,30 +168,118 @@ final class NoteTextView: NSTextView {
     // MARK: - Keys
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        guard window?.firstResponder === self,
-              event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command else {
-            return super.performKeyEquivalent(with: event)
+        guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
+        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        let key = event.charactersIgnoringModifiers?.lowercased()
+        if flags == [.command, .shift] {
+            switch key {
+            case "t": apply(.title)
+            case "h": apply(.heading)
+            case "j": apply(.subheading)
+            case "b": apply(.body)
+            case "m": apply(.monospaced)
+            case "7", "&": toggle(.bulleted)
+            case "8", "*": toggle(.dashed)
+            case "9", "(": toggle(.numbered)
+            case "l": toggle(.checklist)
+            case "u": toggleCheckedItem()
+            default: return super.performKeyEquivalent(with: event)
+            }
+            return true
         }
-        switch event.charactersIgnoringModifiers {
+        guard flags == .command else { return super.performKeyEquivalent(with: event) }
+        switch key {
         case "b": toggleFontTrait(.boldFontMask)
         case "i": toggleFontTrait(.italicFontMask)
         case "u": toggleLine(.underlineStyle)
         case "k": editLink()
+        case "]" where currentList != nil: indentList(by: 1)
+        case "[" where currentList != nil: indentList(by: -1)
         default: return super.performKeyEquivalent(with: event)
         }
         return true
     }
 
-    /// Return in a list starts the next item; in an empty item it ends the list.
+    /// Return continues a list. A second Return ends it. A heading ends at
+    /// the paragraph break, so the next sentence starts in body text.
     override func insertNewline(_ sender: Any?) {
-        guard let item = listItem(at: selectedRange().location) else { return super.insertNewline(sender) }
+        guard let item = listItem(at: selectedRange().location) else {
+            let wasHeading = [.title, .heading, .subheading].contains(formatting.style)
+            super.insertNewline(sender)
+            if wasHeading { apply(.body) }
+            return
+        }
         if item.content.length == 0 {
-            replace(item.marker, with: NSAttributedString(string: ""), paragraphStyle: NSParagraphStyle())
+            replace(item.marker, with: NSAttributedString(string: ""), paragraphStyle: NoteTextStyle.body.paragraphStyle)
         } else {
             let number = item.list == .numbered ? item.number + 1 : 1
-            // A checked item's line through doesn't carry over.
             typingAttributes[.strikethroughStyle] = nil
             insertText("\n" + item.list.marker(forItem: number), replacementRange: selectedRange())
+        }
+    }
+
+    override func deleteBackward(_ sender: Any?) {
+        if selectedRange().length == 0, let item = listItem(at: selectedRange().location), selectedRange().location == item.content.location {
+            replace(item.marker, with: NSAttributedString(string: ""), paragraphStyle: NoteTextStyle.body.paragraphStyle)
+        } else {
+            super.deleteBackward(sender)
+        }
+    }
+
+    override func insertTab(_ sender: Any?) {
+        if currentList != nil { indentList(by: 1) } else { super.insertTab(sender) }
+    }
+
+    override func insertBacktab(_ sender: Any?) {
+        if currentList != nil { indentList(by: -1) } else { super.insertBacktab(sender) }
+    }
+
+    override func insertText(_ insertString: Any, replacementRange: NSRange) {
+        let typedSpace = insertString as? String == " " && !hasMarkedText()
+        super.insertText(insertString, replacementRange: replacementRange)
+        guard typedSpace, currentList == nil else { return }
+        let range = selectedParagraphs
+        let prefix = (string as NSString).substring(with: range)
+        let list: NoteList?
+        switch prefix {
+        case "* ": list = .bulleted
+        case "- ": list = .dashed
+        case "1. ": list = .numbered
+        case "[] ": list = .checklist
+        default: list = nil
+        }
+        guard let list else { return }
+        let marker = NSAttributedString(string: list.marker(forItem: 1), attributes: typingAttributes)
+        replace(range, with: marker, paragraphStyle: list.paragraphStyle)
+    }
+
+    func toggleCheckedItem() {
+        guard let item = listItem(at: selectedRange().location), item.list == .checklist else { return }
+        toggleCheck(item)
+    }
+
+    func showFindBar() {
+        let item = NSMenuItem()
+        item.tag = NSTextFinder.Action.showFindInterface.rawValue
+        performTextFinderAction(item)
+    }
+
+    func indentList(by level: Int) {
+        guard currentList != nil else { return }
+        changeAttributes(in: [selectedParagraphs]) { range in
+            self.textStorage?.enumerateAttribute(.paragraphStyle, in: range) { value, run, _ in
+                guard let old = value as? NSParagraphStyle, !old.textLists.isEmpty,
+                      let style = old.mutableCopy() as? NSMutableParagraphStyle else { return }
+                let indent = min(120, max(0, old.firstLineHeadIndent + CGFloat(level) * 24))
+                let delta = indent - old.firstLineHeadIndent
+                style.firstLineHeadIndent = indent
+                style.headIndent += delta
+                style.tabStops = old.tabStops.map { NSTextTab(textAlignment: $0.alignment, location: $0.location + delta) }
+                self.textStorage?.addAttribute(.paragraphStyle, value: style, range: run)
+            }
+        }
+        if let textStorage, selectedRange().location < textStorage.length {
+            typingAttributes[.paragraphStyle] = textStorage.attribute(.paragraphStyle, at: selectedRange().location, effectiveRange: nil)
         }
     }
 
@@ -233,8 +331,19 @@ final class NoteTextView: NSTextView {
     func apply(_ style: NoteTextStyle) {
         changeAttributes(in: [selectedParagraphs]) { range in
             self.textStorage?.addAttribute(.font, value: style.font, range: range)
+            self.textStorage?.enumerateAttribute(.paragraphStyle, in: range) { value, run, _ in
+                let paragraph = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+                paragraph.lineSpacing = style.paragraphStyle.lineSpacing
+                paragraph.paragraphSpacing = style.paragraphStyle.paragraphSpacing
+                self.textStorage?.addAttribute(.paragraphStyle, value: paragraph, range: run)
+            }
         }
         typingAttributes[.font] = style.font
+        let paragraph = (typingAttributes[.paragraphStyle] as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        paragraph.lineSpacing = style.paragraphStyle.lineSpacing
+        paragraph.paragraphSpacing = style.paragraphStyle.paragraphSpacing
+        typingAttributes[.paragraphStyle] = paragraph
+        NotificationCenter.default.post(name: NSTextView.didChangeTypingAttributesNotification, object: self)
     }
 
     /// ⌘K: a sheet asking for the selection's link, filled in with the one it
@@ -309,10 +418,12 @@ final class NoteTextView: NSTextView {
                 replacement.insert(NSAttributedString(string: marker, attributes: attributes), at: start)
                 length += marker.utf16.count
             }
-            replacement.addAttribute(.paragraphStyle, value: removing ? NSParagraphStyle() : list.paragraphStyle, range: NSRange(location: start, length: length))
+            replacement.addAttribute(.paragraphStyle, value: removing ? NoteTextStyle.body.paragraphStyle : list.paragraphStyle, range: NSRange(location: start, length: length))
         }
+        let selectedWholeParagraphs = selectedRange().length > 0
         replaceCharacters(in: range, withUndoable: replacement)
-        typingAttributes[.paragraphStyle] = removing ? NSParagraphStyle() : list.paragraphStyle
+        if selectedWholeParagraphs { setSelectedRange(NSRange(location: range.location, length: replacement.length)) }
+        typingAttributes[.paragraphStyle] = removing ? NoteTextStyle.body.paragraphStyle : list.paragraphStyle
     }
 
     /// A list item: its marker's range, its list and number, and its text.
@@ -328,8 +439,8 @@ final class NoteTextView: NSTextView {
     private func listItem(at index: Int) -> ListItem? {
         guard let textStorage, textStorage.length > 0, index >= 0, index <= textStorage.length else { return nil }
         let text = textStorage.string as NSString
-        let paragraph = text.paragraphRange(for: NSRange(location: min(index, max(text.length - 1, 0)), length: 0))
-        guard paragraph.length > 0 || index == text.length,
+        let paragraph = text.paragraphRange(for: NSRange(location: index, length: 0))
+        guard paragraph.length > 0,
               let style = textStorage.attribute(.paragraphStyle, at: min(paragraph.location, max(textStorage.length - 1, 0)), effectiveRange: nil) as? NSParagraphStyle,
               !style.textLists.isEmpty else { return nil }
         let line = text.substring(with: paragraph)
@@ -371,7 +482,28 @@ final class NoteTextView: NSTextView {
 
     /// The whole paragraphs the selection touches.
     private var selectedParagraphs: NSRange {
-        (string as NSString).paragraphRange(for: selectedRange())
+        var range = selectedRange()
+        // A selection ending at the next paragraph does not format that paragraph.
+        if range.length > 0 { range.length -= 1 }
+        return (string as NSString).paragraphRange(for: range)
+    }
+
+    var currentList: NoteList? { listItem(at: selectedRange().location)?.list }
+
+    struct Formatting: Equatable {
+        var style: NoteTextStyle = .body
+        var bold = false
+        var italic = false
+        var underline = false
+        var list: NoteList?
+    }
+
+    var formatting: Formatting {
+        let font = currentFont
+        let traits = NSFontManager.shared.traits(of: font)
+        let style = NoteTextStyle.allCases.first { $0.font == font } ?? .body
+        let attributes = selectedRange().length > 0 ? textStorage?.attributes(at: selectedRange().location, effectiveRange: nil) ?? typingAttributes : typingAttributes
+        return Formatting(style: style, bold: traits.contains(.boldFontMask), italic: traits.contains(.italicFontMask), underline: (attributes[.underlineStyle] as? Int ?? 0) != 0, list: currentList)
     }
 
     private var currentFont: NSFont {
@@ -395,6 +527,7 @@ final class NoteTextView: NSTextView {
 
     /// Attribute changes, undoable as one.
     private func changeAttributes(in ranges: [NSRange], _ change: (NSRange) -> Void) {
+        breakUndoCoalescing()
         guard let textStorage, shouldChangeText(inRanges: ranges.map { NSValue(range: $0) }, replacementStrings: nil) else { return }
         textStorage.beginEditing()
         ranges.forEach(change)
@@ -403,6 +536,7 @@ final class NoteTextView: NSTextView {
     }
 
     private func replaceCharacters(in range: NSRange, withUndoable replacement: NSAttributedString) {
+        breakUndoCoalescing()
         guard let textStorage, shouldChangeText(in: range, replacementString: replacement.string) else { return }
         textStorage.replaceCharacters(in: range, with: replacement)
         didChangeText()
@@ -411,6 +545,8 @@ final class NoteTextView: NSTextView {
 
     /// Replaces a range and gives its paragraph a style, as one undoable change.
     private func replace(_ range: NSRange, with replacement: NSAttributedString, paragraphStyle: NSParagraphStyle) {
+        undoManager?.beginUndoGrouping()
+        defer { undoManager?.endUndoGrouping() }
         replaceCharacters(in: range, withUndoable: replacement)
         let paragraph = (string as NSString).paragraphRange(for: NSRange(location: range.location, length: 0))
         changeAttributes(in: [paragraph]) { self.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: $0) }

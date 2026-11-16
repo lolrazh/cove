@@ -48,4 +48,95 @@ struct NoteTextViewTests {
         editor.insertNewline(nil)
         #expect(editor.string == "\n")
     }
+    @Test func `heading return resumes body and retains the heading`() throws {
+        let (note, editor, window) = editor("Heading")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: note.text.length, length: 0))
+        editor.apply(.heading)
+        editor.insertNewline(nil)
+        editor.insertText("Body", replacementRange: editor.selectedRange())
+        #expect(note.text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont == NoteTextStyle.heading.font)
+        #expect(note.text.attribute(.font, at: 8, effectiveRange: nil) as? NSFont == NoteTextStyle.body.font)
+    }
+
+    @Test func `paragraph formatting stops before the next unselected paragraph`() {
+        let (note, editor, window) = editor("One\nTwo")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 0, length: 4))
+        editor.apply(.heading)
+        #expect(note.text.attribute(.font, at: 4, effectiveRange: nil) as? NSFont == NoteTextStyle.body.font)
+    }
+
+    @Test(arguments: NoteList.allCases)
+    func `lists continue end and undo as native text`(list: NoteList) {
+        let (_, editor, window) = editor("First")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 5, length: 0))
+        editor.toggle(list)
+        editor.insertNewline(nil)
+        let second = list.marker(forItem: list == .numbered ? 2 : 1)
+        #expect(editor.string == list.marker(forItem: 1) + "First\n" + second)
+        // Preparation is not part of the edit being undone.
+        editor.breakUndoCoalescing()
+        editor.undoManager?.removeAllActions()
+        editor.undoManager?.beginUndoGrouping()
+        editor.insertNewline(nil)
+        editor.undoManager?.endUndoGrouping()
+        #expect(editor.string == list.marker(forItem: 1) + "First\n")
+        editor.undoManager?.undo()
+        #expect(editor.string.hasSuffix(second))
+        editor.undoManager?.redo()
+        editor.insertNewline(nil)
+        #expect(!editor.string.hasSuffix(second))
+        #expect(editor.currentList == nil)
+    }
+
+    @Test func `list formatting preserves a multi paragraph selection`() {
+        let (_, editor, window) = editor("One\nTwo")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 0, length: 7))
+        editor.toggle(.bulleted)
+        #expect(editor.selectedRange() == NSRange(location: 0, length: editor.string.utf16.count))
+        editor.toggle(.bulleted)
+        #expect(editor.string == "One\nTwo")
+    }
+
+    @Test func `typing a list prefix and backspacing the marker are reversible`() {
+        let (_, editor, window) = editor()
+        defer { window.contentView = nil }
+        editor.insertText("-", replacementRange: editor.selectedRange())
+        editor.insertText(" ", replacementRange: editor.selectedRange())
+        #expect(editor.currentList == .dashed)
+        editor.deleteBackward(nil)
+        #expect(editor.string.isEmpty)
+        #expect(editor.currentList == nil)
+    }
+
+    @Test func `checklist completion does not carry into the next item`() {
+        let (_, editor, window) = editor("Finish")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 6, length: 0))
+        editor.toggle(.checklist)
+        editor.toggleCheckedItem()
+        #expect(editor.string.contains("☑"))
+        editor.insertNewline(nil)
+        editor.insertText("Next", replacementRange: editor.selectedRange())
+        #expect(editor.string == "\t☑\tFinish\n\t☐\tNext")
+        #expect(editor.typingAttributes[.strikethroughStyle] == nil)
+    }
+
+    @Test func `indents survive RTF list restoration and ordinary tabs stay ordinary`() {
+        let (note, editor, window) = editor("Item")
+        defer { window.contentView = nil }
+        editor.toggle(.bulleted)
+        editor.indentList(by: 1)
+        let saved = NSMutableAttributedString(attributedString: note.text)
+        NoteList.flatten(saved)
+        NoteList.restore(in: saved)
+        #expect((saved.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)?.firstLineHeadIndent == 24)
+        let plain = NSMutableAttributedString(string: "\tName\tValue")
+        NoteList.restore(in: plain)
+        #expect(plain.attribute(.paragraphStyle, at: 0, effectiveRange: nil) == nil)
+    }
+
 }
