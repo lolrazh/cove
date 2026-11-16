@@ -55,6 +55,13 @@ enum ChromeMetrics {
     static let progressHeight: CGFloat = 1
 }
 
+/// Native system text at consistent sizes. Keep text out of scaled or blurred
+/// layers; let AppKit and SwiftUI choose the font's optical metrics.
+enum ChromeTypography {
+    static let row = Font.system(size: 14)
+    static let detail = Font.system(size: 12)
+}
+
 /// Shared roles for system surfaces and the profile's generated theme.
 enum ChromePalette {
     /// The frame behind the tabs and the content card: the system's color for

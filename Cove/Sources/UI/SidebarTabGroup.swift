@@ -94,7 +94,7 @@ private struct TabGroupHeader: View {
                 .rotationEffect(.degrees(group.isCollapsed ? 0 : 90))
                 .opacity(0.55)
         }
-        .font(.callout.weight(.semibold))
+        .font(ChromeTypography.row.weight(.semibold))
         .foregroundStyle(ChromePalette.onTheme)
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.sidebarRowHeight)

@@ -36,7 +36,7 @@ private struct LittleCoveContent: View {
         HStack(spacing: 8) {
             FaviconView(image: tab.favicon, size: 16)
             Text(site)
-                .font(.callout.weight(.medium))
+                .font(ChromeTypography.row.weight(.medium))
                 .lineLimit(1)
                 .truncationMode(.middle)
 
@@ -45,7 +45,7 @@ private struct LittleCoveContent: View {
             Button(action: onOpenInCove) {
                 Label("Open in Cove", systemImage: ChromeSymbols.Tabs.openInCove)
                     .labelStyle(.titleAndIcon)
-                    .font(.callout)
+                    .font(ChromeTypography.row)
                     .padding(.horizontal, 6)
             }
             .buttonStyle(ChromeButtonStyle(size: .titlebar))

@@ -381,7 +381,7 @@ private struct SidebarFolderRow: View {
                 .rotationEffect(.degrees(folder.isCollapsed ? 0 : 90))
                 .padding(.trailing, 4)
         }
-        .font(.callout)
+        .font(ChromeTypography.row)
         .padding(.leading, 8)
         .padding(.trailing, ChromeMetrics.tabAccessoryInset)
         .frame(height: ChromeMetrics.sidebarRowHeight)
@@ -458,7 +458,7 @@ private struct SidebarDropZone: View {
 
     var body: some View {
         Text(title)
-            .font(.callout)
+            .font(ChromeTypography.row)
             .foregroundStyle(.tertiary)
             .frame(maxWidth: .infinity)
             .frame(height: ChromeMetrics.sidebarRowHeight)
@@ -485,7 +485,7 @@ private struct SidebarNewTabItem: View {
 
             Spacer(minLength: 0)
         }
-        .font(.callout)
+        .font(ChromeTypography.row)
         .foregroundStyle(ChromePalette.onTheme)
         .padding(.horizontal, 8)
         .frame(height: ChromeMetrics.sidebarRowHeight)

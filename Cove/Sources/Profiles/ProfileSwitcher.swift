@@ -63,7 +63,7 @@ struct SidebarProfileTitle: View {
         }
         .buttonStyle(ChromeButtonStyle(size: .accessory(side: 26)))
         .help("Edit theme and profile")
-        .font(.callout.weight(.medium))
+        .font(ChromeTypography.row.weight(.medium))
         .foregroundStyle(ChromePalette.onTheme)
         .accessibilityLabel("Edit theme for \(profile.name)")
         .contextMenu { ProfileActions(profile: profile, tabManager: tabManager) }

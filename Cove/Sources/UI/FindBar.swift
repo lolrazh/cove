@@ -62,7 +62,7 @@ struct FindBar: View {
                     .fixedSize()
             }
         }
-        .font(.callout)
+        .font(ChromeTypography.row)
         .padding(.horizontal, 8)
         .frame(width: 220, height: 24)
         .chromeFieldStyle(focused: false, minimumRadius: ChromeRadius.accessory)

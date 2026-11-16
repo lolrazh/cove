@@ -158,7 +158,7 @@ struct SiteControlsPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .font(.callout)
+        .font(ChromeTypography.row)
         .textSelection(.enabled)
     }
 

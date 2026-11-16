@@ -11,7 +11,7 @@ struct LibraryView: View {
             LibrarySectionPicker(selection: $model.section)
 
             Text(model.section.explanation)
-                .font(.callout)
+                .font(ChromeTypography.row)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -41,7 +41,7 @@ private struct LibrarySectionPicker: View {
             ForEach(LibraryModel.Section.allCases) { section in
                 Button { selection = section } label: {
                     Text(section.title)
-                        .font(.callout.weight(.medium))
+                        .font(ChromeTypography.row.weight(.medium))
                         .foregroundStyle(section == selection ? .primary : .secondary)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, minHeight: ChromeMetrics.iconButtonSize)
@@ -147,7 +147,7 @@ struct LibraryList<Content: View>: View {
         .overlay {
             if isEmpty {
                 Text(emptyText)
-                    .font(.callout)
+                    .font(ChromeTypography.row)
                     .foregroundStyle(.tertiary)
             }
         }
@@ -175,11 +175,11 @@ struct LibraryRow<Icon: View, Detail: View, Accessory: View>: View {
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(title)
-                            .font(.callout)
+                            .font(ChromeTypography.row)
                             .lineLimit(1)
 
                         detail()
-                            .font(.caption)
+                            .font(ChromeTypography.detail)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }

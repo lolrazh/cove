@@ -32,7 +32,7 @@ struct ToastOverlay: View {
         VStack {
             if let toast = center.current {
                 Label(toast.message, systemImage: toast.symbol)
-                    .font(.callout.weight(.medium))
+                    .font(ChromeTypography.row.weight(.medium))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
                     .background {

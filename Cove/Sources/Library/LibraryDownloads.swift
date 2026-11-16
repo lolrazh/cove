@@ -99,7 +99,7 @@ private struct DownloadRow: View {
                 .frame(width: 24, height: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.filename)
-                    .font(.callout.weight(.medium))
+                    .font(ChromeTypography.row.weight(.medium))
                     .lineLimit(1).truncationMode(.middle)
                 Group {
                     if item.state == .downloading {
@@ -109,7 +109,7 @@ private struct DownloadRow: View {
                         Text(status).monospacedDigit().lineLimit(1)
                     }
                 }
-                .font(.caption)
+                .font(ChromeTypography.detail)
                 .foregroundStyle(.secondary)
                 progressTrack.frame(height: 2)
             }

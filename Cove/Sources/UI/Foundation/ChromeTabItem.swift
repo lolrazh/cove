@@ -98,10 +98,10 @@ struct ChromeTabItem: View {
     private var titleView: some View {
         if isRenaming {
             RenameField(prompt: "Tab Name", text: $draftTitle, onCommit: finishRenaming) { isRenaming = false }
-                .font(.callout)
+                .font(ChromeTypography.row)
         } else {
             Text(title)
-                .font(.callout)
+                .font(ChromeTypography.row)
                 .foregroundStyle(presentation == .sidebar ? AnyShapeStyle(ChromePalette.onTheme)
                                  : AnyShapeStyle(isActive || isHovered ? .primary : .secondary))
                 .lineLimit(1)

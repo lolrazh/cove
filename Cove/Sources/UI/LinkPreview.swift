@@ -11,7 +11,7 @@ struct LinkPreview: View {
         VStack {
             if let url {
                 Text(url.absoluteString)
-                    .font(.callout)
+                    .font(ChromeTypography.row)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)

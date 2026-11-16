@@ -51,7 +51,7 @@ private struct PeekCard: View {
         HStack(spacing: 8) {
             FaviconView(image: tab.favicon, size: 16)
             Text(Site(URL(string: tab.currentURL))?.domain ?? tab.currentURL)
-                .font(.callout.weight(.medium))
+                .font(ChromeTypography.row.weight(.medium))
                 .lineLimit(1)
                 .truncationMode(.middle)
 

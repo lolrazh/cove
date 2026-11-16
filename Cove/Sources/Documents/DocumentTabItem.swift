@@ -46,10 +46,10 @@ struct DocumentTabItem: View {
     private func titleView(_ document: DocumentInfo) -> some View {
         if isRenaming {
             RenameField(prompt: "Title", text: $draftTitle, onCommit: finishRenaming) { isRenaming = false }
-                .font(.callout)
+                .font(ChromeTypography.row)
         } else {
             Text(document.displayTitle)
-                .font(.callout)
+                .font(ChromeTypography.row)
                 .foregroundStyle(isActive || isHovered ? .primary : .secondary)
                 .lineLimit(1)
         }
