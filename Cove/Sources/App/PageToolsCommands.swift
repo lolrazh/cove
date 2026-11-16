@@ -21,7 +21,11 @@ struct PageToolsCommands: Commands {
                 Divider()
 
                 Button("Print…") {
-                    tabManager?.printPage()
+                    if let editor = NSApp.keyWindow?.firstResponder as? NoteTextView {
+                        editor.printView(nil)
+                    } else {
+                        tabManager?.printPage()
+                    }
                 }
                 .keyboardShortcut("p", modifiers: .command)
             }

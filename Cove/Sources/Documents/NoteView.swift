@@ -11,7 +11,7 @@ struct NoteView: View {
     @State private var textView: NoteTextView?
     @FocusState private var isTitleFocused: Bool
 
-    private static let columnWidth: CGFloat = 680
+    private static let columnWidth: CGFloat = 640
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +64,9 @@ private struct NoteFormattingBar: View {
                 }
                 Divider()
                 Button("Strikethrough") { act { $0.toggleLine(.strikethroughStyle) } }
+                Button("Highlight") { act { $0.toggleHighlight() } }
+                Divider()
+                Button("Table…") { act { $0.orderFrontTablePanel(nil) } }
             } label: {
                 Label("Text Style", systemImage: "textformat")
                     .labelStyle(.iconOnly)
@@ -133,8 +136,7 @@ private struct NoteFormattingBar: View {
                 .frame(width: 28, height: 28)
                 .background(selected ? Color.primary.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 6))
         }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
+        .buttonStyle(ChromeButtonStyle())
         .help(title)
         .accessibilityLabel(title)
         .accessibilityAddTraits(selected ? .isSelected : [])

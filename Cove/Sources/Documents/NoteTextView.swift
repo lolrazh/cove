@@ -7,6 +7,7 @@ enum NoteTextStyle: CaseIterable {
     case subheading
     case body
     case monospaced
+    case quote
 
     var name: String {
         switch self {
@@ -15,6 +16,7 @@ enum NoteTextStyle: CaseIterable {
         case .subheading: "Subheading"
         case .body: "Body"
         case .monospaced: "Monospaced"
+        case .quote: "Block Quote"
         }
     }
 
@@ -22,14 +24,18 @@ enum NoteTextStyle: CaseIterable {
         switch self {
         case .title: .systemFont(ofSize: 28, weight: .bold)
         case .heading: .systemFont(ofSize: 22, weight: .semibold)
-        case .subheading: .systemFont(ofSize: 17, weight: .semibold)
-        case .body: .systemFont(ofSize: 17)
+        case .subheading: .systemFont(ofSize: 17, weight: .bold)
+        case .body, .quote: .systemFont(ofSize: 17)
         case .monospaced: .monospacedSystemFont(ofSize: 15, weight: .regular)
         }
     }
 
     var paragraphStyle: NSParagraphStyle {
         let paragraph = NSMutableParagraphStyle()
+        if self == .quote {
+            paragraph.firstLineHeadIndent = 20
+            paragraph.headIndent = 20
+        }
         paragraph.lineSpacing = 4
         paragraph.paragraphSpacing = self == .body || self == .monospaced ? 6 : 10
         return paragraph
@@ -154,6 +160,7 @@ final class NoteTextView: NSTextView {
         editor.usesFindBar = true
         editor.isIncrementalSearchingEnabled = true
         editor.drawsBackground = false
+        editor.usesAdaptiveColorMappingForDarkAppearance = true
         editor.typingAttributes = NoteTextStyle.body.attributes
         editor.defaultParagraphStyle = NoteTextStyle.body.paragraphStyle
         editor.textContainerInset = NSSize(width: 0, height: 12)
@@ -183,8 +190,13 @@ final class NoteTextView: NSTextView {
             case "9", "(": toggle(.numbered)
             case "l": toggle(.checklist)
             case "u": toggleCheckedItem()
+            case "e": toggleHighlight()
             default: return super.performKeyEquivalent(with: event)
             }
+            return true
+        }
+        if flags == [.command, .option], key == "t" {
+            orderFrontTablePanel(nil)
             return true
         }
         guard flags == .command else { return super.performKeyEquivalent(with: event) }
@@ -193,6 +205,7 @@ final class NoteTextView: NSTextView {
         case "i": toggleFontTrait(.italicFontMask)
         case "u": toggleLine(.underlineStyle)
         case "k": editLink()
+        case "'": apply(formatting.style == .quote ? .body : .quote)
         case "]" where currentList != nil: indentList(by: 1)
         case "[" where currentList != nil: indentList(by: -1)
         default: return super.performKeyEquivalent(with: event)
@@ -205,8 +218,9 @@ final class NoteTextView: NSTextView {
     override func insertNewline(_ sender: Any?) {
         guard let item = listItem(at: selectedRange().location) else {
             let wasHeading = [.title, .heading, .subheading].contains(formatting.style)
+            let wasEmptyQuote = formatting.style == .quote && selectedParagraphs.length == 0
             super.insertNewline(sender)
-            if wasHeading { apply(.body) }
+            if wasHeading || wasEmptyQuote { apply(.body) }
             return
         }
         if item.content.length == 0 {
@@ -327,12 +341,31 @@ final class NoteTextView: NSTextView {
         }
     }
 
+    /// A translucent highlight that remains readable in either appearance.
+    func toggleHighlight() {
+        let ranges = selectedTextRanges
+        let attributes = ranges.first.flatMap { textStorage?.attributes(at: $0.location, effectiveRange: nil) } ?? typingAttributes
+        let color: NSColor? = attributes[.backgroundColor] == nil ? .systemYellow.withAlphaComponent(0.25) : nil
+        guard !ranges.isEmpty else {
+            typingAttributes[.backgroundColor] = color
+            return
+        }
+        changeAttributes(in: ranges) { range in
+            if let color { self.textStorage?.addAttribute(.backgroundColor, value: color, range: range) }
+            else { self.textStorage?.removeAttribute(.backgroundColor, range: range) }
+        }
+    }
+
     /// A style for the paragraphs the selection touches.
     func apply(_ style: NoteTextStyle) {
         changeAttributes(in: [selectedParagraphs]) { range in
             self.textStorage?.addAttribute(.font, value: style.font, range: range)
             self.textStorage?.enumerateAttribute(.paragraphStyle, in: range) { value, run, _ in
                 let paragraph = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+                if paragraph.textLists.isEmpty {
+                    paragraph.firstLineHeadIndent = style.paragraphStyle.firstLineHeadIndent
+                    paragraph.headIndent = style.paragraphStyle.headIndent
+                }
                 paragraph.lineSpacing = style.paragraphStyle.lineSpacing
                 paragraph.paragraphSpacing = style.paragraphStyle.paragraphSpacing
                 self.textStorage?.addAttribute(.paragraphStyle, value: paragraph, range: run)
@@ -340,6 +373,10 @@ final class NoteTextView: NSTextView {
         }
         typingAttributes[.font] = style.font
         let paragraph = (typingAttributes[.paragraphStyle] as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        if paragraph.textLists.isEmpty {
+            paragraph.firstLineHeadIndent = style.paragraphStyle.firstLineHeadIndent
+            paragraph.headIndent = style.paragraphStyle.headIndent
+        }
         paragraph.lineSpacing = style.paragraphStyle.lineSpacing
         paragraph.paragraphSpacing = style.paragraphStyle.paragraphSpacing
         typingAttributes[.paragraphStyle] = paragraph
@@ -501,8 +538,12 @@ final class NoteTextView: NSTextView {
     var formatting: Formatting {
         let font = currentFont
         let traits = NSFontManager.shared.traits(of: font)
-        let style = NoteTextStyle.allCases.first { $0.font == font } ?? .body
+        var style = NoteTextStyle.allCases.first { $0.font == font } ?? .body
         let attributes = selectedRange().length > 0 ? textStorage?.attributes(at: selectedRange().location, effectiveRange: nil) ?? typingAttributes : typingAttributes
+        if let paragraph = attributes[.paragraphStyle] as? NSParagraphStyle,
+           paragraph.textLists.isEmpty, paragraph.firstLineHeadIndent == 20, paragraph.headIndent == 20 {
+            style = .quote
+        }
         return Formatting(style: style, bold: traits.contains(.boldFontMask), italic: traits.contains(.italicFontMask), underline: (attributes[.underlineStyle] as? Int ?? 0) != 0, list: currentList)
     }
 

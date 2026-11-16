@@ -62,6 +62,12 @@ final class Note {
             if traits.contains(.italicFontMask) { restored = NSFontManager.shared.convert(restored, toHaveTrait: .italicFontMask) }
             text.addAttribute(.font, value: restored, range: range)
         }
+        // RTF drops alpha. Restore translucent text highlights on either theme.
+        text.enumerateAttribute(.backgroundColor, in: all) { value, range, _ in
+            if let color = value as? NSColor {
+                text.addAttribute(.backgroundColor, value: color.withAlphaComponent(0.25), range: range)
+            }
+        }
         text.enumerateAttribute(.paragraphStyle, in: all) { value, range, _ in
             let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
             guard style.lineSpacing == 0 && style.paragraphSpacing == 0 else { return }

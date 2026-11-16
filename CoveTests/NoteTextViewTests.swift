@@ -139,4 +139,28 @@ struct NoteTextViewTests {
         #expect(plain.attribute(.paragraphStyle, at: 0, effectiveRange: nil) == nil)
     }
 
+    @Test func `block quote returns to body without leaving an indent`() {
+        let (_, editor, window) = editor("Quoted text")
+        defer { window.contentView = nil }
+        editor.apply(.quote)
+        #expect(editor.formatting.style == .quote)
+        editor.apply(.body)
+        #expect(editor.formatting.style == .body)
+        #expect((editor.typingAttributes[.paragraphStyle] as? NSParagraphStyle)?.headIndent == 0)
+    }
+
+    @Test func `highlight toggles without changing text or selection`() {
+        let (note, editor, window) = editor("Highlight these words")
+        defer { window.contentView = nil }
+        let selection = NSRange(location: 10, length: 5)
+        editor.setSelectedRange(selection)
+        editor.toggleHighlight()
+        #expect(note.text.attribute(.backgroundColor, at: 10, effectiveRange: nil) != nil)
+        #expect(note.text.attribute(.backgroundColor, at: 0, effectiveRange: nil) == nil)
+        editor.toggleHighlight()
+        #expect(note.text.attribute(.backgroundColor, at: 10, effectiveRange: nil) == nil)
+        #expect(editor.selectedRange() == selection)
+        #expect(editor.string == "Highlight these words")
+    }
+
 }

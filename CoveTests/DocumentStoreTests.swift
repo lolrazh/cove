@@ -41,6 +41,25 @@ struct DocumentStoreTests {
         #expect(reopened.text.attribute(.font, at: 6, effectiveRange: nil) as? NSFont == custom)
     }
 
+    @Test func `current note styles and highlights survive reopening`() throws {
+        let before = DocumentStore(directory: directory)
+        let document = before.create(.note)
+        let note = try #require(before.note(document.id))
+        for style in NoteTextStyle.allCases {
+            note.text.append(NSAttributedString(string: style.name + "\n", attributes: style.attributes))
+        }
+        note.text.addAttribute(.backgroundColor, value: NSColor.systemYellow.withAlphaComponent(0.25), range: NSRange(location: 0, length: 5))
+        before.save()
+        let reopened = try #require(DocumentStore(directory: directory).note(document.id))
+        var offset = 0
+        for style in NoteTextStyle.allCases {
+            #expect(reopened.text.attribute(.font, at: offset, effectiveRange: nil) as? NSFont == style.font)
+            offset += style.name.utf16.count + 1
+        }
+        let highlight = try #require(reopened.text.attribute(.backgroundColor, at: 0, effectiveRange: nil) as? NSColor)
+        #expect(highlight.alphaComponent == 0.25)
+    }
+
     @Test func `lists and checked items survive a save`() throws {
         let before = DocumentStore(directory: directory)
         let document = before.create(.note)
