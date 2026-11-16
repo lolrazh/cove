@@ -50,6 +50,13 @@ Current order:
    source evidence, 241 passing tests, live checks, and remaining limits.
    History search remains next after feedback on this pass.
 
+6. November 16: Notes text editing and command search were reviewed. A follow-up
+   restores Easel, adds a complete searchable tools catalogue (⇧⌘P), and fixes
+   Notes selection states and table borders. General Settings points to the
+   tools browser and explains Peek. See
+   `agent-logs/2026-11-16_tools-discovery-and-notes-polish.md` for the access audit,
+   266 passing tests, virtual-screen checks, and coverage limits.
+
 The historical plan follows.
 
 An audit of Cove against Arc (as last shipped, before The Browser Company moved

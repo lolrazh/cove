@@ -2,6 +2,10 @@
 
 Date: 16 November 2026. Work on `main`, in small commits.
 
+## Follow-up
+
+The later tools-discovery pass restores Easel and alternate layout/window commands, adds All tools, and fixes Notes selection states and table styling. Current behavior and checks are in `2026-11-16_tools-discovery-and-notes-polish.md`. The entries below record the earlier pass.
+
 ## Changes
 
 - Empty command search shows four recent pages and up to two quick actions: New Note and Reopen Last Closed Tab. It fits the normal panel without scrolling. Settings, history, and other useful commands remain searchable.
