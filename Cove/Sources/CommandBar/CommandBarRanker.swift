@@ -147,7 +147,7 @@ struct CommandBarRanker {
         let openURLs = Set(tabs.map(\.destination))
         let recent = sources.history.filter { !openURLs.contains($0.url) }
             .prefix(Limit.recent).map(Self.historyResult)
-        let quickActions: [CommandBarCommand] = [.newNote, .reopenClosedTab, .showHistory, .settings]
+        let quickActions: [CommandBarCommand] = [.newNote, .reopenClosedTab]
         let commands = quickActions.filter(sources.commands.contains).map(Self.commandResult)
         let sections = [
             CommandBarSection(title: "Open Tabs", results: tabs),

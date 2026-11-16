@@ -14,7 +14,7 @@ struct CommandBarRankerTests {
     }
 
     @Test func `empty input lists recent pages and a short set of useful actions`() {
-        let ranking = rank("", .init(history: [github], commands: [.settings, .showHistory]))
+        let ranking = rank("", .init(history: [github], commands: [.newNote, .reopenClosedTab]))
         #expect(ranking.sections.map(\.title) == ["Recent", "Quick Actions"])
         #expect(ranking.results.count == 3)
         #expect(ranking.completion == nil)
@@ -22,7 +22,7 @@ struct CommandBarRankerTests {
 
     @Test func `empty input does not dump every available command`() {
         let ranking = rank("", .init(commands: CommandBarCommand.allCases))
-        #expect(ranking.results.map(\.kind) == [.command(.newNote), .command(.reopenClosedTab), .command(.showHistory), .command(.settings)])
+        #expect(ranking.results.map(\.kind) == [.command(.newNote), .command(.reopenClosedTab)])
     }
 
     @Test func `split chooser starts with open tabs without repeating recent pages`() {
