@@ -216,6 +216,7 @@ final class NoteTextView: NSTextView {
     /// Return continues a list. A second Return ends it. A heading ends at
     /// the paragraph break, so the next sentence starts in body text.
     override func insertNewline(_ sender: Any?) {
+        if moveInTable(.down) { return }
         guard let item = listItem(at: selectedRange().location) else {
             let wasHeading = [.title, .heading, .subheading].contains(formatting.style)
             let wasEmptyQuote = formatting.style == .quote && selectedParagraphs.length == 0
@@ -223,12 +224,16 @@ final class NoteTextView: NSTextView {
             if wasHeading || wasEmptyQuote { apply(.body) }
             return
         }
+        breakUndoCoalescing()
+        undoManager?.beginUndoGrouping()
+        defer { undoManager?.endUndoGrouping() }
         if item.content.length == 0 {
             replace(item.marker, with: NSAttributedString(string: ""), paragraphStyle: NoteTextStyle.body.paragraphStyle)
         } else {
             let number = item.list == .numbered ? item.number + 1 : 1
             typingAttributes[.strikethroughStyle] = nil
             insertText("\n" + item.list.marker(forItem: number), replacementRange: selectedRange())
+            if item.list == .numbered { renumberFollowingItems() }
         }
     }
 
@@ -241,11 +246,18 @@ final class NoteTextView: NSTextView {
     }
 
     override func insertTab(_ sender: Any?) {
+        if moveInTable(.next) { return }
         if currentList != nil { indentList(by: 1) } else { super.insertTab(sender) }
     }
 
     override func insertBacktab(_ sender: Any?) {
+        if moveInTable(.previous) { return }
         if currentList != nil { indentList(by: -1) } else { super.insertBacktab(sender) }
+    }
+
+    override func insertLineBreak(_ sender: Any?) {
+        if moveInTable(.up) { return }
+        super.insertLineBreak(sender)
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
@@ -461,6 +473,29 @@ final class NoteTextView: NSTextView {
         replaceCharacters(in: range, withUndoable: replacement)
         if selectedWholeParagraphs { setSelectedRange(NSRange(location: range.location, length: replacement.length)) }
         typingAttributes[.paragraphStyle] = removing ? NoteTextStyle.body.paragraphStyle : list.paragraphStyle
+    }
+
+    /// Inserting in the middle keeps later numbers sequential. Stop at a
+    /// different list level or a non-list paragraph.
+    private func renumberFollowingItems() {
+        guard let textStorage, let first = listItem(at: selectedRange().location) else { return }
+        let selection = selectedRange()
+        let attributes = typingAttributes
+        var location = first.marker.location
+        var number = first.number
+        let indent = (textStorage.attribute(.paragraphStyle, at: location, effectiveRange: nil) as? NSParagraphStyle)?.headIndent
+        while location < textStorage.length, let item = listItem(at: location), item.list == .numbered {
+            let paragraph = textStorage.attribute(.paragraphStyle, at: location, effectiveRange: nil) as? NSParagraphStyle
+            guard paragraph?.headIndent == indent else { break }
+            if item.number != number {
+                let marker = NSAttributedString(string: NoteList.numbered.marker(forItem: number), attributes: textStorage.attributes(at: location, effectiveRange: nil))
+                replaceCharacters(in: item.marker, withUndoable: marker)
+            }
+            location = NSMaxRange((string as NSString).paragraphRange(for: NSRange(location: location, length: 0)))
+            number += 1
+        }
+        setSelectedRange(selection)
+        typingAttributes = attributes
     }
 
     /// A list item: its marker's range, its list and number, and its text.

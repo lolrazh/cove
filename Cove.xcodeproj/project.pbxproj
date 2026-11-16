@@ -64,6 +64,7 @@
 		446DD67F7040EF5B3D51A9CC /* TodayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCC0EC890FD510B10A55D43 /* TodayTests.swift */; };
 		44F57E9730ABF0F05F69E45F /* BookmarkHTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 784F27A784DFCD2D9CACA9D5 /* BookmarkHTML.swift */; };
 		46434A6A6301F03AE371D46B /* LibraryDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8823D7DB2E8EB97B61B06127 /* LibraryDownloads.swift */; };
+		4658C98D645EFB8A0F4550FB /* NoteTextView+Tables.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37BAB76839937F1D2F99492 /* NoteTextView+Tables.swift */; };
 		4705C23650C813A161C69316 /* ExtensionToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC26A88B488509DE62829A8 /* ExtensionToolbar.swift */; };
 		474C8D54045B639253D0D8F4 /* DocumentTabItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13156B38A908E66662AFF69B /* DocumentTabItem.swift */; };
 		47955CEB960D3A2AA5A4EAF9 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 9E4963FA481C29889DC4ABD5 /* AppIcon.icon */; };
@@ -369,6 +370,7 @@
 		BEAEF7CCBACFD13F14089B96 /* TabManager+Capture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TabManager+Capture.swift"; sourceTree = "<group>"; };
 		C1B28F6F3EDF263596E3467B /* TabManager+Documents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TabManager+Documents.swift"; sourceTree = "<group>"; };
 		C30CB3278A605D8A560068D9 /* ExtensionHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionHost.swift; sourceTree = "<group>"; };
+		C37BAB76839937F1D2F99492 /* NoteTextView+Tables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NoteTextView+Tables.swift"; sourceTree = "<group>"; };
 		C4059CA9B4D1216328D4B0E5 /* PageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageView.swift; sourceTree = "<group>"; };
 		C60DFEA40DB843CF5FDC13B9 /* BoostEditorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoostEditorPanel.swift; sourceTree = "<group>"; };
 		C727569DA84301B3DC2A1235 /* PrivateFaviconStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateFaviconStoreTests.swift; sourceTree = "<group>"; };
@@ -495,6 +497,7 @@
 				AE9A221925F3432873B2FE51 /* EaselView.swift */,
 				697B773AFCDAE64818381436 /* Note.swift */,
 				53B687B87648930055520893 /* NoteTextView.swift */,
+				C37BAB76839937F1D2F99492 /* NoteTextView+Tables.swift */,
 				FFE4020888500D3173B509FC /* NoteView.swift */,
 			);
 			path = Documents;
@@ -986,6 +989,7 @@
 				27DA872CBE2C44C90A3E2AD8 /* NavigationRequestBuilder.swift in Sources */,
 				03E217D590B834A5F661A750 /* NewTabPage.swift in Sources */,
 				D07C77535E88A71A119F6387 /* Note.swift in Sources */,
+				4658C98D645EFB8A0F4550FB /* NoteTextView+Tables.swift in Sources */,
 				731118BE9522DDB23CA3E991 /* NoteTextView.swift in Sources */,
 				B5BA360CF0EE80BE9F53219D /* NoteView.swift in Sources */,
 				6B8D45C27082842EC6545101 /* PageBackground.swift in Sources */,

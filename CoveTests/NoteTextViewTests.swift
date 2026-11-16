@@ -163,4 +163,49 @@ struct NoteTextViewTests {
         #expect(editor.string == "Highlight these words")
     }
 
+    @Test func `table keys move between cells and append an undoable row`() {
+        let (note, editor, window) = editor()
+        defer { window.contentView = nil }
+        let table = NSTextTable()
+        table.numberOfColumns = 2
+        for row in 0..<2 {
+            for column in 0..<2 {
+                let cell = NSTextTableBlock(table: table, startingRow: row, rowSpan: 1, startingColumn: column, columnSpan: 1)
+                let style = NoteTextStyle.body.paragraphStyle.mutableCopy() as! NSMutableParagraphStyle
+                style.textBlocks = [cell]
+                var attributes = NoteTextStyle.body.attributes
+                attributes[.paragraphStyle] = style
+                note.text.append(NSAttributedString(string: "Cell\n", attributes: attributes))
+            }
+        }
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        editor.insertTab(nil)
+        #expect(editor.selectedRange().location == 5)
+        editor.insertNewline(nil)
+        #expect(editor.selectedRange().location == 15)
+        editor.insertBacktab(nil)
+        #expect(editor.selectedRange().location == 10)
+        editor.insertLineBreak(nil)
+        #expect(editor.selectedRange().location == 0)
+        editor.setSelectedRange(NSRange(location: 15, length: 0))
+        editor.undoManager?.removeAllActions()
+        editor.insertNewline(nil)
+        #expect(editor.selectedRange().location == 21)
+        #expect(note.text.length == 22)
+        editor.undoManager?.undo()
+        #expect(note.text.length == 20)
+    }
+
+    @Test func `inserting a numbered item updates the following numbers`() {
+        let (_, editor, window) = editor("First\nLast")
+        defer { window.contentView = nil }
+        editor.setSelectedRange(NSRange(location: 0, length: editor.string.utf16.count))
+        editor.toggle(.numbered)
+        let firstLine = (editor.string as NSString).range(of: "\n").location
+        editor.setSelectedRange(NSRange(location: firstLine, length: 0))
+        editor.insertNewline(nil)
+        editor.insertText("Middle", replacementRange: editor.selectedRange())
+        #expect(editor.string == "\t1.\tFirst\n\t2.\tMiddle\n\t3.\tLast")
+    }
+
 }
